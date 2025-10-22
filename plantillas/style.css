@@ -1,109 +1,114 @@
- * {
+* {
     box-sizing: border-box;
     margin: 0;
-    font-family: Poppins, sans-serif;
- }
+    font-family: "Poppins", sans-serif;
+}
+
 :root {
     --primary-color: #c0c0c0;
     --secondary-color: #ffffff;
 }
 
 body {
-    background: rgba(0, 0, 0, 0.2) url('bg-image.jpg') center/cover no-repeat fixed;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: url("bg-image.jpg") center/cover no-repeat fixed;
 }
 
-a {
-    color: var(--secondary-color);
-    text-decoration: none;
-}
-
-a:hover {
-    text-decoration: underline;
-}
-    
 
 .wrapper {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
-    min-width: 100vh;
+    min-height: 100vh;
     padding: 1rem;
 }
 
-.login-wrapper{
+
+.login-wrapper {
     position: relative;
-    padding: 4rem 1.5rem 1rem 1.5rem;
-    border: 2px solid var(--primary-color);
+    padding: 4rem 1.5rem 1.5rem 1.5rem;
+    border: 2px solid rgba(255, 255, 255, 0.2);
     border-radius: 15px;
-    backdrop-filter: blur(25px);
-    box-shadow: 0px 0px 10px 2px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(12px); 
+    background: rgba(0, 0, 0, 0.35); /* Transparente */
+    box-shadow: 0 0 25px;
     color: var(--secondary-color);
 }
+
 
 .login-header {
     display: flex;
     position: absolute;
     top: 0;
     left: 50%;
+    transform: translateX(-50%);
     align-items: center;
     justify-content: center;
     padding: 0.5rem 1.5rem;
-    transform: translateX(-50%);
     border-radius: 0 0 20px 20px;
     background-color: var(--primary-color);
     color: black;
-    font-size: clamp(1rem, 6vw, 3rem);
+    font-size: clamp(1rem, 6vw, 2rem);
 }
 
-.login-header::before{
+.login-header::before,
+.login-header::after {
     content: "";
     position: absolute;
     top: 0;
+    width: 0px;
+    height: 10px;
+    background: transparent;
+}
+
+.login-header::before {
     left: -30px;
-    width: 30px;
-    height: 30px;
     border-top-right-radius: 50%;
-    background: transparent;
-    box-shadow: 15px 0 0 0 var(--primary-color);    
-
+    box-shadow: 15px 0 0 0 var(--primary-color);
 }
 
-.login-header::after{
-    content: "";
-    position: absolute;
-    top: 0;
+.login-header::after {
     right: -30px;
-    width: 30px;
-    height: 30px;
     border-bottom-left-radius: 50%;
-    background: transparent;
     box-shadow: -15px 0 0 0 var(--primary-color);
 }
+
 
 .login-form {
     display: flex;
     flex-direction: column;
-    margin-top: clamp(0.5rem, 3vw, 3rem);
+    margin-top: clamp(1rem, 3vw, 2rem);
     font-size: clamp(0.8rem, 3vw, 1rem);
     gap: 1rem;
+    width: 320px;
+    min-height: 320px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  
 }
 
+
 .input-wrapper {
-    display: flex;
     position: relative;
+    display: flex;
     flex-direction: column;
 }
 
 .input-field {
     width: 100%;
-    padding: 0.5rem;
+    padding: 0.6rem;
     border: 2px solid var(--primary-color);
     border-radius: 30px;
     outline: none;
     background: transparent;
     color: var(--secondary-color);
 }
+
 .label {
     position: absolute;
     top: 50%;
@@ -111,11 +116,11 @@ a:hover {
     transform: translateY(-50%);
     transition: 0.2s;
 }
-.input-field:focus~.label,
-.input-field:valid~.label {
-    position: absolute;
+
+.input-field:focus ~ .label,
+.input-field:valid ~ .label {
     top: 0%;
-    left: 0%;
+    left: 10%;
     padding: 0 10px;
     border-radius: 30px;
     background-color: var(--primary-color);
@@ -127,6 +132,7 @@ a:hover {
     top: 10px;
     right: 25px;
 }
+
 
 .login-check {
     display: flex;
@@ -145,20 +151,32 @@ a:hover {
     border: none;
     border-radius: 30px;
     background: #ececec;
-    font-size: clamp(1rem, 3vw, 1.3rem);
+    color: #000;
+    font-size: clamp(1rem, 3vw, 1.2rem);
     font-weight: 600;
     cursor: pointer;
     transition: 0.3s;
 }
+
 .input-login:hover {
     background: var(--secondary-color);
-
 }
+
 
 .register {
     text-align: center;
 }
 
-.register a{
-    font-size: 500;
+.register a {
+    font-weight: 500;
+    color: var(--secondary-color);
+}
+
+a {
+    color: var(--secondary-color);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
 }
