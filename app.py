@@ -8,31 +8,29 @@ app = Flask(__name__)
 # cargar el esquema de entrada (login)
 @app.route('/', methods=['GET'])
 def index():
-    # usar cadena con el nombre del archivo de plantilla
     return render_template('login.html')
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    # si es GET, mostramos el formulario (por si se accede directamente a /login)
+    # si es GET, se muestra el formulario directo en /login.html
     if request.method == 'GET':
         return render_template('login.html')
 
-    # POST: procesar credenciales
+    # Variables para procesar usuario y contraseña:
     usuario = request.form.get('user', '')
     clave = request.form.get('pw', '')
 
-    # usuarios almacenados usan números, por eso comparamos como strings
+    # usuarios almacenados usan números, por eso se compara como string:
     stored = usuarios.get(usuario)
 
     if stored is not None and str(stored) == str(clave):
         # autenticación correcta: renderizamos panel con el usuario
         return render_template('panel.html', usuario=usuario)
     else:
-        # autenticación fallida: volvemos al login mostrando un mensaje de error
-        # (no modificamos tu CSS/HTML; si quieres puedo añadir la plantilla para mostrar error)
+        # autenticación fallida:regresa login mostrando un mensaje de error:
         return render_template('login.html', error="Usuario o clave incorrectos")
 
-
+#esto de abajo es para que corra todo lo del archivo al ejecutarlo:
 if __name__ == '__main__':
     app.run(debug=True)
