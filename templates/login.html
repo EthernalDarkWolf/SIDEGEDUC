@@ -4,8 +4,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Education Technologic</title>
-    <!-- Enlace al CSS usando Flask -->
+    <title>Education Technologic</title> <!--Este es el titull de la pagina-->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   </head>
   <body>
@@ -13,7 +12,7 @@
       <div class="login-wrapper">
         <div class="login-header">Login</div>
         <div class="login-form">
-          <!-- Formulario que envía datos a Flask -->
+          <!-- Forma para enviar datos a flask:-->
           <form action="/login" method="POST">
             <div class="input-wrapper">
               <input type="text" id="user" name="user" class="input-field" required />
@@ -29,7 +28,7 @@
 
             <div class="login-check">
               <div class="remember">
-                <input type="checkbox" id="remember-me" name="remember-me" />
+                <input type="checkbox" id="rememberme" name="remember-me" />
                 <label for="remember-me">Remember me</label>
               </div>
               <div class="forgot">
