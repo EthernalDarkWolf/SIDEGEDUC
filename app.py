@@ -1,36 +1,31 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
 
-from users_and_rols.users import usuarios
+from usuarios.users import validar
 
-app = Flask(__name__)
+app = Flask(__name__) 
 
 
-# cargar el esquema de entrada (login)
-@app.route('/', methods=['GET'])
-def index():
+@app.route('/')
+def login():
     return render_template('login.html')
 
+@app.route('/login', methods=['POST'])
+def iniciar_sesion():
+    # uso de .get() para evitar KeyError y normalizar input
+    usuario = request.form.get('usuario', '').strip()
+    clave = request.form.get('clave', '')
+    # validar debe devolver True/False; proteger contra excepciones internas
+    try:
+        valido = validar(usuario, clave)
+    except Exception:
+        valido = False
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    # si es GET, se muestra el formulario directo en /login.html
-    if request.method == 'GET':
-        return render_template('login.html')
-
-    # Variables para procesar usuario y contraseña:
-    usuario = request.form.get('user', '')
-    clave = request.form.get('pw', '')
-
-    # usuarios almacenados usan números, por eso se compara como string:
-    stored = usuarios.get(usuario)
-
-    if stored is not None and str(stored) == str(clave):
-        # autenticación correcta: renderizamos panel con el usuario
+    if valido:
+        # renderiza panel.html pasando el usuario al template
         return render_template('panel.html', usuario=usuario)
     else:
-        # autenticación fallida:regresa login mostrando un mensaje de error:
-        return render_template('login.html', error="Usuario o clave incorrectos")
+        return "Credenciales inválidas", 401
 
-#esto de abajo es para que corra todo lo del archivo al ejecutarlo:
+
 if __name__ == '__main__':
     app.run(debug=True)
