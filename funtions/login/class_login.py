@@ -7,12 +7,12 @@ except Exception:
 
 class LoginManager:
     def register(self, app):
-        # GET /
+        
         def login():
             return render_template('login/struct.html')
         app.add_url_rule('/', 'login', login, methods=['GET'])
 
-        # POST /login
+      
         def iniciar_sesion():
             usuario = request.form.get('usuario', '').strip()
             clave = request.form.get('clave', '')
@@ -26,7 +26,7 @@ class LoginManager:
             return render_template('login/login_invalid.html', error='Usuario o clave incorrectos.')
         app.add_url_rule('/login', 'iniciar_sesion', iniciar_sesion, methods=['POST'])
 
-        # GET+POST /register
+       
         def register():
             if request.method == 'GET':
                 return render_template('login/register.html')

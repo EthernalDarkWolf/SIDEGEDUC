@@ -1,4 +1,4 @@
-# ...existing code...
+
 # Diccionario de ejemplo: ajustar nombres/contraseñas reales aquí
 usuarios = {
     'Anthony': '1234',
