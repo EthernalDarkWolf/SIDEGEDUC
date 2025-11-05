@@ -5,44 +5,44 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Education Technologic</title> <!--Este es el titull de la pagina-->
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='login/style.css') }}" />
   </head>
   <body>
     <div class="wrapper">
       <div class="login-wrapper">
-        <div class="login-header">Login</div>
+        <div class="login-header">Acceso</div>
         <div class="login-form">
           <!-- Forma para enviar datos a flask:-->
           <form action="/login" method="POST">
             <div class="input-wrapper">
               <input type="text" id="user" name="usuario" class="input-field" required />
-              <label for="user" class="label">Username</label>
+              <label for="user" class="label">Nombre de Usuario</label>
               <i class="bx bx-user icon"></i>
             </div>
 
             <div class="input-wrapper">
               <input type="password" id="pw" name="clave" class="input-field" required />
-              <label for="pw" class="label">Password</label>
+              <label for="pw" class="label">Clave</label>
               <i class="bx bx-lock-alt icon"></i>
             </div>
 
             <div class="login-check">
               <div class="remember">
                 <input type="checkbox" id="rememberme" name="remember-me" />
-                <label for="remember-me">Remember me</label>
+                <label for="remember-me">Recuerdame</label>
               </div>
               <div class="forgot">
-                <a href="#">Forgot password?</a>
+                <a href="#">Olvidaste la clave?</a>
               </div>
             </div>
 
             <div class="input-wrapper">
-              <input type="submit" value="Sign in" class="input-login" />
+              <input type="submit" value="Entrar" class="input-login" />
             </div>
           </form>
 
           <div class="register">
-            <span>Don't have an account? <a href="#">Register</a></span>
+            <span>No tienes cuenta?<a href="#">Registrate</a></span>
           </div>
         </div>
       </div>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Education Technologic</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='home_panel/home_panel.css') }}" />
+    <style>
+        .panel { display:flex; flex-direction:column; gap:12px; max-width:360px; margin:40px auto; }
+        .panel-btn {
+            display:block; text-decoration:none; text-align:center; padding:14px 18px;
+            background:#2b7ae4; color:#fff; border-radius:6px; font-weight:600;
+        }
+        .panel-btn.secondary { background:#4caf50; }
+        .panel-btn.tertiary { background:#f39c12; }
+        header { text-align:center; margin-top:24px; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Panel</h1>
+        {% if usuario %}
+        <p>Bienvenido, {{ usuario }}</p>
+        {% endif %}
+    </header>
+
+    <main>
+        <div class="panel">
+            <a class="panel-btn" href="{{ url_for('boleta') }}">Boleta de calificaciones</a>
+            <a class="panel-btn secondary" href="{{ url_for('constancia') }}">Constancia de estudio</a>
+            <a class="panel-btn tertiary" href="{{ url_for('admin_alumnos') }}">Administración de alumnos</a>
+        </div>
+    </main>
+</body>
+</html>
