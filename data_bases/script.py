@@ -1,1 +1,0 @@
-#este es el script que lanzara la prueba generica del sistema en la BD SIDEGU.sql

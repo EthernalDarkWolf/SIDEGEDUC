@@ -1,9 +1,10 @@
 from flask import Flask
 from funtions.Login.class_login import LoginManager
 
+
 app = Flask(__name__)
 #Llamar la clase para el login del sistema y todas sus funcopnesnes 
-LoginManager().register(app)
+LoginManager().login_system(app)
 
 
 

@@ -1,12 +1,7 @@
 from flask import render_template, request, render_template_string
-from usuarios.users import validar
-try:
-    from usuarios.users import registrar as registrar_usuario
-except Exception:
-    registrar_usuario = None
 
 class LoginManager:
-    def register(self, app):
+    def login_system(self, app):
         
         def login():
             return render_template('login/struct.html')
@@ -30,19 +25,25 @@ class LoginManager:
         def register():
             if request.method == 'GET':
                 return render_template('login/register.html')
-            nombre = request.form.get('name', '').strip()
-            email = request.form.get('email', '').strip()
-            clave = request.form.get('password', '')
-            if not nombre or not clave:
-                return render_template('login/register.html', error='Nombre y clave requeridos.')
-            if registrar_usuario:
-                ok, msg = registrar_usuario(nombre, email, clave)
-                if ok:
-                    return render_template('home_panel/struct.html', usuario=nombre)
-                return render_template('login/register.html', error=msg)
-            return render_template('home_panel/struct.html', usuario=nombre)
-        app.add_url_rule('/register', 'register', register, methods=['GET', 'POST'])
+            elif request.method == 'POST':
+                if registrar_usuario is None:
+                    return render_template('login/register.html', error='Registro no disponible.')
 
+                usuario = request.form.get('usuario', '').strip()
+                clave = request.form.get('clave', '')
+                email = request.form.get('email', '').strip()
+
+                try:
+                    exito = registrar_usuario(usuario, clave, email)
+                except Exception as e:
+                    return render_template('login/register.html', error=f'Error en el registro: {str(e)}')
+
+                if exito:
+                    return render_template('login/register_success.html', usuario=usuario)
+                else:
+                    return render_template('login/register.html', error='El usuario ya existe.')
+
+            
         # Rutas del panel (evitan BuildError en templates)
         def boleta():
             return render_template_string(
