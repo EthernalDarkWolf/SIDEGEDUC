@@ -1,5 +1,6 @@
 from flask import Flask
-from funtions.Login.class_login import LoginManager
+from utiled.Login import LoginManager
+from database.Models import models
 
 
 app = Flask(__name__)
