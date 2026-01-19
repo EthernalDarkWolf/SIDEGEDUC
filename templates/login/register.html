@@ -13,13 +13,12 @@
     <div class="container">
         <div class="form sign-up-container">
             <h1>Registrarse</h1>
-            <form action="/register" method="POST">
-                <input type="text" placeholder="Nombre de Usuario" id="name">
-                <input type="email" placeholder="Email" id="email">
-                <input type="password" placeholder="Clave" id="password">
-
-
+            <form action="{{ url_for('login.register') }}" method="POST">
+                <input type="text" name="usuario" placeholder="Nombre de Usuario" id="name" required>
+                <input type="password" name="clave" placeholder="Clave" id="password" required>
+                <input type="submit" value="Registrarse">
             </form>
+            <p><a href="{{ url_for('login.login') }}">Volver al login</a></p>
         </div>
     </div>
 </body>

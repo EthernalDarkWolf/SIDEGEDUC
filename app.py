@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, session, render_template, redirect, url_for
 from dotenv import load_dotenv
 import os
 
@@ -6,7 +6,7 @@ import os
 load_dotenv()
 
 # Importar SQLAlchemy y blueprint
-from database.models import db
+from database.models import db, Usuarios
 from utiled.start import login_bp
 
 app = Flask(__name__)
@@ -25,8 +25,44 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Inicializar BD
 db.init_app(app)
 
+# Crear tablas si es necesario (solo en entorno de desarrollo)
+with app.app_context():
+    try:
+        db.create_all()
+    except Exception:
+        pass
+
 # Registrar Blueprints
 app.register_blueprint(login_bp)
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+
+@app.route('/dashboard')
+def dashboard():
+    user = None
+    if 'username' in session:
+        user = session.get('username')
+    return render_template('home_panel/struct.html', usuario=user)
+
+
+@app.route('/boleta')
+def boleta():
+    return 'Boleta - en desarrollo'
+
+
+@app.route('/constancia')
+def constancia():
+    return 'Constancia - en desarrollo'
+
+
+@app.route('/admin_alumnos')
+def admin_alumnos():
+    return 'Administración de alumnos - en desarrollo'
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login.login'))
