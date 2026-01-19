@@ -47,6 +47,13 @@ def dashboard():
     return render_template('home_panel/struct.html', usuario=user)
 
 
+@app.route('/')
+def index():
+    if 'username' in session:
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login.login'))
+
+
 @app.route('/boleta')
 def boleta():
     return 'Boleta - en desarrollo'
