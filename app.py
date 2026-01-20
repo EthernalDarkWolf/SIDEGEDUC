@@ -6,7 +6,7 @@ import os
 load_dotenv()
 
 # Importar SQLAlchemy y blueprint
-from database.models import db, Usuarios
+from database.models import db
 from utiled.start import login_bp
 
 app = Flask(__name__)
@@ -18,14 +18,14 @@ DB_PASS = os.getenv("DB_PASS")
 DB_NAME = os.getenv("DB_NAME")
 DB_HOST = os.getenv("DB_HOST")
 
-# Config SQLAlchemy
+# Config SQLAlchemy esto corresponde a la bd
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Inicializar BD
 db.init_app(app)
 
-# Crear tablas si es necesario (solo en entorno de desarrollo)
+# volver a Crear tablas si es necesario (solo en entorno de desarrollo) es para evitar errores al iniciar la app
 with app.app_context():
     try:
         db.create_all()

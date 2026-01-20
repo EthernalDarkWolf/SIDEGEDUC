@@ -74,9 +74,7 @@ def register():
     # Guardar usuario con role=1 y status_user=1 por defecto (esto cambiara)
     try:
         hashed = generate_password_hash(clave)
-        nuevo = Usuarios(nombre=nombre, contrasena=hashed,
-                         id_rol=1,
-                         id_status_user=1)
+        nuevo = Usuarios(nombre=nombre, contrasena=hashed, id_rol=1, id_status_user=1)
         db.session.add(nuevo)
         db.session.commit()
         mensaje = f'Usuario {nombre} registrado exitosamente'
