@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SIDEGEDUC</title> <!--Este es el titull de la pagina-->
+    <title>SIDEGEDUC</title> <!--Este es el titulo de la pagina-->
     <link rel="stylesheet" href="{{ url_for('static', filename='login/style.css') }}" />
   </head>
   <body>
@@ -30,10 +30,6 @@
               <div class="remember">
                 <input type="checkbox" id="rememberme" name="remember-me" />
                 <label for="remember-me">Recuerdame</label>
-              </div>
-              <div class="forgot">
-                <a href="#">Olvidaste la clave?</a>
-              </div>
             </div>
 
             <div class="input-wrapper">
@@ -42,10 +38,44 @@
           </form>
 
           <div class="register">
-            <span>No tienes cuenta?<a href="{{ url_for('login.register') }}">Registrate</a></span>
+            <span>No tienes cuenta? <a href="{{ url_for('login.register') }}">Registrate</a></span>
           </div>
         </div>
       </div>
     </div>
+
+    
+    <div id="status-modal" class="modal-overlay" aria-hidden="true">
+      <div class="modal">
+        <h2 id="modal-title">Acceso</h2>
+        <p id="modal-message"></p>
+        <button id="modal-close">Cerrar</button>
+      </div>
+    </div>
+
+    <script>
+    
+      function showModal(title, message) {
+        const overlay = document.getElementById('status-modal');
+        document.getElementById('modal-title').innerText = title;
+        document.getElementById('modal-message').innerText = message;
+        overlay.setAttribute('aria-hidden', 'false');
+        overlay.classList.add('visible');
+      }
+
+      // Close button
+      document.addEventListener('DOMContentLoaded', function() {
+        const btn = document.getElementById('modal-close');
+        btn.addEventListener('click', function() {
+          const overlay = document.getElementById('status-modal');
+          overlay.setAttribute('aria-hidden', 'true');
+          overlay.classList.remove('visible');
+        });
+
+        {% if modal_show %}
+          showModal({{ modal_title | tojson }}, {{ modal_message | tojson }});
+        {% endif %}
+      });
+    </script>
   </body>
   </html>

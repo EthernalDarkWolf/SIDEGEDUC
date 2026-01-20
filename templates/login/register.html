@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Education Technologic</title> <!--Este es el titull de la pagina-->
-    <link rel="stylesheet" href="{{ url_for('static', filename='login/register.css') }}" />
+    <title>SIDEGEDUC</title> <!--Este es el titulo de la pagina-->
+    <link rel="stylesheet" href="{{ url_for('static', filename='login/style.css') }}" />
     <title>Formulario</title>
 </head>
 
@@ -21,5 +21,37 @@
             <p><a href="{{ url_for('login.login') }}">Volver al login</a></p>
         </div>
     </div>
+
+        <!-- Modal overlay -->
+        <div id="status-modal" class="modal-overlay" aria-hidden="true">
+            <div class="modal">
+                <h2 id="modal-title">Mensaje</h2>
+                <p id="modal-message"></p>
+                <button id="modal-close">Cerrar</button>
+            </div>
+        </div>
+
+        <script>
+            function showModal(title, message) {
+                const overlay = document.getElementById('status-modal');
+                document.getElementById('modal-title').innerText = title;
+                document.getElementById('modal-message').innerText = message;
+                overlay.setAttribute('aria-hidden', 'false');
+                overlay.classList.add('visible');
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                const btn = document.getElementById('modal-close');
+                if (btn) btn.addEventListener('click', function() {
+                    const overlay = document.getElementById('status-modal');
+                    overlay.setAttribute('aria-hidden', 'true');
+                    overlay.classList.remove('visible');
+                });
+
+                {% if modal_show %}
+                    showModal({{ modal_title | tojson }}, {{ modal_message | tojson }});
+                {% endif %}
+            });
+        </script>
 </body>
 </html>

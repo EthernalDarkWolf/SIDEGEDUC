@@ -35,10 +35,6 @@ with app.app_context():
 # Registrar Blueprints
 app.register_blueprint(login_bp)
 
-if __name__ == "__main__":
-    app.run(debug=True)
-
-
 @app.route('/dashboard')
 def dashboard():
     user = None
@@ -73,3 +69,7 @@ def admin_alumnos():
 def logout():
     session.clear()
     return redirect(url_for('login.login'))
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
