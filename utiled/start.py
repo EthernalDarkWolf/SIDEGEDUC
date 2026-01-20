@@ -15,7 +15,7 @@ def login():
     clave = request.form.get('clave')
 
     if not usuario_nombre or not clave:
-        # Mostrar modal sobrepuesto indicando credenciales faltantes/incorrectas
+        # Mostrar mensaje sobrepuesto indicando credenciales faltantes/incorrectas
         mensaje = 'Acceso denegado usuario o clave incorrectos'
         return render_template('login/index.html', modal_show=True, modal_title='Acceso denegado', modal_message=mensaje)
 
@@ -24,7 +24,8 @@ def login():
     if usuario:
         stored = usuario.contrasena
         if check_password_hash(stored, clave) or stored == clave:
-            # Verificar estado del usuario
+           
+            # Verificar estado del usuario aqui el status_user entra em juego si el usuario tiene un valor de inactivo/suspendido niega el acceso
             status = None
             try:
                 status = StatusUser.query.filter_by(id_status_user=usuario.id_status_user).first()
@@ -46,7 +47,7 @@ def login():
             session['username'] = usuario.nombre
             return redirect(url_for('dashboard'))
 
-    # Credenciales inválidas: mostrar modal sobrepuesto
+    # Credenciales inválidas: mostrar mensaje sobrepuesto
     mensaje = 'Acceso denegado usuario o clave incorrectos'
     return render_template('login/index.html', modal_show=True, modal_title='Acceso denegado', modal_message=mensaje)
 
@@ -60,16 +61,17 @@ def register():
     clave = request.form.get('clave')
 
     if not nombre or not clave:
-        # Mostrar modal indicando campos obligatorios en la página de login
+        # Mostrar mensaje indicando campos obligatorios en la página de login
         mensaje = 'Todos los campos son obligatorios'
         return render_template('login/index.html', modal_show=True, modal_title='Error', modal_message=mensaje)
 
+    # Verificar si el usuario ya existe a la hora de registrar
     existing = Usuarios.query.filter_by(nombre=nombre).first()
     if existing:
         mensaje = 'El usuario ya existe'
         return render_template('login/index.html', modal_show=True, modal_title='Error', modal_message=mensaje)
 
-    # Guardar usuario con role=1 y status_user=1 por defecto
+    # Guardar usuario con role=1 y status_user=1 por defecto (esto cambiara)
     try:
         hashed = generate_password_hash(clave)
         nuevo = Usuarios(nombre=nombre, contrasena=hashed,
