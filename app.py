@@ -18,8 +18,14 @@ DB_PASS = os.getenv("DB_PASS")
 DB_NAME = os.getenv("DB_NAME")
 DB_HOST = os.getenv("DB_HOST")
 
-# Config SQLAlchemy esto corresponde a la bd
-app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
+# Config SQLAlchemy: si faltan variables de entorno, usar SQLite por defecto (desarrollo)
+if DB_USER and DB_PASS and DB_NAME and DB_HOST:
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
+else:
+    sqlite_path = os.path.join(os.path.dirname(__file__), 'sidegeduc.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{sqlite_path}"
+    print('DB: faltan credenciales MySQL. Usando SQLite de respaldo en', sqlite_path)
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Inicializar BD

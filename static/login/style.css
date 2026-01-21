@@ -1,229 +1,145 @@
 * {
     box-sizing: border-box;
     margin: 0;
-    font-family: "Poppins", sans-serif;
+    font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
 
-:root {
-    --primary-color: #c0c0c0;
-    --secondary-color: #ffffff;
+:root{
+    --teal:#48c9b0;
+    --dark:#166ab8;
+    --muted:#9aa6b2;
+    --accent:#60e0c9;
 }
 
-body {
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: url("bg-image.jpg") center/cover no-repeat fixed;
+html,body{
+    height:100%;
 }
 
-
-.wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    min-height: 100vh;
-    padding: 1rem;
+/* Main split container */
+.auth-container{
+    min-height:100vh;
+    display:flex;
+    width:100%;
 }
 
-
-.login-wrapper {
-    position: relative;
-    padding: 4rem 1.5rem 1.5rem 1.5rem;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 15px;
-    backdrop-filter: blur(12px); 
-    background: rgba(0, 0, 0, 0.35); /* Transparente */
-    box-shadow: 0 0 25px;
-    color: var(--secondary-color);
+.left-panel{
+    flex:1;
+    background-position:center;
+    background-size:cover;
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
 }
 
+.left-overlay{
+    width:100%;
+    height:100%;
+    /* Make image more visible: subtle translucent wash instead of heavy green */
+    background: linear-gradient(180deg, rgba(32, 42, 132, 0.06), rgba(0,0,0,0.0));
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:3rem;
+    position:relative;
+}
 
-.login-header {
-    display: flex;
+/* Decorative soft gradient accents (non-destructive) */
+.left-overlay::before{
+    content: '';
     position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem 1.5rem;
-    border-radius: 0 0 20px 20px;
-    background-color: var(--primary-color);
-    color: black;
-    font-size: clamp(1rem, 6vw, 2rem);
-}
-
-.login-header::before,
-.login-header::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    width: 0px;
-    height: 10px;
-    background: transparent;
-}
-
-.login-header::before {
-    left: -30px;
-    border-top-right-radius: 50%;
-    box-shadow: 15px 0 0 0 var(--primary-color);
-}
-
-.login-header::after {
-    right: -30px;
-    border-bottom-left-radius: 50%;
-    box-shadow: -15px 0 0 0 var(--primary-color);
-}
-
-
-.login-form {
-    display: flex;
-    flex-direction: column;
-    margin-top: clamp(1rem, 3vw, 2rem);
-    font-size: clamp(0.8rem, 3vw, 1rem);
-    gap: 1rem;
-    width: 320px;
-    min-height: 320px;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-  
-}
-
-
-.input-wrapper {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-}
-
-.input-field {
-    width: 100%;
-    padding: 0.6rem;
-    border: 2px solid var(--primary-color);
-    border-radius: 30px;
-    outline: none;
-    background: transparent;
-    color: var(--secondary-color);
-}
-
-.label {
-    position: absolute;
-    top: 50%;
-    left: 5%;
-    transform: translateY(-50%);
-    transition: 0.2s;
-}
-
-.input-field:focus ~ .label,
-.input-field:valid ~ .label {
-    top: 0%;
-    left: 10%;
-    padding: 0 10px;
-    border-radius: 30px;
-    background-color: var(--primary-color);
-    color: black;
-}
-
-.icon {
-    position: absolute;
-    top: 10px;
-    right: 25px;
-}
-
-
-.login-check {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.forgot {
-    font-size: clamp(0.7rem, 2vw, 0.8rem);
-}
-
-.input-login {
-    width: 100%;
-    padding: 0.6rem;
-    border: none;
-    border-radius: 30px;
-    background: #ececec;
-    color: #000;
-    font-size: clamp(1rem, 3vw, 1.2rem);
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.input-login:hover {
-    background: var(--secondary-color);
-}
-
-
-.register {
-    text-align: center;
-}
-
-.register a {
-    font-weight: 500;
-    color: var(--secondary-color);
-}
-
-a {
-    color: var(--secondary-color);
-    text-decoration: none;
-}
-
-a:hover {
-    text-decoration: underline;
-}
-
-/* Modal overlay styles */
-.modal-overlay {
-    position: fixed;
     inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0,0,0,0.5);
-    visibility: hidden;
-    opacity: 0;
-    transition: opacity 0.2s ease, visibility 0.2s ease;
-    z-index: 9999;
+    background: radial-gradient(600px 300px at 20% 40%, rgba(255,255,255,0.06), transparent 20%),
+                            radial-gradient(400px 200px at 80% 60%, rgba(255,255,255,0.03), transparent 20%);
+    pointer-events:none;
 }
 
-.modal-overlay.visible {
-    visibility: visible;
-    opacity: 1;
+.left-overlay .brand h2{
+    font-weight:700;
+    font-size:clamp(1.4rem,3vw,2rem);
+    margin-bottom:0.5rem;
+    /* Gradient text with slight transparency to blend with image */
+    background: linear-gradient(90deg, rgba(255,255,255,0.98), rgba(255,255,255,0.8));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: rgba(255,255,255,0.9);
+    opacity:0.95;
+}
+.left-overlay .brand p{
+    color: rgba(255,255,255,0.85);
+    opacity:0.9;
+}
+.left-overlay .dots{
+    margin-top:2rem;
+    opacity:0.9;
 }
 
-.modal {
-    background: #fff;
-    color: #000;
-    padding: 1.5rem;
-    border-radius: 8px;
-    width: min(90%, 420px);
-    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-    text-align: center;
+.right-panel{
+    width:480px;
+    max-width:50%;
+    background: linear-gradient(180deg, rgba(46, 87, 129, 0.98), rgba(22,33,43,0.98));
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:3rem 2rem;
+    color:#dbe6ee;
 }
 
-#modal-title {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.25rem;
+.form-wrap{
+    width:100%;
+    max-width:360px;
 }
 
-#modal-message {
-    margin-bottom: 1rem;
-}
+.panel-header{display:none}
+.tabs{display:none}
 
-#modal-close {
-    padding: 0.5rem 1rem;
-    border: none;
-    background: #333;
-    color: #fff;
-    border-radius: 6px;
-    cursor: pointer;
+h1{font-size:1.6rem;margin-bottom:1rem;color:#eaf6f3}
+
+.register-form{display:flex;flex-direction:column;gap:0.85rem}
+.register-form label{font-size:0.8rem;color:var(--muted)}
+.register-form input[type="text"],
+.register-form input[type="password"],
+.register-form input[type="email"]{
+    padding:0.8rem 1rem;
+    border-radius:28px;
+    border:1px solid rgba(255,255,255,0.06);
+    background:rgba(21, 8, 77, 0.424);
+    color:#eaf6f3;
+    outline:none;
+}
+.register-form input:focus{box-shadow:0 6px 18px rgba(0,0,0,0.35);border-color:rgba(96,224,201,0.6)}
+
+.checkbox-row{display:flex;align-items:center;gap:0.5rem;margin-top:0.4rem}
+.checkbox-row input{width:16px;height:16px}
+.checkbox-row label{font-size:0.85rem;color:var(--muted)}
+
+.btn-submit{
+    margin-top:0.6rem;
+    padding:0.8rem 1rem;
+    border-radius:999px;
+    border:none;
+    background:linear-gradient(90deg,var(--accent),var(--teal));
+    color:#042022;
+    font-weight:700;
+    cursor:pointer;
+}
+.alt-link{margin-top:1rem;color:var(--muted);font-size:0.9rem}
+.alt-link a{color:#9fe6d6;text-decoration:none}
+
+/* Modal overlay styles (kept) */
+.modal-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);visibility:hidden;opacity:0;transition:opacity .2s ease,visibility .2s ease;z-index:9999}
+.modal-overlay.visible{visibility:visible;opacity:1}
+.modal{background:#fff;color:#000;padding:1.5rem;border-radius:8px;width:min(90%,420px);box-shadow:0 10px 40px rgba(0,0,0,0.3);text-align:center}
+#modal-title{margin:0 0 .5rem 0;font-size:1.25rem}
+#modal-message{margin-bottom:1rem}
+#modal-close{padding:.5rem 1rem;border:none;background:#333;color:#fff;border-radius:6px;cursor:pointer}
+
+/* Responsive: stack on small screens */
+@media (max-width:880px){
+    .auth-container{flex-direction:column}
+    .left-panel{height:40vh}
+    .right-panel{width:100%;max-width:100%;padding:2rem}
 }

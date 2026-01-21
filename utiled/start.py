@@ -1,6 +1,7 @@
 from flask import Blueprint, request, redirect, url_for, render_template, session, flash
 from database.models import Usuarios, Roles, StatusUser, db
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.exc import OperationalError
 
 login_bp = Blueprint('login', __name__)
 
@@ -8,7 +9,7 @@ login_bp = Blueprint('login', __name__)
 @login_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'GET':
-        return render_template('login/index.html')
+        return render_template('login/index.html', active='login')
 
     # POST
     usuario_nombre = request.form.get('usuario')
@@ -17,9 +18,13 @@ def login():
     if not usuario_nombre or not clave:
         # Mostrar mensaje sobrepuesto indicando credenciales faltantes/incorrectas
         mensaje = 'Acceso denegado usuario o clave incorrectos'
-        return render_template('login/index.html', modal_show=True, modal_title='Acceso denegado', modal_message=mensaje)
+        return render_template('login/index.html', modal_show=True, modal_title='Acceso denegado', modal_message=mensaje, active='login')
 
-    usuario = Usuarios.query.filter_by(nombre=usuario_nombre).first()
+    try:
+        usuario = Usuarios.query.filter_by(nombre=usuario_nombre).first()
+    except OperationalError:
+        mensaje = 'Error: no se puede conectar a la base de datos. Contacte al administrador.'
+        return render_template('login/index.html', modal_show=True, modal_title='Error DB', modal_message=mensaje, active='login')
 
     if usuario:
         stored = usuario.contrasena
@@ -36,11 +41,11 @@ def login():
 
             if 'suspend' in estado or 'suspendido' in estado:
                 mensaje = 'No tienes permitido el acceso motivo: usuario suspendido'
-                return render_template('login/index.html', modal_show=True, modal_title='Acceso denegado', modal_message=mensaje)
+                return render_template('login/index.html', modal_show=True, modal_title='Acceso denegado', modal_message=mensaje, active='login')
 
             if 'inactiv' in estado or 'inactivo' in estado:
                 mensaje = 'No tienes permitido el acceso motivo: usuario Inactivo'
-                return render_template('login/index.html', modal_show=True, modal_title='Acceso denegado', modal_message=mensaje)
+                return render_template('login/index.html', modal_show=True, modal_title='Acceso denegado', modal_message=mensaje, active='login')
 
             # Usuario activo: iniciar sesión
             session['user_id'] = usuario.id_user
@@ -49,27 +54,38 @@ def login():
 
     # Credenciales inválidas: mostrar mensaje sobrepuesto
     mensaje = 'Acceso denegado usuario o clave incorrectos'
-    return render_template('login/index.html', modal_show=True, modal_title='Acceso denegado', modal_message=mensaje)
+    return render_template('login/index.html', modal_show=True, modal_title='Acceso denegado', modal_message=mensaje, active='login')
 
 
 @login_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'GET':
-        return render_template('login/register.html')
+        # Renderizar la plantilla combinada y seleccionar la pestaña de registro
+        return render_template('login/index.html', active='register')
 
     nombre = request.form.get('usuario')
     clave = request.form.get('clave')
 
+    # Validación server-side: el usuario debe aceptar los términos
+    terms = request.form.get('terms')
+    if not terms:
+        mensaje = 'Debes aceptar los términos de servicio para crear la cuenta.'
+        return render_template('login/index.html', modal_show=True, modal_title='Error', modal_message=mensaje, active='register')
+
     if not nombre or not clave:
         # Mostrar mensaje indicando campos obligatorios en la página de login
         mensaje = 'Todos los campos son obligatorios'
-        return render_template('login/index.html', modal_show=True, modal_title='Error', modal_message=mensaje)
+        return render_template('login/index.html', modal_show=True, modal_title='Error', modal_message=mensaje, active='register')
 
     # Verificar si el usuario ya existe a la hora de registrar
-    existing = Usuarios.query.filter_by(nombre=nombre).first()
+    try:
+        existing = Usuarios.query.filter_by(nombre=nombre).first()
+    except OperationalError:
+        mensaje = 'Error: no se puede conectar a la base de datos. Contacte a los Desarrolladores.'
+        return render_template('login/index.html', modal_show=True, modal_title='Error DB', modal_message=mensaje, active='register')
     if existing:
         mensaje = 'El usuario ya existe'
-        return render_template('login/index.html', modal_show=True, modal_title='Error', modal_message=mensaje)
+        return render_template('login/index.html', modal_show=True, modal_title='Error', modal_message=mensaje, active='register')
 
     # Guardar usuario con role=1 y status_user=1 por defecto (esto cambiara)
     try:
@@ -78,9 +94,9 @@ def register():
         db.session.add(nuevo)
         db.session.commit()
         mensaje = f'Usuario {nombre} registrado exitosamente'
-        return render_template('login/index.html', modal_show=True, modal_title='Registro exitoso', modal_message=mensaje)
+        return render_template('login/index.html', modal_show=True, modal_title='Registro exitoso', modal_message=mensaje, active='login')
     except Exception:
         db.session.rollback()
         mensaje = 'Error al crear usuario'
-        return render_template('login/index.html', modal_show=True, modal_title='Error', modal_message=mensaje)
+        return render_template('login/index.html', modal_show=True, modal_title='Error', modal_message=mensaje, active='register')
 

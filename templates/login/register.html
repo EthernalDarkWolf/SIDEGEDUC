@@ -6,19 +6,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SIDEGEDUC</title> <!--Este es el titulo de la pagina-->
     <link rel="stylesheet" href="{{ url_for('static', filename='login/style.css') }}" />
+    <style>
+        /* Fallback minimal styles if external CSS fails to load */
+        body{background:#ffffff;color:#000;font-family:Arial,Helvetica,sans-serif}
+        .auth-container{padding:2rem}
+        .right-panel, .left-panel{display:block}
+    </style>
     <title>Formulario</title>
 </head>
 
 <body>
-    <div class="container">
-        <div class="form sign-up-container">
-            <h1>Registrarse</h1>
-            <form action="{{ url_for('login.register') }}" method="POST">
-                <input type="text" name="usuario" placeholder="Nombre de Usuario" id="name" required>
-                <input type="password" name="clave" placeholder="Clave" id="password" required>
-                <input type="submit" value="Registrarse">
-            </form>
-            <p><a href="{{ url_for('login.login') }}">Volver al login</a></p>
+    <div class="auth-container">
+        <div class="left-panel" style="background-image: url('{{ url_for('static', filename='login/bg-image.jpg') }}');">
+            
+        </div>
+
+        <div class="right-panel">
+            <div class="form-wrap">
+                <!-- panel header removed to simplify UI -->
+
+                <h1>Registrarse</h1>
+
+                <form action="{{ url_for('login.register') }}" method="POST" class="register-form">
+                    <label for="usuario">Nombre de Usuario</label>
+                    <input type="text" name="usuario" id="usuario" required>
+
+                    <label for="clave">Clave</label>
+                    <input type="password" name="clave" id="clave" required>
+
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="terms" name="terms" required>
+                        <label for="terms">Acepto los términos de servicio</label>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Sign Up</button>
+                </form>
+
+                <p class="alt-link">¿Ya tienes cuenta? <a href="{{ url_for('login.login') }}">Inicia sesión</a></p>
+            </div>
         </div>
     </div>
 
