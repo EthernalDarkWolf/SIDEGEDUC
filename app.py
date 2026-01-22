@@ -145,7 +145,8 @@ def developer_manage_user():
     if not allowed:
         return 'Acceso denegado: privilegios insuficientes', 403
 
-    users = Usuarios.query.order_by(Usuarios.nombre).all()
+    # Excluir al usuario actual de la lista para evitar que se modifique a sí mismo
+    users = Usuarios.query.filter(Usuarios.id_user != cur.id_user).order_by(Usuarios.nombre).all()
     roles = Roles.query.order_by(Roles.nombre_rol).all()
     statuses = StatusUser.query.order_by(StatusUser.estado).all()
 
@@ -156,6 +157,7 @@ def developer_manage_user():
         uo = Usuarios.query.filter_by(id_user=session.get('user_id')).first()
         if uo:
             user = uo.nombre
+            current_user_id = uo.id_user
 
     if request.method == 'POST':
         form = request.form
@@ -171,12 +173,12 @@ def developer_manage_user():
                     if new_status:
                         target_user.id_status_user = int(new_status)
                     db.session.commit()
-                    return render_template('home_panel/struct.html', usuario=user, developer_priv=developer_priv, content_template='home_panel/manage_user.html', users=users, roles=roles, statuses=statuses, message='Usuario actualizado correctamente')
+                    return render_template('home_panel/struct.html', usuario=user, developer_priv=developer_priv, content_template='home_panel/manage_user.html', users=users, roles=roles, statuses=statuses, message='Usuario actualizado correctamente', current_user_id=current_user_id if 'current_user_id' in locals() else None)
                 except Exception as e:
                     db.session.rollback()
-                    return render_template('home_panel/struct.html', usuario=user, developer_priv=developer_priv, content_template='home_panel/manage_user.html', users=users, roles=roles, statuses=statuses, message='Error al actualizar el usuario')
+                    return render_template('home_panel/struct.html', usuario=user, developer_priv=developer_priv, content_template='home_panel/manage_user.html', users=users, roles=roles, statuses=statuses, message='Error al actualizar el usuario', current_user_id=current_user_id if 'current_user_id' in locals() else None)
 
-    return render_template('home_panel/struct.html', usuario=user, developer_priv=developer_priv, content_template='home_panel/manage_user.html', users=users, roles=roles, statuses=statuses)
+    return render_template('home_panel/struct.html', usuario=user, developer_priv=developer_priv, content_template='home_panel/manage_user.html', users=users, roles=roles, statuses=statuses, current_user_id=current_user_id if 'current_user_id' in locals() else None)
 
 
 @app.route('/logout')

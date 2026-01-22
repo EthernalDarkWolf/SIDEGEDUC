@@ -1,37 +1,81 @@
-<div class="card">
+<div class="card manage-user">
     <h3>Gestionar Roles y Estado de Usuario</h3>
     {% if message %}
-        <p class="muted" style="color:green">{{ message }}</p>
+        <div class="toast {{ 'ok' if 'actualizado' in message|lower or 'exitos' in message|lower else 'err' }}">{{ message }}</div>
     {% endif %}
-    <form method="post">
-        <label>Usuario:
-            <select name="user_id" required>
-                <option value="">-- seleccionar --</option>
+
+    <div class="manage-grid">
+        <div class="user-list">
+            <strong>Usuarios</strong>
+            <ul>
                 {% for u in users %}
-                    <option value="{{ u.id_user }}">{{ u.nombre }}</option>
+                    <li data-id="{{ u.id_user }}">{{ u.nombre }}</li>
+                {% else %}
+                    <li class="muted">No hay otros usuarios</li>
                 {% endfor %}
-            </select>
-        </label>
-        <div style="height:8px"></div>
-        <label>Rol:
-            <select name="role_id">
-                <option value="">-- mantener --</option>
-                {% for r in roles %}
-                    <option value="{{ r.id_rol }}">{{ r.nombre_rol }}</option>
-                {% endfor %}
-            </select>
-        </label>
-        <div style="height:8px"></div>
-        <label>Estado:
-            <select name="status_id">
-                <option value="">-- mantener --</option>
-                {% for s in statuses %}
-                    <option value="{{ s.id_status_user }}">{{ s.estado }}</option>
-                {% endfor %}
-            </select>
-        </label>
-        <div style="margin-top:12px">
-            <button class="panel-btn secondary" type="submit">Actualizar usuario</button>
+            </ul>
         </div>
-    </form>
+
+        <form class="manage-form" method="post" onsubmit="return confirmUpdate()">
+            <label>Seleccionar usuario
+                <select id="user-select" name="user_id" required>
+                    <option value="">-- seleccionar --</option>
+                    {% for u in users %}
+                        <option value="{{ u.id_user }}">{{ u.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>Rol
+                <select name="role_id">
+                    <option value="">-- mantener --</option>
+                    {% for r in roles %}
+                        <option value="{{ r.id_rol }}">{{ r.nombre_rol }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>Estado
+                <select name="status_id">
+                    <option value="">-- mantener --</option>
+                    {% for s in statuses %}
+                        <option value="{{ s.id_status_user }}">{{ s.estado }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <div class="actions">
+                <button class="panel-btn secondary" type="submit">Actualizar usuario</button>
+                <button type="button" class="panel-btn tertiary" onclick="resetForm()">Limpiar</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Sin posibilidad de cambiar al propio usuario: current_user_id viene desde el backend (puede ser null)
+        (function(){
+            const list = document.querySelectorAll('.user-list li[data-id]');
+            const sel = document.getElementById('user-select');
+            list.forEach(li => li.addEventListener('click', function(){
+                const id = this.getAttribute('data-id');
+                sel.value = id;
+                // highlight
+                document.querySelectorAll('.user-list li').forEach(x=>x.classList.remove('active'));
+                this.classList.add('active');
+            }));
+        })();
+
+        function resetForm(){
+            document.getElementById('user-select').value = '';
+            document.querySelectorAll('.user-list li').forEach(x=>x.classList.remove('active'));
+            const f = document.querySelector('.manage-form');
+            Array.from(f.querySelectorAll('select')).forEach(s=>{ if(s.name !== 'user_id') s.value = ''; });
+        }
+
+        function confirmUpdate(){
+            const sel = document.getElementById('user-select');
+            if(!sel.value){ alert('Selecciona un usuario antes de actualizar.'); return false; }
+            return confirm('¿Confirmas actualizar el usuario seleccionado?');
+        }
+    </script>
 </div>
