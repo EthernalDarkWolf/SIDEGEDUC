@@ -27,7 +27,7 @@
 
                 <h1>Registrarse</h1>
 
-                <form action="{{ url_for('login.register') }}" method="POST" class="register-form">
+                <form action="{{ url_for('login.register_handler') }}" method="POST" class="register-form">
                     <label for="usuario">Nombre de Usuario</label>
                     <input type="text" name="usuario" id="usuario" required>
 
@@ -42,7 +42,7 @@
                     <button type="submit" class="btn-submit">Sign Up</button>
                 </form>
 
-                <p class="alt-link">¿Ya tienes cuenta? <a href="{{ url_for('login.login') }}">Inicia sesión</a></p>
+                <p class="alt-link">¿Ya tienes cuenta? <a href="{{ url_for('login.login_handler') }}">Inicia sesión</a></p>
             </div>
         </div>
     </div>
