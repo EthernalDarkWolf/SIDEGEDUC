@@ -1,0 +1,27 @@
+<div>
+    <h3>Completar datos: Representante</h3>
+    {% if message %}<p style="color:green">{{ message }}</p>{% endif %}
+    <p class="muted">Persona: {{ persona[1] }} {{ persona[2] }}</p>
+    <form method="post">
+        <label>Número de hijos:<br><input type="number" name="numero_hijos" min="0" value="0"></label><br>
+        <label>Profesión:<br>
+            <select name="id_profesion">
+                <option value="">-- ninguno --</option>
+                {% for pr in profesiones %}
+                    <option value="{{ pr.id_profesion }}">{{ pr.nombre_profesion }}</option>
+                {% endfor %}
+            </select>
+        </label><br>
+        <label>Ocupación:<br>
+            <select name="id_ocupacion">
+                <option value="">-- ninguno --</option>
+                {% for oc in ocupaciones %}
+                    <option value="{{ oc.id_ocupacion }}">{{ oc.nombre_ocupacion }}</option>
+                {% endfor %}
+            </select>
+        </label><br>
+        <div style="margin-top:8px">
+            <button class="panel-btn" type="submit">Guardar Representante</button>
+        </div>
+    </form>
+</div>

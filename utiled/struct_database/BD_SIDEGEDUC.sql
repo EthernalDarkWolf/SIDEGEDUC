@@ -155,13 +155,7 @@ CREATE TABLE planteles (
     FOREIGN KEY (id_cargo) REFERENCES cargos(id_cargo)
 );
 
--- Tipos de calificación 
-CREATE TABLE tipos_calificacion (
-    id_tipo_calificacion INT AUTO_INCREMENT PRIMARY KEY,
-    tipo VARCHAR(20) NOT NULL UNIQUE  -- puede ser tipo Numerica, Letra
-);
-
-create table fuente_de_ingresos(
+CREATE TABLE fuente_de_ingresos (
     id_fuente_ingresos INT AUTO_INCREMENT PRIMARY KEY,
     nombre_fuente VARCHAR(100) NOT NULL UNIQUE
 );
@@ -241,13 +235,24 @@ CREATE TABLE empleados (
     FOREIGN KEY (id_cargo) REFERENCES cargos(id_cargo)
 );
 
--- Representantes (padres/tutores de estudiantes)
+-- Relacion de representanntres con hijos (uno a muchos)
+-- Relacion de representantes con hijos (uno a muchos)
+CREATE TABLE tipos_relacion_representante_hijo(
+    id_relacion_representante_hijo INT AUTO_INCREMENT PRIMARY KEY,
+    tipo_de_relacion VARCHAR(50) NOT NULL UNIQUE -- Padre, Madre, Tutor, etc.
+);
+
+-- Tabla de representantes (persona que representa a uno o varios estudiantes)
 CREATE TABLE representantes (
     id_representante INT AUTO_INCREMENT PRIMARY KEY,
-    id_persona INT,
-    ocupacion VARCHAR(100),
-    relacion_con_estudiante VARCHAR(50),  -- Padre, Madre, Tutor, etc.
-    FOREIGN KEY (id_persona) REFERENCES personas(id_persona)
+    id_persona INT NOT NULL,
+    id_profesion INT NULL,
+    id_ocupacion INT NULL,
+    id_nivel_academico INT NULL,
+    FOREIGN KEY (id_persona) REFERENCES personas(id_persona),
+    FOREIGN KEY (id_profesion) REFERENCES profesiones(id_profesion),
+    FOREIGN KEY (id_ocupacion) REFERENCES ocupaciones(id_ocupacion),
+    FOREIGN KEY (id_nivel_academico) REFERENCES niveles_academicos(id_nivel_academico)
 );
 
 -- Relación estudiantes-representantes (muchos a muchos)
@@ -255,14 +260,16 @@ CREATE TABLE estudiante_representante (
     id_estudiante_representante INT AUTO_INCREMENT PRIMARY KEY,
     id_estudiante INT,
     id_representante INT,
+    tipo_relacion INT,
     es_representante_principal BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (id_estudiante) REFERENCES estudiantes(id_estudiante),
-    FOREIGN KEY (id_representante) REFERENCES representantes(id_representante)
+    FOREIGN KEY (id_representante) REFERENCES representantes(id_representante),
+    FOREIGN KEY (tipo_relacion) REFERENCES tipos_relacion_representante_hijo(id_relacion_representante_hijo)
 );
 
 -- Historial de estudiantes (cambios de nivel/sección)
 
-create table motivos_cambio_seccion(
+CREATE TABLE motivos_cambio_seccion (
     id_motivo_cambio INT AUTO_INCREMENT PRIMARY KEY,
     descripcion_motivo VARCHAR(100) NOT NULL UNIQUE
 );
@@ -279,23 +286,17 @@ CREATE TABLE historial_estudiantes (
     FOREIGN KEY (id_motivo_del_cambio) REFERENCES motivos_cambio_seccion(id_motivo_cambio)
 );
 
--- Datos adicionales por persona  profesor, representante, empleado estudiante no tiene logica aqui
+-- Datos adicionales por persona
 CREATE TABLE datos_academicos (
     id_datos_academicos INT AUTO_INCREMENT PRIMARY KEY,
     id_persona INT,
     id_nivel_academico INT,
     institucion VARCHAR(100) NULL,
     anio_graduacion YEAR,
-    id_profesion INT,
-    id_ocupacion INT,
-    id_especialidad INT,
     sabe_leer BOOLEAN,
     sabe_escribir BOOLEAN,
     FOREIGN KEY (id_persona) REFERENCES personas(id_persona),
-    FOREIGN KEY (id_nivel_academico) REFERENCES niveles_academicos(id_nivel_academico),
-    FOREIGN KEY (id_profesion) REFERENCES profesiones(id_profesion),
-    FOREIGN KEY (id_ocupacion) REFERENCES ocupaciones(id_ocupacion),
-    FOREIGN KEY (id_especialidad) REFERENCES especialidades(id_especialidad)
+    FOREIGN KEY (id_nivel_academico) REFERENCES niveles_academicos(id_nivel_academico)
 );
 
 CREATE TABLE datos_economicos (
@@ -312,7 +313,6 @@ CREATE TABLE datos_familiares (
     id_persona INT,
     id_estado_civil INT,
     id_religion INT,
-    numero_hijos_o_representados VARCHAR(50),
     FOREIGN KEY (id_persona) REFERENCES personas(id_persona),
     FOREIGN KEY (id_estado_civil) REFERENCES estados_civiles(id_estado_civil),
     FOREIGN KEY (id_religion) REFERENCES religiones(id_religion)
@@ -327,16 +327,30 @@ CREATE TABLE persona_contacto (
     FOREIGN KEY (id_contacto) REFERENCES contactos(id_contacto)
 );
 
+create table dia_de_la_semana( -- puede ser util para los horarios y otros fines
+
+    id_dia_semana INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_dia VARCHAR(20) NOT NULL UNIQUE -- Lunes, Martes, Miercoles, Jueves, Viernes, Sabado, Domingo
+);
+
+create table estado_de_horario(
+    id_estado_horario INT AUTO_INCREMENT PRIMARY KEY,
+    descripcion_estado VARCHAR(50) NOT NULL UNIQUE -- Activo, Inactivo, Temporal, Permanente, etc.
+);
+
 -- Horarios
 CREATE TABLE horarios (
     id_horario INT AUTO_INCREMENT PRIMARY KEY,
     id_seccion INT,
+    estado_del_horario INT,
     id_materia INT,
-    dia_semana VARCHAR(20) NOT NULL,
+    dia_de_la_semana int,
     hora_inicio TIME NOT NULL,
     hora_fin TIME NOT NULL,
     FOREIGN KEY (id_seccion) REFERENCES secciones(id_seccion),
-    FOREIGN KEY (id_materia) REFERENCES materias(id_materia)
+    FOREIGN KEY (id_materia) REFERENCES materias(id_materia),
+    FOREIGN KEY (dia_de_la_semana) REFERENCES dia_de_la_semana(id_dia_semana),
+    FOREIGN KEY (estado_del_horario) REFERENCES estado_de_horario(id_estado_horario)
 );
 
 -- Calificaciones
@@ -451,15 +465,6 @@ CREATE TABLE capacitaciones_profesor (
     FOREIGN KEY (id_profesor) REFERENCES profesores(id_profesor)
 );
 
--- Relación profesores con empleados (si un profesor también es empleado administrativo)
-CREATE TABLE profesor_empleado (
-    id_profesor_empleado INT AUTO_INCREMENT PRIMARY KEY,
-    id_profesor INT,
-    id_empleado INT,
-    FOREIGN KEY (id_profesor) REFERENCES profesores(id_profesor),
-    FOREIGN KEY (id_empleado) REFERENCES empleados(id_empleado)
-);
-
 -- Añadir campos solicitados por la planilla
 ALTER TABLE personas
     ADD COLUMN tipo_persona VARCHAR(50) NULL; -- indica si es docente, estudiante, representante, empleado, etc.
@@ -473,40 +478,37 @@ ALTER TABLE empleados
     ADD COLUMN id_plantel INT NULL,
     ADD CONSTRAINT fk_empleado_plantel FOREIGN KEY (id_plantel) REFERENCES planteles(id_plantel);
 
--- Tabla para identificar documentos de identidad (cedula ciudadana o escolar)
-CREATE TABLE identificaciones (
-    id_identificacion INT AUTO_INCREMENT PRIMARY KEY,
+-- Tabla para cédulas nacionales (personas >= 9)
+CREATE TABLE persona_cedula (
+    id_persona_cedula INT AUTO_INCREMENT PRIMARY KEY,
     id_persona INT NOT NULL,
-    id_tipo_documento INT NULL, -- referencia a tipo_documento (cedula nacional, cedula escolar, etc.)
-    categoria ENUM('ciudadana','escolar') NOT NULL COMMENT 'ciudadana: cedula nacional; escolar: cedula escolar asociada a representante',
-    numero_identificacion VARCHAR(100) NOT NULL,
-    fecha_emision DATE NULL,
-    vigente BOOLEAN DEFAULT TRUE,
-    id_representante INT NULL, -- referido cuando categoria='escolar'
-    informacion_adicional TEXT,
-    UNIQUE KEY uq_persona_categoria (id_persona, categoria),
-    UNIQUE KEY uq_numero_identificacion (numero_identificacion),
+    numero_cedula VARCHAR(25) NOT NULL UNIQUE,
+    portador_de_la_cedula INT NULL,
+    id_tipo_documento INT,
     FOREIGN KEY (id_persona) REFERENCES personas(id_persona),
-    FOREIGN KEY (id_tipo_documento) REFERENCES tipo_documento(id_tipo_documento),
-    FOREIGN KEY (id_representante) REFERENCES representantes(id_representante),
-    CHECK (categoria <> 'escolar' OR id_representante IS NOT NULL)
+    FOREIGN KEY (portador_de_la_cedula) REFERENCES personas(id_persona),
+    FOREIGN KEY (id_tipo_documento) REFERENCES tipo_documento(id_tipo_documento)
 );
 
--- Trigger: cuando la persona alcanza la edad configurada (ej. 18 años), se crea
--- un registro de tipo 'ciudadana' si no existe aún. Ajustar la constante `EDAD_CIUDADANA`
--- según la normativa local.
-DELIMITER $$
-CREATE TRIGGER trg_persona_alcanzar_edad_ciudadana
-AFTER UPDATE ON personas
-FOR EACH ROW
-BEGIN
-    DECLARE EDAD_CIUDADANA INT DEFAULT 9; -- ajustar según necesidad
-    IF (OLD.fecha_nacimiento IS NOT NULL) THEN
-        IF (TIMESTAMPDIFF(YEAR, NEW.fecha_nacimiento, CURDATE()) >= EDAD_CIUDADANA)
-           AND (SELECT COUNT(*) FROM identificaciones WHERE id_persona = NEW.id_persona AND categoria = 'ciudadana') = 0 THEN
-            INSERT INTO identificaciones (id_persona, categoria, numero_identificacion, fecha_emision, vigente, informacion_adicional)
-            VALUES (NEW.id_persona, 'ciudadana', '', NULL, TRUE, 'Generado automáticamente: pendiente número de cédula');
-        END IF;
-    END IF;
-END$$
-DELIMITER ;
+-- Tabla para cédulas escolares (personas < 9)
+CREATE TABLE ninos_cedula (
+    id_ninos_cedula INT AUTO_INCREMENT PRIMARY KEY,
+    id_persona INT NOT NULL,
+    numero_cedula_escolar VARCHAR(25) NOT NULL UNIQUE,
+    id_tipo_documento INT,
+    FOREIGN KEY (id_persona) REFERENCES personas(id_persona),
+    FOREIGN KEY (id_tipo_documento) REFERENCES tipo_documento(id_tipo_documento)
+);
+
+-- Fin de la creación de la base de datos SIDEGEDUC (por ahora)
+INSERT INTO roles (nombre_rol) VALUES ('Desarrollador'),
+('Personal Administrativo'), 
+('Director'),
+('Profesor'), 
+('Estudiante'), 
+('Representante'), 
+('Empleado');
+
+INSERT INTO status_user (estado) VALUES('Activo'), 
+('Inactivo'), 
+('Suspendido');

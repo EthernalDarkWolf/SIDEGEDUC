@@ -1,0 +1,11 @@
+<div>
+    <h3>Completar datos: Estudiante</h3>
+    {% if message %}<p style="color:green">{{ message }}</p>{% endif %}
+    <p class="muted">Persona: {{ persona[1] }} {{ persona[2] }}</p>
+    <form method="post">
+        <label>Fecha de inscripción:<br><input type="date" name="fecha_inscripcion" required></label><br>
+        <div style="margin-top:8px">
+            <button class="panel-btn" type="submit">Guardar Estudiante</button>
+        </div>
+    </form>
+</div>

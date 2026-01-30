@@ -10,7 +10,7 @@ from database.models import db, Usuarios, Roles, StatusUser
 from utiled.start import login_bp
 
 app = Flask(__name__)
-app.secret_key = "162618"  
+app.secret_key = os.getenv("SECRET_KEY", "162618")  # Usar variable de entorno para secret_key
 
 # Obtener datos del archivo .env
 DB_USER = os.getenv("DB_USER")
@@ -31,12 +31,12 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Inicializar BD
 db.init_app(app)
 
-# volver a Crear tablas si es necesario (solo en entorno de desarrollo) es para evitar errores al iniciar la app
+# Crear tablas si es necesario (solo en entorno de desarrollo) para evitar errores al iniciar la app
 with app.app_context():
     try:
         db.create_all()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error creando tablas: {e}")
 
 # Registrar blueprint de autenticación (login/register)
 app.register_blueprint(login_bp)
@@ -50,6 +50,9 @@ from utiled.view_handlers import (
     registros_index_view,
     registros_tipo_view,
     developer_manage_user_view,
+    developer_secciones_existentes_view,
+    developer_import_export_view,
+    registro_persona_ext_view,
 )
 
 
@@ -91,6 +94,18 @@ def registros_tipo(tipo):
 @app.route('/developer/manage_user', methods=['GET', 'POST'])
 def developer_manage_user():
     return developer_manage_user_view()
+
+@app.route('/developer/secciones_existentes')
+def developer_secciones_existentes():
+    return developer_secciones_existentes_view()
+
+@app.route('/developer/import_export', methods=['GET', 'POST'])
+def developer_import_export():
+    return developer_import_export_view()
+
+@app.route('/registros/persona/<int:pid>/<tipo>', methods=['GET', 'POST'])
+def registro_persona_ext(pid, tipo):
+    return registro_persona_ext_view(pid, tipo)
 
 
 @app.route('/logout')

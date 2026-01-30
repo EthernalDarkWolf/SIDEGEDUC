@@ -1,8 +1,18 @@
 <div class="card">
     <h3>{{ title }}</h3>
-    <p class="muted">Formulario simple para {{ title }} (implementar campos según esquema DB).</p>
+    {% if message %}
+        <p style="color:green">{{ message }}</p>
+    {% endif %}
     <form method="post">
-        <label>Nombre: <input name="nombre" required></label>
+        {% if tipo == 'letra_seccion' %}
+            <label>Letra: <input name="letra" required maxlength="1"></label>
+        {% elif tipo == 'grados' %}
+            <label>Número de Grado: <input name="numero_grado" type="number" required min="1" max="12"></label>
+        {% elif tipo == 'niveles' %}
+            <label>Nombre del Nivel: <input name="nombre_nivel" required></label>
+        {% else %}
+            <label>Nombre: <input name="nombre" required></label>
+        {% endif %}
         <div style="margin-top:8px">
             <button class="panel-btn" type="submit">Registrar</button>
         </div>

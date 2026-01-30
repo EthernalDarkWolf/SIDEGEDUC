@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,231 +6,467 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SIDEGEDUC</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='home_panel/home_panel.css') }}" />
-    <style>
-        .panel { display:flex; flex-direction:column; gap:12px; max-width:360px; margin:40px auto; }
-        .panel-btn {
-            display:block; text-decoration:none; text-align:center; padding:14px 18px;
-            background:#2b7ae4; color:#fff; border-radius:6px; font-weight:600;
-        }
-        .panel-btn.secondary { background:#4caf50; }
-        .panel-btn.tertiary { background:#f39c12; }
-        header { text-align:center; margin-top:24px; }
-    </style>
-</head>
-<body>
-    <div class="app-layout">
-        <aside class="sidebar">
-            <div class="sidebar-top">
-                <div style="display:flex;align-items:center;gap:8px">
-                    <div class="logo">SIDEGEDUC</div>
-                    <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Colapsar barra">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </button>
-                </div>
-                <div class="search"><input placeholder="Buscar..." aria-label="Buscar"/></div>
-            </div>
-
-            <nav class="side-nav">
-                <ul>
-                    <li class="side-item active"><a href="#"><span class="icon"> 
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 11.5L12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-8.5z" fill="currentColor"/></svg>
-                    </span><span class="label">Panel</span></a></li>
-
-                    <li class="side-item has-children">
-                        <button class="side-btn"><span class="icon">
-                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" fill="currentColor"/></svg>
-                        </span><span class="label">Proyectos</span><span class="chev">▾</span></button>
-                        <ul class="side-sub">
-                            <li><a href="#">Proyecto 1</a></li>
-                            <li><a href="#">Proyecto 2</a></li>
-                        </ul>
-                    </li>
-                    <li class="side-item has-children">
-                        <button class="side-btn"><span class="icon">
-                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2v6l4 2-4 2v6l-4-2V8l4-6z" fill="currentColor"/></svg>
-                        </span><span class="label">Registros</span><span class="chev">▾</span></button>
-                        <ul class="side-sub">
-                            <li><a href="{{ url_for('registros_tipo', tipo='plantel') }}">Registro de Plantel</a></li>
-                            <li><a href="{{ url_for('registros_tipo', tipo='estudiantes') }}">Registro de Estudiantes</a></li>
-                            <li><a href="{{ url_for('registros_tipo', tipo='profesores') }}">Registro de Profesores</a></li>
-                            <li><a href="{{ url_for('registros_tipo', tipo='personal_admin') }}">Personal Administrativo</a></li>
-                            <li><a href="{{ url_for('registros_tipo', tipo='personal_obrero') }}">Personal Obrero</a></li>
-                        </ul>
-                    </li>
-
-                    {% if developer_priv %}
-                    <li class="side-item has-children">
-                        <button class="side-btn"><span class="icon">
-                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2a2 2 0 0 1 2 2v2h4v4h-2v2h2v4h-4v2a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2v-2H6v-4h2v-2H6V6h4V4a2 2 0 0 1 2-2h2z" fill="currentColor"/></svg>
-                        </span><span class="label">Desarrollador</span><span class="chev">▾</span></button>
-                        <ul class="side-sub">
-                            <li><a href="{{ url_for('developer_manage_user') }}">Gestionar roles & estados</a></li>
-                        </ul>
-                    </li>
-                    {% endif %}
-
-                    <li class="side-item"><a href="{{ url_for('boleta') }}"><span class="icon">
-                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 3h10a1 1 0 0 1 1 1v16l-6-3-6 3V4a1 1 0 0 1 1-1z" fill="currentColor"/></svg>
-                    </span><span class="label">Boletas</span></a></li>
-
-                    <li class="side-item"><a href="{{ url_for('constancia') }}"><span class="icon">
-                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 3H5a2 2 0 0 0-2 2v14l7-3 7 3V5a2 2 0 0 0-2-2z" fill="currentColor"/></svg>
-                    </span><span class="label">Constancias</span></a></li>
-                </ul>
-            </nav>
-
-            <div class="sidebar-bottom">
-                <div class="user-mini">{{ usuario if usuario else 'Invitado' }}</div>
-                <a class="logout-sm" href="{{ url_for('logout') }}">Cerrar sesión</a>
-            </div>
-        </aside>
-
-        <main class="main-area">
-            <header class="topbar">
-                <div class="topbar-left">
-                    <h1>Panel</h1>
-                    {% if usuario %}
-                        <p class="muted">Bienvenido, <strong>{{ usuario }}</strong></p>
-                    {% endif %}
-                </div>
-                <div class="topbar-actions">
-                    <div class="notif">🔔</div>
-                    <div class="profile">👤</div>
-                </div>
-            </header>
-
-            <section class="content-area">
-                <div class="content-grid">
-                    {% if content_template %}
-                        {% include content_template %}
-                    {% else %}
-                        <div class="card">
-                            <h3>Resumen</h3>
-                            <p class="muted">Accede a las funciones desde la barra lateral. Aquí verás información relevante y accesos rápidos.</p>
-                        </div>
-
-                        <div class="card">
-                            <h3>Accesos rápidos</h3>
-                            <p class="muted">Boletas, constancias y administración ahora disponibles en la navegación.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </section>
-        </main>
-    </div>
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* Palette adapted from login: --bg/#071023, --card/#0f1724cc, --accent/#2bd6b6 */
         :root{--sidebar-start:#071023;--sidebar-end:#0f1724cc;--accent:#2bd6b6;--accent2:#00bfa5;--bg:#f6f8fb;--muted:#9aa4ad}
         body{margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#071023 0%, #071023 12%, #071023 12%, #f6f8fb 100%);color:#0b1220}
-        .app-layout{display:flex;min-height:100vh}
 
         /* SIDEBAR */
-        .sidebar{width:240px;background:linear-gradient(180deg,var(--sidebar-start),var(--sidebar-end));color:#fff;padding:18px 18px;display:flex;flex-direction:column;justify-content:space-between;border-right:1px solid rgba(255,255,255,0.04);transition:width .28s cubic-bezier(.2,.9,.2,1)}
-        .sidebar.collapsed{width:72px}
-        .sidebar-top{display:flex;flex-direction:column;gap:12px}
-        .logo{font-weight:800;font-size:1.05rem;letter-spacing:1px;color:var(--accent);display:flex;align-items:center;gap:8px}
-        .sidebar-toggle{background:transparent;border:none;color:rgba(255,255,255,0.85);padding:6px;border-radius:8px;cursor:pointer;margin-left:auto}
-        .search input{width:100%;margin-top:6px;padding:10px;border-radius:10px;border:none;background:rgba(255,255,255,0.04);color:#fff}
-        .search input::placeholder{color:rgba(255,255,255,0.55)}
+        .sidebar{
+            width: 280px;
+            background: linear-gradient(180deg,var(--sidebar-start),var(--sidebar-end));
+            color:#fff;
+            padding:0;
+            display:flex;
+            flex-direction:column;
+            border-right:1px solid rgba(255,255,255,0.04);
+            transition: transform 0.3s cubic-bezier(.2,.9,.2,1);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1050;
+            top: 0;
+            left: 0;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        .sidebar.hidden{transform: translateX(-100%)}
+        .logo{font-weight:800;font-size:1.2rem;letter-spacing:1px;color:var(--accent);display:flex;align-items:center;gap:8px}
+        .sidebar-toggle{background:transparent;border:none;color:rgba(255,255,255,0.85);padding:8px;border-radius:8px;cursor:pointer;margin-left:auto;transition: all 0.2s}
+        .sidebar-toggle:hover{background: rgba(255,255,255,0.1); transform: scale(1.1)}
+        .nav-link{color: white !important;text-decoration: none;padding: 10px 15px;border-radius: 8px;margin-bottom: 4px;display: flex;align-items: center;width: 100%;transition: all .22s cubic-bezier(.2,.9,.2,1)}
+        .nav-link:hover{background:rgba(255,255,255,0.08) !important; transform: translateX(5px)}
+        .nav-link.btn-link{color: white !important;border: none;background: transparent;padding: 10px 15px}
+        .nav-link.btn-link:hover{background:rgba(255,255,255,0.08) !important}
+        .collapse ul.nav li a.nav-link{padding: 6px 12px;font-size: 0.9rem;margin-left: 20px}
+        .user-mini{font-weight:700;color:rgba(255,255,255,0.95);font-size: 0.9rem}
 
-        .side-nav ul{list-style:none;padding:12px 0;margin:0}
-        .side-item{margin-bottom:8px}
+        /* MAIN CONTENT */
+        .content{margin-left: 280px;padding:22px;background: var(--bg); min-height: 100vh; transition: margin-left 0.3s cubic-bezier(.2,.9,.2,1);}
+        .sidebar.hidden ~ .content{margin-left: 0}
 
-        /* item layout */
-        .side-item a, .side-btn{display:flex;align-items:center;gap:12px;color:rgba(230,234,240,0.98);text-decoration:none;padding:12px;border-radius:12px;border:none;background:transparent;width:100%;text-align:left;transition:background .22s cubic-bezier(.2,.9,.2,1),transform .12s ease,box-shadow .18s ease}
-        .side-item a:hover, .side-btn:hover{background:rgba(255,255,255,0.04);transform:translateY(-3px);box-shadow:0 10px 24px rgba(2,6,23,0.08)}
-        .side-item.active a{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#042018;box-shadow:0 12px 28px rgba(43,214,182,0.12);transform:translateY(-2px)}
-        .side-btn{cursor:pointer}
+        /* TOPBAR */
+        .topbar{
+            background: white;
+            padding: 15px 25px;
+            border-bottom: 1px solid #e9ecef;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-left: 280px;
+            transition: margin-left 0.3s cubic-bezier(.2,.9,.2,1);
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 280px;
+            z-index: 1030;
+            height: 70px;
+        }
+        .sidebar.hidden ~ .topbar{
+            margin-left: 0;
+            left: 0;
+        }
+        .menu-toggle{
+            background: var(--accent);
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(43,214,182,0.3);
+        }
+        .menu-toggle:hover{
+            background: var(--accent2);
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(43,214,182,0.4);
+        }
 
-        /* ICON style: prominent, techy */
-        .icon{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:8px;background:rgba(255,255,255,0.03)}
-        .icon svg{width:20px;height:20px;display:block;color:inherit}
-        .side-item.active .icon{background:linear-gradient(90deg,var(--accent),var(--accent2));filter:drop-shadow(0 8px 18px rgba(43,214,182,0.14));}
+        /* MAIN CONTENT */
+        .content{
+            margin-left: 280px;
+            padding: 22px;
+            background: var(--bg);
+            min-height: 100vh;
+            transition: margin-left 0.3s cubic-bezier(.2,.9,.2,1);
+            margin-top: 70px;
+        }
+        .sidebar.hidden ~ .content{
+            margin-left: 0;
+        }
 
-        .chev{margin-left:auto;opacity:0.9}
-        .side-sub{list-style:none;padding-left:14px;margin-top:8px;max-height:0;overflow:hidden;transition:max-height .28s cubic-bezier(.2,.9,.2,1),opacity .22s ease;opacity:0}
-        .has-children.open .side-sub{opacity:1;max-height:360px}
-        .side-sub li a{padding:8px 10px;border-radius:8px;color:rgba(230,234,240,0.9);display:block}
-        .side-sub li a:hover{background:rgba(255,255,255,0.03)}
+        /* OVERLAY for mobile */
+        .sidebar-overlay{
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1040;
+        }
+        .sidebar.hidden .sidebar-overlay{
+            display: block;
+        }
 
-        .sidebar-bottom{display:flex;flex-direction:column;gap:8px}
-        .user-mini{font-weight:700;color:rgba(255,255,255,0.95)}
-        .logout-sm{background:rgba(255,255,255,0.06);color:#fff;padding:8px;border-radius:8px;text-decoration:none;display:inline-block;text-align:center}
+        /* Cards styling */
+        .card{box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important; border: 1px solid rgba(0, 0, 0, 0.125);}
+        .card-header{background: linear-gradient(90deg, var(--accent), var(--accent2)) !important; color: white !important;}
 
-        /* collapsed state: hide labels */
-        .sidebar.collapsed .label{display:none}
-        .sidebar.collapsed .logo{justify-content:center}
-        .sidebar.collapsed .search{display:none}
-        .sidebar.collapsed .side-item a, .sidebar.collapsed .side-btn{justify-content:center}
-
-        /* MAIN */
-        .main-area{flex:1;padding:22px;background:transparent}
-        .topbar{display:flex;justify-content:space-between;align-items:center}
-        .muted{color:var(--muted)}
-
-        /* Header title and username emphasis */
-        .topbar-left h1{margin:0;display:inline-block;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#042018;padding:10px 14px;border-radius:10px;font-size:2rem;box-shadow:0 12px 30px rgba(43,214,182,0.12)}
-        .topbar-left .muted{margin-top:8px;color:rgba(255,255,255,0.9);display:block}
-        .topbar-left .muted strong{color:#042018;background:linear-gradient(90deg,rgba(255,255,255,0.95),rgba(255,255,255,0.9));padding:4px 8px;border-radius:8px;margin-left:6px}
-        .content-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:18px}
-        .card{background:#fff;padding:16px;border-radius:10px;box-shadow:0 10px 30px rgba(2,6,23,0.05);transition:transform .18s ease,box-shadow .18s ease}
-        .card:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(2,6,23,0.08)}
+        /* Responsive */
+        @media(max-width:768px){
+            .sidebar{
+                width: 280px;
+                z-index: 1050;
+            }
+            .sidebar.hidden{
+                transform: translateX(-100%);
+            }
+            .content{
+                margin-left: 0;
+                padding: 15px;
+                margin-top: 70px;
+            }
+            .topbar{
+                margin-left: 0;
+                left: 0;
+                padding: 10px 15px;
+            }
+            .menu-toggle{
+                padding: 8px 12px;
+                font-size: 1rem;
+            }
+            .sidebar-overlay{
+                display: block;
+            }
+            .sidebar.hidden .sidebar-overlay{
+                display: none;
+            }
+        }
 
         /* focus states for accessibility */
-        .side-item a:focus, .side-btn:focus, .logout-sm:focus, .card:focus{outline:3px solid rgba(43,214,182,0.14);outline-offset:3px}
-        .side-item a:focus{box-shadow:0 8px 20px rgba(2,6,23,0.08)}
-
-        @media(max-width:900px){.sidebar{display:none}.app-layout{flex-direction:column}.main-area{padding:12px}}
+        .nav-link:focus{outline:3px solid rgba(43,214,182,0.14);outline-offset:3px}
     </style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Overlay for mobile -->
+        <div class="sidebar-overlay"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="p-3">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="logo">
+                        <i class="fas fa-graduation-cap me-2"></i>
+                        SIDEGEDUC
+                    </div>
+                    <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Ocultar sidebar">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-0">
+                            <i class="fas fa-search text-white"></i>
+                        </span>
+                        <input class="form-control bg-transparent border-0 text-white" placeholder="Buscar..." aria-label="Buscar" style="box-shadow: none;">
+                    </div>
+                </div>
+            </div>
+
+            <nav class="p-3 flex-grow-1">
+                <ul class="nav flex-column">
+                    <li class="nav-item mb-2">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-tachometer-alt me-3"></i>
+                            <span>Panel</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item mb-2">
+                        <button class="nav-link btn btn-link text-start p-0 w-100" data-bs-toggle="collapse" data-bs-target="#registrosSub" aria-expanded="false">
+                            <i class="fas fa-folder-plus me-3"></i>
+                            <span>Registros</span>
+                            <i class="fas fa-chevron-down ms-auto"></i>
+                        </button>
+                        <div class="collapse" id="registrosSub">
+                            <ul class="nav flex-column">
+                                <li><a class="nav-link" href="{{ url_for('registros_tipo', tipo='plantel') }}">
+                                    <i class="fas fa-building me-2"></i>Registro de Plantel</a></li>
+                                <li><a class="nav-link" href="{{ url_for('registros_tipo', tipo='personas') }}">
+                                    <i class="fas fa-users me-2"></i>Registro de Personas</a></li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <li class="nav-item mb-2">
+                        <button class="nav-link btn btn-link text-start p-0 w-100" data-bs-toggle="collapse" data-bs-target="#materiasSub" aria-expanded="false">
+                            <i class="fas fa-book me-3"></i>
+                            <span>Materias</span>
+                            <i class="fas fa-chevron-down ms-auto"></i>
+                        </button>
+                        <div class="collapse" id="materiasSub">
+                            <ul class="nav flex-column">
+                                <li><a class="nav-link" href="{{ url_for('registros_tipo', tipo='materias') }}">
+                                    <i class="fas fa-plus-circle me-2"></i>Agregar Materia</a></li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <li class="nav-item mb-2">
+                        <button class="nav-link btn btn-link text-start p-0 w-100" data-bs-toggle="collapse" data-bs-target="#seccionesSub" aria-expanded="false">
+                            <i class="fas fa-layer-group me-3"></i>
+                            <span>Secciones</span>
+                            <i class="fas fa-chevron-down ms-auto"></i>
+                        </button>
+                        <div class="collapse" id="seccionesSub">
+                            <ul class="nav flex-column">
+                                <li><a class="nav-link" href="{{ url_for('registros_tipo', tipo='secciones') }}">
+                                    <i class="fas fa-plus-circle me-2"></i>Agregar Sección</a></li>
+                                <li><a class="nav-link" href="{{ url_for('registros_tipo', tipo='secciones') }}?action=assign_materia">
+                                    <i class="fas fa-link me-2"></i>Asignar Materia</a></li>
+                                <li><a class="nav-link" href="{{ url_for('registros_tipo', tipo='secciones') }}?action=add_student">
+                                    <i class="fas fa-user-plus me-2"></i>Agregar Estudiante</a></li>
+                                <li><a class="nav-link" href="{{ url_for('registros_tipo', tipo='secciones') }}?action=assign_professor">
+                                    <i class="fas fa-chalkboard-teacher me-2"></i>Asignar Profesor</a></li>
+                                <li><a class="nav-link" href="{{ url_for('registros_tipo', tipo='letra_seccion') }}">
+                                    <i class="fas fa-font me-2"></i>Agregar Letra</a></li>
+                                <li><a class="nav-link" href="{{ url_for('registros_tipo', tipo='grados') }}">
+                                    <i class="fas fa-hashtag me-2"></i>Agregar Grado</a></li>
+                                <li><a class="nav-link" href="{{ url_for('registros_tipo', tipo='niveles') }}">
+                                    <i class="fas fa-level-up-alt me-2"></i>Agregar Nivel</a></li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    {% if developer_priv %}
+                    <li class="nav-item mb-2">
+                        <button class="nav-link btn btn-link text-start p-0 w-100" data-bs-toggle="collapse" data-bs-target="#developerSub" aria-expanded="false">
+                            <i class="fas fa-cogs me-3"></i>
+                            <span>Desarrollador</span>
+                            <i class="fas fa-chevron-down ms-auto"></i>
+                        </button>
+                        <div class="collapse" id="developerSub">
+                            <ul class="nav flex-column">
+                                <li><a class="nav-link" href="{{ url_for('developer_manage_user') }}">
+                                    <i class="fas fa-users-cog me-2"></i>Gestionar Roles</a></li>
+                                <li><a class="nav-link" href="{{ url_for('developer_secciones_existentes') }}">
+                                    <i class="fas fa-list me-2"></i>Secciones Existentes</a></li>
+                                <li><a class="nav-link" href="{{ url_for('developer_import_export') }}">
+                                    <i class="fas fa-database me-2"></i>Importar/Exportar BD</a></li>
+                            </ul>
+                        </div>
+                    </li>
+                    {% endif %}
+
+                    <li class="nav-item mb-2">
+                        <a class="nav-link" href="{{ url_for('boleta') }}">
+                            <i class="fas fa-file-alt me-3"></i>
+                            <span>Boletas</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item mb-2">
+                        <a class="nav-link" href="{{ url_for('constancia') }}">
+                            <i class="fas fa-certificate me-3"></i>
+                            <span>Constancias</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="mt-auto p-3">
+                <div class="user-mini mb-2">
+                    <i class="fas fa-user me-2"></i>
+                    {{ usuario if usuario else 'Invitado' }}
+                </div>
+                <a class="btn btn-outline-light btn-sm w-100" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt me-2"></i>Cerrar sesión
+                </a>
+            </div>
+        </aside>
+
+        <!-- Topbar -->
+        <header class="topbar">
+            <button id="menu-toggle" class="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="d-flex align-items-center">
+                <h1 class="h4 mb-0 ms-3">Panel de Control</h1>
+            </div>
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <i class="fas fa-bell text-muted"></i>
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user me-2"></i>{{ usuario if usuario else 'Invitado' }}
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Perfil</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Configuración</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Cerrar sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="content">
+            {% if content_template %}
+                {% include content_template %}
+            {% else %}
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-primary text-white">
+                                    <h4 class="card-title mb-0">
+                                        <i class="fas fa-tachometer-alt me-2"></i>Panel de Control - SIDEGEDUC
+                                    </h4>
+                                </div>
+                                <div class="card-body">
+                                    {% if usuario %}
+                                        <div class="row mb-4">
+                                            <div class="col-md-6">
+                                                <div class="card border-info">
+                                                    <div class="card-body text-center">
+                                                        <i class="fas fa-user-circle fa-3x text-info mb-3"></i>
+                                                        <h5>Bienvenido, {{ usuario }}</h5>
+                                                        {% if role_name %}
+                                                            <p class="text-muted mb-1">Rol: <strong>{{ role_name }}</strong></p>
+                                                        {% endif %}
+                                                        {% if status %}
+                                                            <span class="badge bg-success">Estado: {{ status }}</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="card border-warning">
+                                                    <div class="card-body text-center">
+                                                        <i class="fas fa-users fa-3x text-warning mb-3"></i>
+                                                        <h5>Estadísticas del Sistema</h5>
+                                                        {% if roles_count is not none %}
+                                                            <p class="mb-1">Total de roles: <strong>{{ roles_count }}</strong></p>
+                                                        {% endif %}
+                                                        {% if users_by_role %}
+                                                            <div class="mt-3">
+                                                                <small class="text-muted">Usuarios por rol:</small>
+                                                                <ul class="list-unstyled mt-2">
+                                                                    {% for item in users_by_role %}
+                                                                        <li><span class="badge bg-secondary">{{ item.role }}: {{ item.count }}</span></li>
+                                                                    {% endfor %}
+                                                                </ul>
+                                                            </div>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    <strong>Información:</strong> Accede a las funciones del sistema desde la barra lateral.
+                                                    Aquí encontrarás información relevante y accesos rápidos.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <div class="text-center">
+                                            <i class="fas fa-sign-in-alt fa-4x text-muted mb-4"></i>
+                                            <h4>Acceso requerido</h4>
+                                            <p class="text-muted">Por favor, inicia sesión para acceder al panel de control.</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </main>
+    </div>
 
     <script>
-        // sidebar submenu toggle
-        document.querySelectorAll('.has-children > .side-btn').forEach(function(btn){
-            btn.addEventListener('click', function(e){
-                const parent = btn.parentElement;
-                parent.classList.toggle('open');
-            });
-        });
-
-        // small accessibility: allow Enter to toggle
-        document.querySelectorAll('.has-children > .side-btn').forEach(function(btn){
-            btn.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); } });
-        });
-
-        // sidebar collapse/expand with persistence
+        // Sidebar toggle functionality with persistence
         (function(){
-            const sidebar = document.querySelector('.sidebar');
-            const toggle = document.getElementById('sidebar-toggle');
-            const storageKey = 'sideCollapsed';
+            const sidebar = document.getElementById('sidebar');
+            const menuToggle = document.getElementById('menu-toggle');
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const overlay = document.querySelector('.sidebar-overlay');
+            const storageKey = 'sidebarHidden';
 
-            function setCollapsed(collapsed){
-                if(collapsed){
-                    sidebar.classList.add('collapsed');
-                    toggle.style.transform = 'rotate(180deg)';
-                    toggle.setAttribute('aria-expanded','false');
+            function setSidebarHidden(hidden){
+                if(hidden){
+                    sidebar.classList.add('hidden');
+                    localStorage.setItem(storageKey, 'true');
                 } else {
-                    sidebar.classList.remove('collapsed');
-                    toggle.style.transform = '';
-                    toggle.setAttribute('aria-expanded','true');
+                    sidebar.classList.remove('hidden');
+                    localStorage.setItem(storageKey, 'false');
                 }
             }
 
-            // init from localStorage
+            function toggleSidebar(){
+                const isHidden = sidebar.classList.contains('hidden');
+                setSidebarHidden(!isHidden);
+            }
+
+            // Initialize from localStorage
             try{
                 const stored = localStorage.getItem(storageKey);
-                if(stored === 'true') setCollapsed(true);
+                if(stored === 'true'){
+                    setSidebarHidden(true);
+                }
             } catch(e){ /* ignore */ }
 
-            if(toggle){
-                toggle.addEventListener('click', function(){
-                    const isCollapsed = sidebar.classList.contains('collapsed');
-                    setCollapsed(!isCollapsed);
-                    try{ localStorage.setItem(storageKey, String(!isCollapsed)); } catch(e){}
+            // Menu toggle button (hamburger)
+            if(menuToggle){
+                menuToggle.addEventListener('click', toggleSidebar);
+            }
+
+            // Sidebar close button (X)
+            if(sidebarToggle){
+                sidebarToggle.addEventListener('click', toggleSidebar);
+            }
+
+            // Overlay click to close (mobile)
+            if(overlay){
+                overlay.addEventListener('click', function(){
+                    setSidebarHidden(true);
                 });
             }
+
+            // Close sidebar on mobile when clicking nav links
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                link.addEventListener('click', function(){
+                    if(window.innerWidth <= 768){
+                        setSidebarHidden(true);
+                    }
+                });
+            });
+
+            // Handle window resize
+            window.addEventListener('resize', function(){
+                if(window.innerWidth > 768){
+                    // On desktop, show sidebar if it was hidden on mobile
+                    const isHidden = sidebar.classList.contains('hidden');
+                    if(isHidden && localStorage.getItem(storageKey) !== 'true'){
+                        setSidebarHidden(false);
+                    }
+                }
+            });
         })();
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/ui-animations.js') }}"></script>
 </body>
 </html>

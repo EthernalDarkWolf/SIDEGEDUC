@@ -1,0 +1,45 @@
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Registro de Plantel</h3>
+                </div>
+                <div class="card-body">
+                    {% if message %}
+                        <div class="alert alert-success">{{ message }}</div>
+                    {% endif %}
+                    <form method="post">
+                        <div class="mb-3">
+                            <label for="nombre_plantel" class="form-label">Nombre del plantel:</label>
+                            <input type="text" id="nombre_plantel" name="nombre_plantel_nomina" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="codigo_pa" class="form-label">Código PA:</label>
+                            <input type="text" id="codigo_pa" name="codigo_pa" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_nivel" class="form-label">Nivel:</label>
+                            <select id="id_nivel" name="id_nivel" class="form-select">
+                                <option value="">-- seleccionar --</option>
+                                {% for n in niveles %}
+                                    <option value="{{ n.id_nivel }}">{{ n.nombre_nivel }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_cargo" class="form-label">Cargo (opcional):</label>
+                            <select id="id_cargo" name="id_cargo" class="form-select">
+                                <option value="">-- ninguno --</option>
+                                {% for c in cargos %}
+                                    <option value="{{ c.id_cargo }}">{{ c.nombre_cargo }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Registrar Plantel</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

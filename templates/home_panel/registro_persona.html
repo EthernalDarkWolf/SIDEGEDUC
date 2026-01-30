@@ -1,0 +1,68 @@
+<div>
+    <h3>Registro de Persona</h3>
+    {% if message %}
+        <p style="color:green">{{ message }}</p>
+    {% endif %}
+    <form method="post">
+        <label>Primer nombre:<br><input name="primer_nombre" required></label><br>
+        <label>Segundo nombre:<br><input name="segundo_nombre"></label><br>
+        <label>Primer apellido:<br><input name="primer_apellido" required></label><br>
+        <label>Segundo apellido:<br><input name="segundo_apellido"></label><br>
+        <label>Fecha de nacimiento:<br><input type="date" name="fecha_nacimiento"></label><br>
+        <label>Sexo:<br>
+            <select name="id_sexo">
+                <option value="">-- sin especificar --</option>
+                {% for s in sexos %}
+                    <option value="{{ s.id_sexo }}">{{ s.letra_sexo }}</option>
+                {% endfor %}
+            </select>
+        </label><br>
+        <label>Tipo de documento (opcional):<br>
+            <select name="id_tipo_documento">
+                <option value="">-- ninguno --</option>
+                {% for td in tipo_documentos %}
+                    <option value="{{ td.id_tipo_documento }}">{{ td.nombre_tipo_documento }}</option>
+                {% endfor %}
+            </select>
+        </label><br>
+        <label>Número de cédula (opcional):<br><input name="numero_cedula"></label><br>
+        <label>Tipo de persona:<br>
+            <select name="tipo_persona" id="tipo_persona" required>
+                <option value="estudiante">Estudiante</option>
+                <option value="representante">Representante</option>
+                <option value="profesor">Profesor</option>
+                <option value="empleado">Empleado</option>
+            </select>
+        </label><br>
+
+        <div id="fields_estudiante" style="display:block;margin-top:8px">
+            <label>Fecha inscripción (estudiante):<br><input type="date" name="fecha_inscripcion"></label><br>
+        </div>
+
+        <div id="fields_representante" style="display:none;margin-top:8px">
+            <label>Número de hijos (representante):<br><input type="number" name="numero_hijos" min="0" value="0"></label><br>
+        </div>
+
+        <button type="submit" class="panel-btn">Registrar</button>
+    </form>
+
+    <script>
+        const tipo = document.getElementById('tipo_persona');
+        const fe = document.getElementById('fields_estudiante');
+        const fr = document.getElementById('fields_representante');
+        function toggle(){
+            if(tipo.value === 'estudiante'){
+                fe.style.display = 'block';
+                fr.style.display = 'none';
+            } else if(tipo.value === 'representante'){
+                fe.style.display = 'none';
+                fr.style.display = 'block';
+            } else {
+                fe.style.display = 'none';
+                fr.style.display = 'none';
+            }
+        }
+        tipo.addEventListener('change', toggle);
+        toggle();
+    </script>
+</div>
