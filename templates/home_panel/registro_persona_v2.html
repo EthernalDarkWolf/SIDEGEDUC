@@ -5,7 +5,9 @@
     {% endif %}
 
     <form method="post" id="personaForm">
-        <div class="grid">
+        <div class="card" style="border-radius:12px;padding:18px;border:1px solid var(--card-border);background:var(--panel-bg)">
+            <div class="card-body">
+                <div class="grid">
             <div class="group">
                 <label>Primer nombre</label>
                 <input name="primer_nombre" required placeholder="Ingrese primer nombre">
@@ -23,14 +25,10 @@
                 <input name="segundo_apellido" placeholder="(opcional)">
             </div>
 
-            <div class="group date-grid">
-                <label>Fecha de nacimiento</label>
-                <div class="date-selects">
-                    <select id="birth_day" aria-label="Día"></select>
-                    <select id="birth_month" aria-label="Mes"></select>
-                    <select id="birth_year" aria-label="Año"></select>
-                </div>
-                <input type="hidden" name="fecha_nacimiento" id="fecha_nacimiento">
+            <div class="group">
+                <label for="fecha_nacimiento">Fecha de nacimiento</label>
+                <input type="text" id="fecha_nacimiento" name="fecha_nacimiento" placeholder="DD/MM/AAAA" data-flatpickr="true" readonly>
+                <small class="muted">Formato visible: DD/MM/AAAA</small>
             </div>
 
             <div class="group">
@@ -69,8 +67,9 @@
             </div>
 
             <div id="fields_estudiante" class="group extra-group" style="display:block">
-                <label>Fecha inscripción (estudiante)</label>
-                <input type="date" name="fecha_inscripcion">
+                <label for="fecha_inscripcion">Fecha inscripción (estudiante)</label>
+                <input type="text" id="fecha_inscripcion" name="fecha_inscripcion" placeholder="DD/MM/AAAA" data-flatpickr="true" readonly>
+                <small class="muted">Opcional, conserva el mismo formato</small>
             </div>
 
             <div id="fields_representante" class="group extra-group" style="display:none">
@@ -79,70 +78,88 @@
             </div>
         </div>
 
-        <div style="margin-top:12px">
-            <button type="submit" class="panel-btn">Registrar persona</button>
+                </div>
+
+                <div style="margin-top:18px">
+                    <button type="submit" class="panel-btn primary">Registrar persona</button>
+                </div>
+            </div>
         </div>
     </form>
 
     <style>
-        .registro-persona h3{margin-top:0}
+        .registro-persona h3{margin-top:0;font-size:1.6rem;color:var(--accent-2);display:flex;align-items:center;gap:10px}
         .registro-persona .success{color:var(--accent2);font-weight:700}
-        .registro-persona .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+        .registro-persona .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
         .registro-persona .group{display:flex;flex-direction:column}
-        .registro-persona label{font-weight:600;margin-bottom:6px;color:var(--muted)}
-        .registro-persona input,.registro-persona select{padding:10px;border-radius:8px;border:1px solid rgba(11,18,32,0.08)}
-        .registro-persona .date-selects{display:flex;gap:8px}
-        .registro-persona .date-selects select{flex:1}
+        .registro-persona label{font-weight:600;margin-bottom:8px;color:var(--muted);font-size:0.95rem}
+        .registro-persona input,.registro-persona select{padding:12px;border-radius:10px;border:1px solid #e6eef2;background:linear-gradient(180deg,#fff,#fbffff);font-size:0.98rem}
+        .registro-persona input[readonly]{background:#fff}
+        .registro-persona .muted{color:var(--muted);font-size:0.85rem;margin-top:6px}
         .registro-persona .extra-group input{width:100%}
-        @media(max-width:600px){.registro-persona .date-selects{flex-direction:column}}
+        .registro-persona .card{background:transparent;border-radius:10px}
+        .registro-persona .card-body{padding:8px}
+        @media(max-width:600px){.registro-persona .grid{grid-template-columns:1fr}}
     </style>
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     <script>
-        // Poblar selects para día/mes/año
         (function(){
-            const day = document.getElementById('birth_day');
-            const month = document.getElementById('birth_month');
-            const year = document.getElementById('birth_year');
-            const hidden = document.getElementById('fecha_nacimiento');
+            // initialize flatpickr on elements with data-flatpickr attribute
+            const cfg = {
+                altInput: true,
+                altFormat: 'd/m/Y',
+                dateFormat: 'Y-m-d',
+                locale: flatpickr.l10ns && flatpickr.l10ns.es ? flatpickr.l10ns.es : undefined,
+                allowInput: true,
+                clickOpens: true,
+                wrap: false,
+                // enhance mobile behavior
+                disableMobile: true
+            };
 
-            for(let d=1; d<=31; d++){ const opt = document.createElement('option'); opt.value = String(d).padStart(2,'0'); opt.text = d; day.appendChild(opt); }
-            const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-            for(let m=1;m<=12;m++){ const opt = document.createElement('option'); opt.value = String(m).padStart(2,'0'); opt.text = months[m-1]; month.appendChild(opt); }
-            const now = new Date(); const curY = now.getFullYear();
-            for(let y=curY; y>=curY-100; y--){ const opt = document.createElement('option'); opt.value = y; opt.text = y; year.appendChild(opt); }
+            document.querySelectorAll('input[data-flatpickr]').forEach(function(el){
+                try{
+                    // ensure wrapper with icon and helper exists
+                    if(!el.closest('.date-field')){
+                        const wrapper = document.createElement('div'); wrapper.className='date-field';
+                        el.parentNode.insertBefore(wrapper, el); wrapper.appendChild(el);
+                        const icon = document.createElement('span'); icon.className='date-icon';
+                        icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none"><path d="M17 3v2M7 3v2M3 7h18M21 21H3V7h18v14z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+                        wrapper.appendChild(icon);
+                        const clearBtn = document.createElement('button'); clearBtn.type='button'; clearBtn.className='date-clear'; clearBtn.title='Limpiar fecha'; clearBtn.innerHTML='✕';
+                        clearBtn.style.position='absolute'; clearBtn.style.right='46px'; clearBtn.style.top='50%'; clearBtn.style.transform='translateY(-50%)'; clearBtn.style.border='none'; clearBtn.style.background='transparent'; clearBtn.style.cursor='pointer'; clearBtn.style.fontSize='14px';
+                        wrapper.appendChild(clearBtn);
+                        const help = document.createElement('span'); help.className='date-helper'; help.textContent = el.getAttribute('placeholder') || 'DD/MM/AAAA'; wrapper.appendChild(help);
+                        // icon opens calendar
+                        icon.addEventListener('click', function(){ el.focus(); el.click(); });
+                        clearBtn.addEventListener('click', function(){ if(el._flatpickr) el._flatpickr.clear(); });
+                    }
+                    // initialize flatpickr and keep instance on element
+                    const instance = flatpickr(el, cfg);
+                    el._flatpickr = instance;
+                } catch(e){ console.warn('flatpickr init failed', e); }
+            });
 
-            function syncHidden(){
-                const d = day.value; const m = month.value; const y = year.value;
-                if(d && m && y){ hidden.value = `${y}-${m}-${d}`; }
-                else hidden.value = '';
-            }
-
-            day.addEventListener('change', syncHidden);
-            month.addEventListener('change', syncHidden);
-            year.addEventListener('change', syncHidden);
-            try{ if(!year.value) { year.value = String(curY-20); } if(!month.value) month.value='01'; if(!day.value) day.value='01'; syncHidden(); } catch(e){}
-        })();
-
-        // Toggle campos extra según tipo de persona
-        (function(){
+            // Toggle campos extra según tipo de persona
             const tipo = document.getElementById('tipo_persona');
             const fe = document.getElementById('fields_estudiante');
             const fr = document.getElementById('fields_representante');
             function toggle(){
-                if(tipo.value === 'estudiante'){
-                    fe.style.display = 'block'; fr.style.display = 'none';
-                } else if(tipo.value === 'representante'){
-                    fe.style.display = 'none'; fr.style.display = 'block';
-                } else { fe.style.display = 'none'; fr.style.display = 'none'; }
+                if(tipo.value === 'estudiante'){ fe.style.display = 'block'; fr.style.display = 'none'; }
+                else if(tipo.value === 'representante'){ fe.style.display = 'none'; fr.style.display = 'block'; }
+                else { fe.style.display = 'none'; fr.style.display = 'none'; }
             }
             tipo.addEventListener('change', toggle);
             toggle();
-        })();
 
-        // Antes de enviar: asegurar que fecha_nacimiento esté seteada
-        document.getElementById('personaForm').addEventListener('submit', function(e){
-            const hidden = document.getElementById('fecha_nacimiento');
-            if(!hidden.value){ alert('Por favor seleccione la fecha de nacimiento completa (día/mes/año).'); e.preventDefault(); }
-        });
+            // Validate before submit
+            document.getElementById('personaForm').addEventListener('submit', function(e){
+                const hidden = document.getElementById('fecha_nacimiento');
+                if(!hidden.value){ alert('Por favor seleccione la fecha de nacimiento.'); e.preventDefault(); }
+            });
+        })();
     </script>
 </div>

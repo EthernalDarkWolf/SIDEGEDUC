@@ -8,6 +8,8 @@
     <title>SIDEGEDUC</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='home_panel/home_panel.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
     <style>
         /* Palette adapted from login: --bg/#071023, --card/#0f1724cc, --accent/#2bd6b6 */
         :root{--sidebar-start:#071023;--sidebar-end:#0f1724cc;--accent:#2bd6b6;--accent2:#00bfa5;--bg:#f6f8fb;--muted:#9aa4ad}
@@ -182,7 +184,7 @@
             <nav class="p-3 flex-grow-1">
                 <ul class="nav flex-column">
                     <li class="nav-item mb-2">
-                        <a class="nav-link" href="#">
+                        <a class="nav-link" href="{{ url_for('dashboard') }}">
                             <i class="fas fa-tachometer-alt me-3"></i>
                             <span>Panel</span>
                         </a>
@@ -280,15 +282,7 @@
                 </ul>
             </nav>
 
-            <div class="mt-auto p-3">
-                <div class="user-mini mb-2">
-                    <i class="fas fa-user me-2"></i>
-                    {{ usuario if usuario else 'Invitado' }}
-                </div>
-                <a class="btn btn-outline-light btn-sm w-100" href="{{ url_for('logout') }}">
-                    <i class="fas fa-sign-out-alt me-2"></i>Cerrar sesión
-                </a>
-            </div>
+            <!-- removed compact user box from sidebar by request -->
         </aside>
 
         <!-- Topbar -->
@@ -309,7 +303,7 @@
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Perfil</a></li>
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Configuración</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('user_configuracion') }}"><i class="fas fa-cog me-2"></i>Configuración</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Cerrar sesión</a></li>
                     </ul>
@@ -361,7 +355,9 @@
                                                                 <small class="text-muted">Usuarios por rol:</small>
                                                                 <ul class="list-unstyled mt-2">
                                                                     {% for item in users_by_role %}
-                                                                        <li><span class="badge bg-secondary">{{ item.role }}: {{ item.count }}</span></li>
+                                                                        {% if item.role|lower|replace(' ', '') != 'creador' or is_creator %}
+                                                                            <li><span class="badge bg-secondary">{{ item.role }}: {{ item.count }}</span></li>
+                                                                        {% endif %}
                                                                     {% endfor %}
                                                                 </ul>
                                                             </div>
@@ -468,5 +464,6 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/ui-animations.js') }}"></script>
+    <script src="{{ url_for('static', filename='home_panel/form-controls.js') }}"></script>
 </body>
 </html>

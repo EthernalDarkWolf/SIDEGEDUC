@@ -1,81 +1,114 @@
 <div class="card manage-user">
-    <h3>Gestionar Roles y Estado de Usuario</h3>
-    {% if message %}
-        <div class="toast {{ 'ok' if 'actualizado' in message|lower or 'exitos' in message|lower else 'err' }}">{{ message }}</div>
-    {% endif %}
+    <header class="manage-header">
+        <div class="title">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z" fill="#0b5f47"/>
+                <path d="M4 20c0-3.31 4.03-6 8-6s8 2.69 8 6v1H4v-1z" fill="#06a77d"/>
+            </svg>
+            <div>
+                <h3>Gestionar Roles y Estado</h3>
+                <p class="muted">Selecciona un usuario para cambiar su rol o estado</p>
+            </div>
+        </div>
+        {% if message %}
+            <div class="toast {{ 'ok' if 'actualizado' in message|lower or 'exitos' in message|lower else 'err' }}">{{ message }}</div>
+        {% endif %}
+    </header>
 
     <div class="manage-grid">
-        <div class="user-list">
-            <strong>Usuarios</strong>
-            <ul>
+        <aside class="user-list" aria-label="Lista de usuarios">
+            <div class="list-head">
+                <strong>Usuarios</strong>
+                <input class="search" placeholder="Buscar usuario..." aria-label="Buscar usuario" />
+            </div>
+            <ul id="user-items">
                 {% for u in users %}
-                    <li data-id="{{ u.id_user }}">{{ u.nombre }}</li>
+                    <li data-id="{{ u.id_user }}" data-initial="{{ u.nombre[:1] }}">
+                        <span class="avatar" aria-hidden></span>
+                        <span class="name">{{ u.nombre }}</span>
+                    </li>
                 {% else %}
                     <li class="muted">No hay otros usuarios</li>
                 {% endfor %}
             </ul>
-        </div>
+        </aside>
 
         <form class="manage-form" method="post" onsubmit="return confirmUpdate()">
-            <label>Seleccionar usuario
+            <div class="field">
+                <label for="user-select">Usuario</label>
                 <select id="user-select" name="user_id" required>
                     <option value="">-- seleccionar --</option>
                     {% for u in users %}
                         <option value="{{ u.id_user }}">{{ u.nombre }}</option>
                     {% endfor %}
                 </select>
-            </label>
+            </div>
 
-            <label>Rol
-                <select name="role_id">
-                    <option value="">-- mantener --</option>
-                    {% for r in roles %}
-                        <option value="{{ r.id_rol }}">{{ r.nombre_rol }}</option>
-                    {% endfor %}
-                </select>
-            </label>
+            <div class="row">
+                <div class="field">
+                    <label for="role-select">Rol</label>
+                    <select id="role-select" name="role_id">
+                        <option value="">-- mantener --</option>
+                        {% for r in roles %}
+                            {% if r.nombre_rol|lower|replace(' ', '') != 'creador' or is_creator %}
+                                <option value="{{ r.id_rol }}">{{ r.nombre_rol }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
 
-            <label>Estado
-                <select name="status_id">
-                    <option value="">-- mantener --</option>
-                    {% for s in statuses %}
-                        <option value="{{ s.id_status_user }}">{{ s.estado }}</option>
-                    {% endfor %}
-                </select>
-            </label>
+                <div class="field">
+                    <label for="status-select">Estado</label>
+                    <select id="status-select" name="status_id">
+                        <option value="">-- mantener --</option>
+                        {% for s in statuses %}
+                            <option value="{{ s.id_status_user }}">{{ s.estado }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
 
             <div class="actions">
-                <button class="panel-btn secondary" type="submit">Actualizar usuario</button>
-                <button type="button" class="panel-btn tertiary" onclick="resetForm()">Limpiar</button>
+                <button class="panel-btn primary" type="submit">Actualizar</button>
+                <button type="button" class="panel-btn outline" onclick="resetForm()">Limpiar</button>
             </div>
         </form>
     </div>
 
     <script>
-        // Sin posibilidad de cambiar al propio usuario: current_user_id viene desde el backend (puede ser null)
         (function(){
-            const list = document.querySelectorAll('.user-list li[data-id]');
+            const list = document.querySelectorAll('#user-items li[data-id]');
             const sel = document.getElementById('user-select');
+            const search = document.querySelector('.user-list .search');
+
+            function clearActive(){ document.querySelectorAll('#user-items li').forEach(x=>x.classList.remove('active')); }
+
             list.forEach(li => li.addEventListener('click', function(){
-                const id = this.getAttribute('data-id');
+                const id = this.dataset.id;
                 sel.value = id;
-                // highlight
-                document.querySelectorAll('.user-list li').forEach(x=>x.classList.remove('active'));
-                this.classList.add('active');
+                clearActive(); this.classList.add('active');
             }));
+
+            search.addEventListener('input', function(){
+                const q = this.value.toLowerCase();
+                document.querySelectorAll('#user-items li').forEach(li => {
+                    const t = li.textContent.toLowerCase();
+                    li.style.display = t.includes(q) ? '' : 'none';
+                });
+            });
         })();
 
         function resetForm(){
             document.getElementById('user-select').value = '';
-            document.querySelectorAll('.user-list li').forEach(x=>x.classList.remove('active'));
-            const f = document.querySelector('.manage-form');
-            Array.from(f.querySelectorAll('select')).forEach(s=>{ if(s.name !== 'user_id') s.value = ''; });
+            document.getElementById('role-select').value = '';
+            document.getElementById('status-select').value = '';
+            document.querySelectorAll('#user-items li').forEach(x=>x.classList.remove('active'));
         }
 
         function confirmUpdate(){
             const sel = document.getElementById('user-select');
             if(!sel.value){ alert('Selecciona un usuario antes de actualizar.'); return false; }
-            return confirm('¿Confirmas actualizar el usuario seleccionado?');
+            return confirm('¿Confirmas aplicar los cambios al usuario seleccionado?');
         }
     </script>
 </div>

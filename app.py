@@ -9,12 +9,11 @@ load_dotenv()
 
 # --- IMPORTACIÓN DE MODELOS ---
 # Importamos desde la ruta que SQLAlchemy reconozca según tu estructura
-try:
-    from database.models import db, Usuarios, Roles, StatusUser
-except ImportError:
-    from models import db, Usuarios, Roles, StatusUser
+from database.models import db, Usuarios, Roles, StatusUser
 
 from utiled.start import login_bp
+# ---Importamos el mansejador de los permisos
+from utiled.permissions import get_user_context
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "162618")
@@ -51,67 +50,78 @@ with app.app_context():
 # Registrar blueprint de autenticación
 app.register_blueprint(login_bp)
 
+
+@app.context_processor
+def inject_user_context():
+    
+    try:
+        ctx = get_user_context(session)
+    except Exception:
+        ctx = {}
+    return {
+        'is_creator': ctx.get('is_creator', False),
+        'developer_priv': ctx.get('developer_priv', False),
+        'role_name': ctx.get('role_name'),
+        'role_desc': ctx.get('role_desc'),
+        'status': ctx.get('status'),
+        'usuario': ctx.get('user')
+    }
+
 # --- IMPORTACIÓN DE MANEJADORES DE VISTA ---
-from utiled.view_handlers import (
-    dashboard_view,
-    index_view,
-    boleta_view,
-    constancia_view,
-    admin_alumnos_view,
-    registros_index_view,
-    registros_tipo_view,
-    developer_manage_user_view,
-    developer_secciones_existentes_view,
-    developer_import_export_view,
-    registro_persona_ext_view,
-)
+import utiled.view_handlers as manejar_la_vista_de
 
 # --- RUTAS ---
 
 @app.route('/dashboard')
 def dashboard():
-    return dashboard_view()
+    return manejar_la_vista_de.home_panel()
 
 @app.route('/')
 def index():
-    return index_view()
-
+    return manejar_la_vista_de.login()
 @app.route('/boleta')
 def boleta():
-    return boleta_view()
+    return manejar_la_vista_de.boleta()
 
 @app.route('/constancia')
 def constancia():
-    return constancia_view()
-
+    return manejar_la_vista_de.constancia() 
 @app.route('/admin_alumnos')
 def admin_alumnos():
-    return admin_alumnos_view()
+    return manejar_la_vista_de.admin_alumnos()
 
 @app.route('/registros')
 def registros_index():
-    return registros_index_view()
+    return manejar_la_vista_de.usuarios_roles_registrados()
 
 @app.route('/registros/<tipo>', methods=['GET', 'POST'])
 def registros_tipo(tipo):
-    return registros_tipo_view(tipo)
+    return manejar_la_vista_de.tipo_de_registro_persona(tipo)
 
 @app.route('/developer/manage_user', methods=['GET', 'POST'])
 def developer_manage_user():
-    return developer_manage_user_view()
+    return manejar_la_vista_de.administrador_herramientas()
+
 
 @app.route('/developer/secciones_existentes')
 def developer_secciones_existentes():
-    return developer_secciones_existentes_view()
+    return manejar_la_vista_de.developer_secciones_existentes_vista()
 
 @app.route('/developer/import_export', methods=['GET', 'POST'])
 def developer_import_export():
-    return developer_import_export_view()
+    return manejar_la_vista_de.developer_import_export_vista()
+
+
+@app.route('/user/configuracion', methods=['GET', 'POST'])
+def user_configuracion():
+    return manejar_la_vista_de.configuracion_de_usuario()
+        
 
 @app.route('/registros/persona/<int:pid>/<tipo>', methods=['GET', 'POST'])
 def registro_persona_ext(pid, tipo):
-    return registro_persona_ext_view(pid, tipo)
+    return manejar_la_vista_de.registro_persona_ext_vista(pid, tipo)
 
+# Ruta de cierre de sesión
 @app.route('/logout')
 def logout():
     session.clear()

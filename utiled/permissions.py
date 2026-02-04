@@ -20,6 +20,7 @@ def get_user_context(session): #esto es la funcion que se reutiliza  para obtene
     role_name = None
     role_desc = None
     status = None
+    is_creator = False
 
     if 'user_id' in session:
         try:
@@ -39,6 +40,10 @@ def get_user_context(session): #esto es la funcion que se reutiliza  para obtene
 
                 # Concede privilegios a desarrolladores, administradores o personal empleado
                 rn = (role_name or '').lower()
+                # El rol especial 'Creador' tiene todos los privilegios
+                if role_name and role_name.lower() == 'creador':
+                    developer_priv = True
+                    is_creator = True
                 if 'desarroll' in rn or 'administr' in rn or 'empleado' in rn:
                     developer_priv = True
 
@@ -65,7 +70,8 @@ def get_user_context(session): #esto es la funcion que se reutiliza  para obtene
         'current_user_id': current_user_id,
         'role_name': role_name,
         'role_desc': role_desc,
-        'status': status
+        'status': status,
+        'is_creator': is_creator
     }
 
 

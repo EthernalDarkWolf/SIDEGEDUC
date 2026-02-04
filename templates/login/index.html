@@ -66,7 +66,7 @@
 
                             <button type="submit" class="btn">Iniciar sesión</button>
                         </form>
-                        <p class="alt-link">¿No tienes cuenta? <a href="#" id="link-show-register">Regístrate</a></p>
+                        <p class="alt-link">¿No tienes cuenta? <a href="{{ url_for('login.register_handler') }}" id="link-show-register">Regístrate</a></p>
                     </div>
 
                     <div id="panel-register" class="panel" style="display:none">
@@ -89,7 +89,7 @@
 
                             <button type="submit" class="btn">Crear cuenta</button>
                         </form>
-                        <p class="alt-link">¿Ya tienes cuenta? <a href="#" id="link-show-login">Inicia sesión</a></p>
+                        <p class="alt-link">¿Ya tienes cuenta? <a href="{{ url_for('login.login_handler') }}" id="link-show-login">Inicia sesión</a></p>
                     </div>
                 </div>
             </div>
@@ -136,11 +136,21 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             const btn = document.getElementById('modal-close');
-            if (btn) btn.addEventListener('click', function() {
-                const overlay = document.getElementById('status-modal');
-                overlay.setAttribute('aria-hidden', 'true');
-                overlay.classList.remove('visible');
-            });
+            if (btn) {
+                const redirectAfterModal = {{ redirect_after_modal|default(False)|tojson }};
+                if (redirectAfterModal) {
+                    btn.addEventListener('click', function() {
+                        // si se indica redirigir, vamos al login (o página inicial de login)
+                        window.location.href = "{{ url_for('login.login_handler') }}";
+                    });
+                } else {
+                    btn.addEventListener('click', function() {
+                        const overlay = document.getElementById('status-modal');
+                        overlay.setAttribute('aria-hidden', 'true');
+                        overlay.classList.remove('visible');
+                    });
+                }
+            }
 
             // wire tab buttons
             const tLogin = document.getElementById('tab-login');

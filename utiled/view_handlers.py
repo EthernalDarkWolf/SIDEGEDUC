@@ -1,8 +1,5 @@
-""" este script se encarga para las vistas del sistema
- es decir el encargado de renderizar las vistas.
-dependiendo de los permisos que tenga el usuario y por su puesto
-su estado de actividad, tambien se encarga de hacer algunos de los registros aunque
-esto ultimo mas adelante ya no estara en este archivo..."""
+"""Script manejador de las vistras del sistema
+con sus respectivas funciones"""
 
 from flask import render_template, redirect, url_for, request, session
 from database.models import Usuarios, Roles, StatusUser, db
@@ -10,58 +7,66 @@ from sqlalchemy import func, text
 from .permissions import get_user_context, user_has_admin_privileges
 from flask import abort
 import os
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
-def dashboard_view():
-    #Muestra la página principal del dashboard 
-    ctx = get_user_context(session)
-    # Conteos: total de roles y usuarios por rol
+def compute_role_counts(ctx):
+    """Devuelve (roles_count, users_by_role) respetando la visibilidad del rol 'Creador'.
+    Si el usuario NO es creador, el rol 'Creador' se excluye de los conteos y listados.
+    """
     try:
-        roles_count = Roles.query.count()
-        users_q = db.session.query(Roles.nombre_rol, func.count(Usuarios.id_user)).join(Usuarios, Usuarios.id_rol == Roles.id_rol).group_by(Roles.id_rol).all()
+        if ctx.get('is_creator'):
+            roles_count = Roles.query.count()
+            users_q = db.session.query(Roles.nombre_rol, func.count(Usuarios.id_user)).join(Usuarios, Usuarios.id_rol == Roles.id_rol).group_by(Roles.id_rol).all()
+        else:
+            # Filtrar 'Creador' de forma insensible a mayúsculas y espacios
+            roles_count = Roles.query.filter(func.lower(func.trim(Roles.nombre_rol)) != 'creador').count()
+            users_q = db.session.query(Roles.nombre_rol, func.count(Usuarios.id_user)).join(Usuarios, Usuarios.id_rol == Roles.id_rol).filter(func.lower(func.trim(Roles.nombre_rol)) != 'creador').group_by(Roles.id_rol).all()
         users_by_role = [{'role': r or 'Sin nombre', 'count': int(c)} for r, c in users_q]
     except Exception:
         roles_count = 0
         users_by_role = []
+    return roles_count, users_by_role
+
+
+def home_panel():
+    #Muestra la página principal del dashboard 
+    ctx = get_user_context(session)
+    # Conteos: total de roles y usuarios por rol (respetando visibilidad de 'Creador')
+    roles_count, users_by_role = compute_role_counts(ctx)
 
     return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role)
 
 
-def index_view():
+def login():
     #Ruta raíz; redirige al dashboard si hay sesión activa, al login si no
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login.login_handler'))
 
 
-def boleta_view():
+def boleta():
     return 'Boleta - en desarrollo'
 
 
-def constancia_view():
+def constancia():
     return 'Constancia - en desarrollo'
 
 
-def admin_alumnos_view():
+def admin_alumnos():
     return 'Administración de alumnos - en desarrollo'
 
 
-def registros_index_view():
+def usuarios_roles_registrados():
     #Lista de registros — reutiliza el contexto de usuario para permisos
     ctx = get_user_context(session)
-    # provide counts in case template wants them
-    try:
-        roles_count = Roles.query.count()
-        users_q = db.session.query(Roles.nombre_rol, func.count(Usuarios.id_user)).join(Usuarios, Usuarios.id_rol == Roles.id_rol).group_by(Roles.id_rol).all()
-        users_by_role = [{'role': r or 'Sin nombre', 'count': int(c)} for r, c in users_q]
-    except Exception:
-        roles_count = 0
-        users_by_role = []
+    # Conteos: total de roles y usuarios por rol 
+    roles_count, users_by_role = compute_role_counts(ctx)
 
     return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/registros.html')
 
 
-def registros_tipo_view(tipo):
+def tipo_de_registro_persona(tipo):
     # Solo permitir tipos manejables directamente desde este endpoint.
     # Los tipos específicos de persona (estudiante/profesor/empleado) se manejan
     # a través del flujo "personas" -> extensión (registro_persona_ext).
@@ -115,23 +120,11 @@ def registros_tipo_view(tipo):
                 message = f'Error al registrar persona: {str(e)}'
 
             # pasar conteos y mostrar mensaje
-            try:
-                roles_count = Roles.query.count()
-                users_q = db.session.query(Roles.nombre_rol, func.count(Usuarios.id_user)).join(Usuarios, Usuarios.id_rol == Roles.id_rol).group_by(Roles.id_rol).all()
-                users_by_role = [{'role': r or 'Sin nombre', 'count': int(c)} for r, c in users_q]
-            except Exception:
-                roles_count = 0
-                users_by_role = []
+            roles_count, users_by_role = compute_role_counts(ctx)
             return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/registro_persona_v2.html', message=message)
 
         # GET: mostrar formulario
-        try:
-            roles_count = Roles.query.count()
-            users_q = db.session.query(Roles.nombre_rol, func.count(Usuarios.id_user)).join(Usuarios, Usuarios.id_rol == Roles.id_rol).group_by(Roles.id_rol).all()
-            users_by_role = [{'role': r or 'Sin nombre', 'count': int(c)} for r, c in users_q]
-        except Exception:
-            roles_count = 0
-            users_by_role = []
+        roles_count, users_by_role = compute_role_counts(ctx)
 
         # cargar opciones necesarias: sexos y tipos de documento
         try:
@@ -362,18 +355,12 @@ def registros_tipo_view(tipo):
         return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/registro_tipo.html', tipo=tipo, title=title_map.get(tipo, 'Registro'))
 
     # Default behavior for other tipos
-    try:
-        roles_count = Roles.query.count()
-        users_q = db.session.query(Roles.nombre_rol, func.count(Usuarios.id_user)).join(Usuarios, Usuarios.id_rol == Roles.id_rol).group_by(Roles.id_rol).all()
-        users_by_role = [{'role': r or 'Sin nombre', 'count': int(c)} for r, c in users_q]
-    except Exception:
-        roles_count = 0
-        users_by_role = []
+    roles_count, users_by_role = compute_role_counts(ctx)
 
     return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/registro_tipo.html', tipo=tipo, title=title_map.get(tipo, 'Registro'))
 
 
-def developer_manage_user_view():
+def administrador_herramientas():
     """Vista para que desarrolladores/administradores gestionen usuarios.
 
     - Si no hay sesión activa, redirige al login
@@ -391,11 +378,15 @@ def developer_manage_user_view():
         return 'Acceso denegado: privilegios insuficientes', 403
 
     # Preparar datos para el formulario
-    users = Usuarios.query.filter(Usuarios.id_user != cur.id_user).order_by(Usuarios.nombre).all()
-    roles = Roles.query.order_by(Roles.nombre_rol).all()
-    statuses = StatusUser.query.order_by(StatusUser.estado).all()
-
     ctx = get_user_context(session)
+    users = Usuarios.query.filter(Usuarios.id_user != cur.id_user).order_by(Usuarios.nombre).all()
+    # Mostrar el rol 'Creador' solo al propio creador
+    if ctx.get('is_creator'):
+        roles = Roles.query.order_by(Roles.nombre_rol).all()
+    else:
+        # Excluir el rol 'Creador' (insensible a mayúsculas/espacios)
+        roles = Roles.query.filter(func.lower(func.trim(Roles.nombre_rol)) != 'creador').order_by(Roles.nombre_rol).all()
+    statuses = StatusUser.query.order_by(StatusUser.estado).all()
     user = ctx['user']
     developer_priv = True
     current_user_id = ctx['current_user_id']
@@ -409,42 +400,31 @@ def developer_manage_user_view():
             target_user = Usuarios.query.filter_by(id_user=int(target)).first()
             if target_user:
                 try:
+                    # Prevención: no permitir asignar el rol 'Creador' si el actor no es el creador
                     if new_role:
+                        try:
+                            role_obj = Roles.query.filter_by(id_rol=int(new_role)).first()
+                        except Exception:
+                            role_obj = None
+                        if role_obj and (role_obj.nombre_rol or '').lower().replace(' ', '') == 'creador' and not ctx.get('is_creator'):
+                            raise PermissionError('No autorizado para asignar el rol Creador')
                         target_user.id_rol = int(new_role)
                     if new_status:
                         target_user.id_status_user = int(new_status)
                     db.session.commit()
-                    try:
-                        roles_count = Roles.query.count()
-                        users_q = db.session.query(Roles.nombre_rol, func.count(Usuarios.id_user)).join(Usuarios, Usuarios.id_rol == Roles.id_rol).group_by(Roles.id_rol).all()
-                        users_by_role = [{'role': r or 'Sin nombre', 'count': int(c)} for r, c in users_q]
-                    except Exception:
-                        roles_count = 0
-                        users_by_role = []
-                    return render_template('home_panel/struct.html', usuario=user, developer_priv=developer_priv, role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/manage_user.html', users=users, roles=roles, statuses=statuses, message='Usuario actualizado correctamente', current_user_id=current_user_id)
+                    roles_count, users_by_role = compute_role_counts(ctx)
+                    return render_template('home_panel/struct.html', usuario=user, developer_priv=developer_priv, role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/manage_user.html', users=users, roles=roles, statuses=statuses, message='Usuario actualizado correctamente', current_user_id=current_user_id, is_creator=ctx.get('is_creator'))
                 except Exception:
                     db.session.rollback()
-                    try:
-                        roles_count = Roles.query.count()
-                        users_q = db.session.query(Roles.nombre_rol, func.count(Usuarios.id_user)).join(Usuarios, Usuarios.id_rol == Roles.id_rol).group_by(Roles.id_rol).all()
-                        users_by_role = [{'role': r or 'Sin nombre', 'count': int(c)} for r, c in users_q]
-                    except Exception:
-                        roles_count = 0
-                        users_by_role = []
-                    return render_template('home_panel/struct.html', usuario=user, developer_priv=developer_priv, role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/manage_user.html', users=users, roles=roles, statuses=statuses, message='Error al actualizar el usuario', current_user_id=current_user_id)
+                    roles_count, users_by_role = compute_role_counts(ctx)
+                    return render_template('home_panel/struct.html', usuario=user, developer_priv=developer_priv, role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/manage_user.html', users=users, roles=roles, statuses=statuses, message='Error al actualizar el usuario', current_user_id=current_user_id, is_creator=ctx.get('is_creator'))
 
-    try:
-        roles_count = Roles.query.count()
-        users_q = db.session.query(Roles.nombre_rol, func.count(Usuarios.id_user)).join(Usuarios, Usuarios.id_rol == Roles.id_rol).group_by(Roles.id_rol).all()
-        users_by_role = [{'role': r or 'Sin nombre', 'count': int(c)} for r, c in users_q]
-    except Exception:
-        roles_count = 0
-        users_by_role = []
+    roles_count, users_by_role = compute_role_counts(ctx)
 
-    return render_template('home_panel/struct.html', usuario=user, developer_priv=developer_priv, role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/manage_user.html', users=users, roles=roles, statuses=statuses, current_user_id=current_user_id)
+    return render_template('home_panel/struct.html', usuario=user, developer_priv=developer_priv, role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/manage_user.html', users=users, roles=roles, statuses=statuses, current_user_id=current_user_id, is_creator=ctx.get('is_creator'))
 
 
-def registro_persona_ext_view(pid, tipo):
+def registro_persona_ext_vista(pid, tipo):
     """Formulario de extensión para completar datos según tipo: estudiante, representante, profesor, empleado."""
     if 'user_id' not in session:
         return redirect(url_for('login.login_handler'))
@@ -546,7 +526,7 @@ def registro_persona_ext_view(pid, tipo):
     return abort(404)
 
 
-def developer_secciones_existentes_view():
+def developer_secciones_existentes_vista():
     """Vista para ver secciones existentes (solo desarrolladores)."""
     ctx = get_user_context(session)
     if not ctx['developer_priv']:
@@ -566,7 +546,7 @@ def developer_secciones_existentes_view():
     return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=0, users_by_role=[], content_template='home_panel/developer_secciones_existentes.html', secciones=secciones)
 
 
-def developer_import_export_view():
+def developer_import_export_vista():
     """Vista para importar/exportar BD (solo desarrolladores)."""
     ctx = get_user_context(session)
     if not ctx['developer_priv']:
@@ -640,3 +620,75 @@ def developer_import_export_view():
                 message = 'Selecciona un archivo SQL'
 
     return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=0, users_by_role=[], content_template='home_panel/developer_import_export.html', message=message)
+
+
+def configuracion_de_usuario():
+    """Configuración de usuario: cambiar nombre, contraseña, borrar cuenta."""
+    if 'user_id' not in session:
+        return redirect(url_for('login.login_handler'))
+
+    ctx = get_user_context(session)
+    uid = ctx.get('current_user_id')
+    user_obj = Usuarios.query.filter_by(id_user=uid).first()
+    if not user_obj:
+        return redirect(url_for('login.login_handler'))
+
+    message = None
+    message_type = 'info'
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+        try:
+            if action == 'change_name':
+                new_name = (request.form.get('new_name') or '').strip()
+                if not new_name:
+                    raise ValueError('El nombre no puede estar vacío')
+                # comprobar unicidad
+                exists = Usuarios.query.filter(Usuarios.nombre == new_name, Usuarios.id_user != user_obj.id_user).first()
+                if exists:
+                    raise ValueError('El nombre de usuario ya está en uso')
+                user_obj.nombre = new_name
+                db.session.commit()
+                message = 'Nombre actualizado correctamente'
+                message_type = 'success'
+
+            elif action == 'change_password':
+                current = request.form.get('current_password') or ''
+                newpw = request.form.get('new_password') or ''
+                confirm = request.form.get('confirm_password') or ''
+                if not current or not newpw or not confirm:
+                    raise ValueError('Completa todos los campos de contraseña')
+                if newpw != confirm:
+                    raise ValueError('Las nuevas contraseñas no coinciden')
+                stored = user_obj.contrasena
+                if not (check_password_hash(stored, current) or stored == current):
+                    raise ValueError('Contraseña actual incorrecta')
+                user_obj.contrasena = generate_password_hash(newpw)
+                db.session.commit()
+                message = 'Contraseña actualizada correctamente'
+                message_type = 'success'
+
+            elif action == 'delete_account':
+                pw = request.form.get('confirm_password_delete') or ''
+                if not pw:
+                    raise ValueError('Debes indicar la contraseña para eliminar la cuenta')
+                stored = user_obj.contrasena
+                if not (check_password_hash(stored, pw) or stored == pw):
+                    raise ValueError('Contraseña incorrecta')
+                # eliminar usuario
+                db.session.delete(user_obj)
+                db.session.commit()
+                session.clear()
+                # mostrar modal en login informando del borrado
+                return render_template('login/index.html', modal_show=True, modal_title='Usuario borrado', modal_message='Usuario borrado exitosamente', active='login', redirect_after_modal=True)
+        except Exception as e:
+            db.session.rollback()
+            message = str(e)
+            message_type = 'danger'
+
+    return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=0, users_by_role=[], content_template='home_panel/user_settings.html', message=message, message_type=message_type)
+
+
+# Alias para compatibilidad con rutas que esperan el nombre `user_settings_vista`
+def user_settings_vista():
+    return configuracion_de_usuario()

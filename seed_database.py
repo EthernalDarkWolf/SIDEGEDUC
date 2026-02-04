@@ -40,7 +40,9 @@ def seed_database():
                     Roles(id_rol=2, nombre_rol='Profesor'),
                     Roles(id_rol=3, nombre_rol='Estudiante'),
                     Roles(id_rol=4, nombre_rol='Representante'),
-                    Roles(id_rol=5, nombre_rol='Empleado')
+                    Roles(id_rol=5, nombre_rol='Empleado'),
+                    # Rol especial superior: Creador (invisible para el resto)
+                    Roles(id_rol=99, nombre_rol='Creador')
                 ])
                 print("Roles creados.")
 
