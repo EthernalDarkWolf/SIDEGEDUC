@@ -5,80 +5,115 @@
     {% endif %}
 
     <form method="post" id="personaForm">
-        <div class="card" style="border-radius:12px;padding:18px;border:1px solid var(--card-border);background:var(--panel-bg)">
+        <div class="card">
             <div class="card-body">
                 <div class="grid">
-            <div class="group">
-                <label>Primer nombre</label>
-                <input name="primer_nombre" required placeholder="Ingrese primer nombre">
-            </div>
-            <div class="group">
-                <label>Segundo nombre</label>
-                <input name="segundo_nombre" placeholder="(opcional)">
-            </div>
-            <div class="group">
-                <label>Primer apellido</label>
-                <input name="primer_apellido" required placeholder="Ingrese primer apellido">
-            </div>
-            <div class="group">
-                <label>Segundo apellido</label>
-                <input name="segundo_apellido" placeholder="(opcional)">
-            </div>
+                    <div class="main-col">
+                        <div class="section-card">
+                            <div class="section-header"><span class="icon-badge"><i class="fas fa-user"></i></span><h4>Datos personales</h4></div>
+                            <div class="section-body">
+                                <div class="group">
+                                    <label>Primer nombre</label>
+                                    <input name="primer_nombre" required placeholder="Ingrese primer nombre">
+                                </div>
+                                <div class="group">
+                                    <label>Segundo nombre</label>
+                                    <input name="segundo_nombre" placeholder="(opcional)">
+                                </div>
+                                <div class="group">
+                                    <label>Primer apellido</label>
+                                    <input name="primer_apellido" required placeholder="Ingrese primer apellido">
+                                </div>
+                                <div class="group">
+                                    <label>Segundo apellido</label>
+                                    <input name="segundo_apellido" placeholder="(opcional)">
+                                </div>
+                                <div class="group full">
+                                    <label for="fecha_nacimiento">Fecha de nacimiento</label>
+                                    <input type="text" id="fecha_nacimiento" name="fecha_nacimiento" placeholder="DD/MM/AAAA" data-flatpickr="true" readonly>
+                                    <small class="muted">Formato: DD/MM/AAAA</small>
+                                </div>
+                                <div class="group">
+                                    <label>Sexo</label>
+                                    <select name="id_sexo">
+                                        <option value="">-- sin especificar --</option>
+                                        {% for s in sexos %}
+                                            <option value="{{ s.id_sexo }}">{{ s.letra_sexo }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
 
-            <div class="group">
-                <label for="fecha_nacimiento">Fecha de nacimiento</label>
-                <input type="text" id="fecha_nacimiento" name="fecha_nacimiento" placeholder="DD/MM/AAAA" data-flatpickr="true" readonly>
-                <small class="muted">Formato visible: DD/MM/AAAA</small>
-            </div>
+                        <div class="section-card">
+                            <div class="section-header"><span class="icon-badge"><i class="fas fa-id-card"></i></span><h4>Identificación</h4></div>
+                            <div class="section-body">
+                                <div class="group full">
+                                    <label>Tipo de documento (opcional)</label>
+                                    <select name="id_tipo_documento">
+                                        <option value="">-- ninguno --</option>
+                                        {% for td in tipo_documentos %}
+                                            <option value="{{ td.id_tipo_documento }}">{{ td.nombre_tipo_documento }}</option>
+                                        {% endfor %}
+                                        <option value="escolar">Cédula escolar</option>
+                                    </select>
+                                </div>
+                                <div class="group full">
+                                    <label>Número de cédula (opcional)</label>
+                                    <div class="cedula-wrap">
+                                        <input name="numero_cedula" id="numero_cedula" placeholder="Ej: 31412298">
+                                        <div id="cedula_spinner" class="spinner" style="display:none" aria-hidden="true"></div>
+                                        <div id="cedula_generated_note" class="generated-note" style="display:none"><span class="bolt">⚡</span> Cédula escolar generada automáticamente</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-            <div class="group">
-                <label>Sexo</label>
-                <select name="id_sexo">
-                    <option value="">-- sin especificar --</option>
-                    {% for s in sexos %}
-                        <option value="{{ s.id_sexo }}">{{ s.letra_sexo }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+                    <aside class="side-col">
+                        <div class="section-card">
+                            <div class="section-header"><span class="icon-badge"><i class="fas fa-user-tie"></i></span><h4>Tipo & roles</h4></div>
+                            <div class="section-body">
+                                <div class="group full">
+                                    <label>Tipo de persona</label>
+                                    <select name="tipo_persona" id="tipo_persona" required>
+                                        <option value="estudiante">Estudiante</option>
+                                        <option value="representante">Representante</option>
+                                        <option value="profesor">Profesor</option>
+                                        <option value="empleado">Empleado</option>
+                                    </select>
+                                </div>
 
-            <div class="group">
-                <label>Tipo de documento (opcional)</label>
-                <select name="id_tipo_documento">
-                    <option value="">-- ninguno --</option>
-                    {% for td in tipo_documentos %}
-                        <option value="{{ td.id_tipo_documento }}">{{ td.nombre_tipo_documento }}</option>
-                    {% endfor %}
-                    <option value="escolar">Cédula escolar</option>
-                </select>
-            </div>
+                                <div id="fields_estudiante" class="group extra-group full" style="display:block">
+                                    <label for="fecha_inscripcion">Fecha inscripción (estudiante)</label>
+                                    <input type="text" id="fecha_inscripcion" name="fecha_inscripcion" placeholder="DD/MM/AAAA" data-flatpickr="true" readonly>
+                                </div>
 
-            <div class="group">
-                <label>Número de cédula (opcional)</label>
-                <input name="numero_cedula" placeholder="Ej: 12345678">
-            </div>
+                                <div id="escolar-controls" class="group extra-group full" style="display:none">
+                                    <label>Número de hijo (orden)</label>
+                                    <input type="number" id="numero_hijo" name="numero_hijo" min="1" placeholder="Ej: 1">
+                                    <small class="muted">Número orden del hijo para el representante.</small>
+                                </div>
 
-            <div class="group">
-                <label>Tipo de persona</label>
-                <select name="tipo_persona" id="tipo_persona" required>
-                    <option value="estudiante">Estudiante</option>
-                    <option value="representante">Representante</option>
-                    <option value="profesor">Profesor</option>
-                    <option value="empleado">Empleado</option>
-                </select>
-            </div>
+                                <div id="rep-cedula-wrap" class="group extra-group full" style="display:none">
+                                    <label>Cédula del representante (para escolar)</label>
+                                    <input type="text" id="cedula_representante" name="cedula_representante" placeholder="Ej: 12345678">
+                                    <small class="muted">Se usarán los 2 últimos dígitos para generar la cédula escolar.</small>
+                                </div>
 
-            <div id="fields_estudiante" class="group extra-group" style="display:block">
-                <label for="fecha_inscripcion">Fecha inscripción (estudiante)</label>
-                <input type="text" id="fecha_inscripcion" name="fecha_inscripcion" placeholder="DD/MM/AAAA" data-flatpickr="true" readonly>
-                <small class="muted">Opcional, conserva el mismo formato</small>
-            </div>
+                                <div id="generar_escolar_wrap" class="group full" style="display:none;margin-top:6px">
+                                    <button type="button" id="btn_generar_escolar" class="panel-btn outline">Generar cédula escolar</button>
+                                    <small class="muted" style="margin-left:8px">Llena fecha de nacimiento, número de hijo y cédula representante.</small>
+                                </div>
 
-            <div id="fields_representante" class="group extra-group" style="display:none">
-                <label>Número de hijos (representante)</label>
-                <input type="number" name="numero_hijos" min="0" value="0">
-            </div>
-        </div>
-
+                                <div id="fields_representante" class="group extra-group full" style="display:none">
+                                    <label>Número de hijos (representante)</label>
+                                    <input type="number" id="numero_hijos" name="numero_hijos" min="0" value="0">
+                                    <small class="muted">Indica cuántos hijos tiene este representante.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
                 </div>
 
                 <div style="margin-top:18px">
@@ -88,31 +123,13 @@
         </div>
     </form>
 
-    <style>
-        .registro-persona h3{margin-top:0;font-size:1.6rem;color:var(--accent-2);display:flex;align-items:center;gap:10px}
-        .registro-persona .success{color:var(--accent2);font-weight:700}
-        .registro-persona .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
-        .registro-persona .group{display:flex;flex-direction:column}
-        .registro-persona label{font-weight:600;margin-bottom:8px;color:var(--muted);font-size:0.95rem}
-        .registro-persona input,.registro-persona select{padding:12px;border-radius:10px;border:1px solid #e6eef2;background:linear-gradient(180deg,#fff,#fbffff);font-size:0.98rem}
-        .registro-persona input[readonly]{background:#fff}
-        .registro-persona .muted{color:var(--muted);font-size:0.85rem;margin-top:6px}
-        .registro-persona .extra-group input{width:100%}
-        .registro-persona .card{background:transparent;border-radius:10px}
-        .registro-persona .card-body{padding:8px}
-        .registro-persona .disabled-field{background:#efefef !important;color:#666 !important;border-color:#ddd !important}
-        .registro-persona .found-notice{background:#fffbe6;border:1px solid #ffd54d;padding:10px;border-radius:8px;margin-bottom:12px;color:#6b4f00}
-        .registro-persona .small-actions{display:flex;gap:8px;align-items:center;margin-top:8px}
-        .registro-persona .panel-btn.ghost{background:transparent;border:1px solid #cfd8dc;color:var(--muted)}
-        @media(max-width:600px){.registro-persona .grid{grid-template-columns:1fr}}
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='home_panel/registro_persona.css') }}">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     <script>
         (function(){
-            // initialize flatpickr on elements with data-flatpickr attribute
             const cfg = {
                 altInput: true,
                 altFormat: 'd/m/Y',
@@ -121,13 +138,11 @@
                 allowInput: true,
                 clickOpens: true,
                 wrap: false,
-                // enhance mobile behavior
                 disableMobile: true
             };
 
             document.querySelectorAll('input[data-flatpickr]').forEach(function(el){
                 try{
-                    // ensure wrapper with icon and helper exists
                     if(!el.closest('.date-field')){
                         const wrapper = document.createElement('div'); wrapper.className='date-field';
                         el.parentNode.insertBefore(wrapper, el); wrapper.appendChild(el);
@@ -138,40 +153,52 @@
                         clearBtn.style.position='absolute'; clearBtn.style.right='46px'; clearBtn.style.top='50%'; clearBtn.style.transform='translateY(-50%)'; clearBtn.style.border='none'; clearBtn.style.background='transparent'; clearBtn.style.cursor='pointer'; clearBtn.style.fontSize='14px';
                         wrapper.appendChild(clearBtn);
                         const help = document.createElement('span'); help.className='date-helper'; help.textContent = el.getAttribute('placeholder') || 'DD/MM/AAAA'; wrapper.appendChild(help);
-                        // icon opens calendar
                         icon.addEventListener('click', function(){ el.focus(); el.click(); });
                         clearBtn.addEventListener('click', function(){ if(el._flatpickr) el._flatpickr.clear(); });
                     }
-                    // initialize flatpickr and keep instance on element
                     const instance = flatpickr(el, cfg);
                     el._flatpickr = instance;
                 } catch(e){ console.warn('flatpickr init failed', e); }
             });
 
-            // Toggle campos extra según tipo de persona
+            const form = document.getElementById('personaForm');
             const tipo = document.getElementById('tipo_persona');
             const fe = document.getElementById('fields_estudiante');
             const fr = document.getElementById('fields_representante');
+            const escolarControls = document.getElementById('escolar-controls');
+            const repCedulaWrap = document.getElementById('rep-cedula-wrap');
+            const generarWrap = document.getElementById('generar_escolar_wrap');
+            const numeroHijoInput = document.getElementById('numero_hijo');
+            const cedulaRepInput = document.getElementById('cedula_representante');
+            const numeroCedulaField = document.querySelector('input[name="numero_cedula"]');
+            const spinner = document.getElementById('cedula_spinner');
+            const generatedNote = document.getElementById('cedula_generated_note');
+
             function toggle(){
+                if(!tipo) return;
                 if(tipo.value === 'estudiante'){ fe.style.display = 'block'; fr.style.display = 'none'; }
                 else if(tipo.value === 'representante'){ fe.style.display = 'none'; fr.style.display = 'block'; }
                 else { fe.style.display = 'none'; fr.style.display = 'none'; }
+                const td = document.querySelector('select[name="id_tipo_documento"]');
+                const isEscolar = td && td.value === 'escolar';
+                if(tipo.value === 'estudiante' || isEscolar){ if(escolarControls) escolarControls.style.display='block'; if(repCedulaWrap) repCedulaWrap.style.display='block'; if(generarWrap) generarWrap.style.display='block'; }
+                else { if(escolarControls) escolarControls.style.display='none'; if(repCedulaWrap) repCedulaWrap.style.display='none'; if(generarWrap) generarWrap.style.display='none'; }
             }
-            tipo.addEventListener('change', toggle);
+            if(tipo) tipo.addEventListener('change', toggle);
+            const tipoDoc = document.querySelector('select[name="id_tipo_documento"]');
+            if(tipoDoc) tipoDoc.addEventListener('change', toggle);
             toggle();
 
             // Validate before submit
-            document.getElementById('personaForm').addEventListener('submit', function(e){
+            form.addEventListener('submit', function(e){
                 const hidden = document.getElementById('fecha_nacimiento');
                 if(!hidden.value){ alert('Por favor seleccione la fecha de nacimiento.'); e.preventDefault(); }
             });
 
-            // Elemento para mostrar aviso cuando se encuentra persona existente
+            // found notice
             const foundNotice = document.createElement('div'); foundNotice.id='foundNotice'; foundNotice.className='found-notice'; foundNotice.style.display='none';
-            const form = document.getElementById('personaForm');
             form.parentNode.insertBefore(foundNotice, form);
 
-            // Helper para desactivar/activar campos y aplicar estilos (incluye cédula)
             function setFormDisabled(disabled){
                 form.querySelectorAll('input, select, textarea, button').forEach(function(el){
                     if(el.classList && el.classList.contains('date-clear')) return;
@@ -189,10 +216,7 @@
                 });
             }
 
-            // No permitir reactivar ni navegar a ficha desde aquí: solo mostrar aviso
-            const actionsWrap = document.createElement('div'); actionsWrap.className='small-actions';
-
-            // Check cedula on blur/change
+            // cedula lookup
             const ced = form.querySelector('input[name="numero_cedula"]');
             if(ced){
                 let timeout = null;
@@ -203,37 +227,71 @@
                         .then(r => r.json())
                         .then(function(j){
                             if(j && j.found){
-                                // rellenar campos
                                 form.querySelector('input[name="primer_nombre"]').value = j.primer_nombre || '';
                                 form.querySelector('input[name="segundo_nombre"]').value = j.segundo_nombre || '';
                                 form.querySelector('input[name="primer_apellido"]').value = j.primer_apellido || '';
                                 form.querySelector('input[name="segundo_apellido"]').value = j.segundo_apellido || '';
                                 const fechaN = document.getElementById('fecha_nacimiento');
                                 if(fechaN){ if(j.fecha_nacimiento){ try{ if(fechaN._flatpickr) fechaN._flatpickr.setDate(j.fecha_nacimiento); else fechaN.value = j.fecha_nacimiento; }catch(e){ fechaN.value = j.fecha_nacimiento; } } }
-                                // selects
                                 const sexSel = form.querySelector('select[name="id_sexo"]'); if(sexSel) sexSel.value = j.id_sexo || '';
                                 const tdSel = form.querySelector('select[name="id_tipo_documento"]'); if(tdSel) tdSel.value = j.id_tipo_documento || '';
                                 const tipoSel = document.getElementById('tipo_persona'); if(tipoSel) tipoSel.value = j.tipo_persona || tipoSel.value;
                                 const fins = document.getElementById('fecha_inscripcion'); if(fins){ if(j.fecha_inscripcion){ try{ if(fins._flatpickr) fins._flatpickr.setDate(j.fecha_inscripcion); else fins.value = j.fecha_inscripcion; }catch(e){ fins.value = j.fecha_inscripcion; } } }
-
                                 foundNotice.innerHTML = `<strong>Datos autocompletados:</strong> ${j.primer_nombre} ${j.primer_apellido} — Cédula: ${j.numero_cedula}<div style="margin-top:8px;color:#a94442;font-weight:700">No puedes volver a registrar esta persona.</div>`;
                                 foundNotice.style.display = 'block';
-                                if(!foundNotice.querySelector('.small-actions')) foundNotice.appendChild(actionsWrap);
-                                // mostrar campos según tipo y desactivar todo el formulario
-                                if(document.getElementById('tipo_persona')){ document.getElementById('tipo_persona').value = j.tipo_persona || document.getElementById('tipo_persona').value; }
-                                // trigger toggle to show correct extra fields
-                                try{ const ev = new Event('change'); document.getElementById('tipo_persona').dispatchEvent(ev); }catch(e){}
                                 setFormDisabled(true);
                             } else {
                                 foundNotice.style.display = 'none';
                                 setFormDisabled(false);
-                                if(foundNotice.querySelector('.small-actions')) foundNotice.removeChild(actionsWrap);
                             }
                         }).catch(function(){ foundNotice.style.display='none'; setFormDisabled(false); });
                 }
                 ced.addEventListener('input', function(){ clearTimeout(timeout); timeout = setTimeout(runCheck, 500); });
                 ced.addEventListener('blur', runCheck);
             }
+
+            // auto-generate escolar
+            function cleanDigits(s){ return String(s||'').replace(/\D+/g,''); }
+            function getAltDateString(el){
+                try{ if(el && el._flatpickr){ const d = el._flatpickr.selectedDates[0]; if(d instanceof Date) return ('0'+d.getDate()).slice(-2)+('0'+(d.getMonth()+1)).slice(-2)+d.getFullYear(); } }catch(e){}
+                if(!el) return '';
+                const v = el.value || el.getAttribute('placeholder') || '';
+                const m = v.match(/(\d{2})\D?(\d{2})\D?(\d{4})/);
+                if(m) return m[1]+m[2]+m[3];
+                return '';
+            }
+
+            let genTimeout = null; let busyGenerating = false;
+            function tryAutoGenerate(){
+                if(busyGenerating) return;
+                const td = document.querySelector('select[name="id_tipo_documento"]');
+                const isEscolar = td && td.value === 'escolar';
+                if(!isEscolar) return;
+                const fechaEl = document.getElementById('fecha_nacimiento');
+                const numH = numeroHijoInput && numeroHijoInput.value ? String(numeroHijoInput.value).trim() : '';
+                const fechaStr = getAltDateString(fechaEl);
+                const repCed = cleanDigits(cedulaRepInput && cedulaRepInput.value ? cedulaRepInput.value : (document.querySelector('input[name="numero_cedula"]').value || ''));
+                if(!numH || !fechaStr || !repCed || repCed.length < 2) return;
+                if(genTimeout) clearTimeout(genTimeout);
+                genTimeout = setTimeout(function(){
+                    busyGenerating = true;
+                    if(spinner) spinner.style.display = 'inline-block';
+                    setTimeout(function(){
+                        const ult2 = repCed.slice(-2);
+                        const cedulaEscolar = ''+numH+fechaStr+ult2;
+                        if(numeroCedulaField){ numeroCedulaField.value = cedulaEscolar; numeroCedulaField.disabled = true; numeroCedulaField.classList.add('generated'); numeroCedulaField.setAttribute('readonly','readonly'); }
+                        if(spinner) spinner.style.display = 'none';
+                        if(generatedNote) generatedNote.style.display = 'inline-flex';
+                        busyGenerating = false;
+                    }, 3000);
+                }, 400);
+            }
+
+            if(numeroHijoInput) numeroHijoInput.addEventListener('input', tryAutoGenerate);
+            if(cedulaRepInput) cedulaRepInput.addEventListener('input', tryAutoGenerate);
+            const fechaNEl = document.getElementById('fecha_nacimiento');
+            if(fechaNEl){ fechaNEl.addEventListener('change', tryAutoGenerate); fechaNEl.addEventListener('blur', tryAutoGenerate); }
+            if(tipoDoc) tipoDoc.addEventListener('change', tryAutoGenerate);
         })();
     </script>
 </div>

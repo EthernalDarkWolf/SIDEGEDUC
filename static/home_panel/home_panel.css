@@ -9,6 +9,7 @@
 	--card-border:#e9f4f2;
 }
 
+
 .manage-user{max-width:980px;margin:18px auto;padding:20px;border-radius:12px;background:var(--glass);box-shadow:0 6px 22px rgba(11,18,32,0.04);}
 .manage-header{display:flex;flex-direction:column;gap:10px;margin-bottom:8px}
 .manage-header .title{display:flex;gap:12px;align-items:center}

@@ -1,0 +1,98 @@
+/* Estilos modernos para Registro de Persona - registro_persona.css */
+:root{
+    --bg:#ffffff;
+    --muted:#7b8a90;
+    --accent:#2bd6b6;
+    --accent-dark:#06a77d;
+    --card:#fbffff;
+    --border:#e6f4ef;
+    --text:#0b1220;
+    --max-width:1020px;
+    --input-height:48px;
+    --label-size:0.9rem;
+    --section-gap:14px;
+}
+.registro-persona{max-width:var(--max-width);margin:18px auto;padding:0 16px}
+.registro-persona .card{background:linear-gradient(180deg,var(--card),#f7fffc);border-radius:12px;border:1px solid var(--border);box-shadow:0 8px 26px rgba(3,26,24,0.05);overflow:visible}
+.registro-persona .card-body{padding:22px}
+
+.registro-persona h3{font-size:1.6rem;margin:0 0 10px;color:var(--accent-dark);font-weight:800;letter-spacing:0.2px}
+.registro-persona p.lead{margin:0 0 14px;color:var(--muted)}
+
+/* Grid layout: main form + sidebar */
+.registro-persona .grid{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
+.main-col{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--section-gap)}
+
+.group{display:flex;flex-direction:column}
+.group label{font-weight:600;color:var(--muted);font-size:var(--label-size);margin-bottom:6px}
+
+/* Inputs estilo moderno */
+.group input, .group select, .group textarea{
+    padding:10px 14px;border-radius:10px;border:1px solid rgba(10,80,70,0.06);background:linear-gradient(180deg,#ffffff,#f9fffd);font-size:0.98rem;color:var(--text);transition:box-shadow .18s,transform .12s,border-color .12s;outline:none;height:var(--input-height)}
+.group input::placeholder{color:rgba(11,17,20,0.18)}
+.group input:focus, .group select:focus{box-shadow:0 10px 24px rgba(6,167,125,0.06);transform:translateY(-2px);border-color:rgba(6,167,125,0.18)}
+
+/* Full width helper for date fields and selects that occupy two columns */
+.main-col .full{grid-column:1/-1}
+
+/* Sidebar card for meta controls */
+.side-col{position:sticky;top:86px}
+.side-col .section-card{padding:14px;border-radius:10px;border:1px solid #eef7f4;background:linear-gradient(180deg,#fff,#fbffff)}
+/* Section header */
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.section-header h4{margin:0;font-size:1rem;color:var(--text);font-weight:700}
+.icon-badge{width:36px;height:36px;border-radius:10px;background:linear-gradient(180deg,rgba(43,214,182,0.14),rgba(6,167,125,0.08));display:flex;align-items:center;justify-content:center;color:var(--accent-dark);font-size:0.98rem}
+.section-body{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.section-body .full{grid-column:1/-1}
+.cedula-wrap{display:flex;align-items:center;gap:8px}
+.generated-note{white-space:nowrap}
+.panel-btn{cursor:pointer}
+
+/* Spinner and generated note */
+.spinner{width:18px;height:18px;border-radius:50%;border:3px solid rgba(0,0,0,0.06);border-top-color:var(--accent-dark);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.generated-note{background:linear-gradient(90deg, rgba(96,224,201,0.12), rgba(6,167,125,0.06));padding:6px 10px;border-radius:999px;color:var(--accent-dark);font-weight:700;font-size:0.9rem;display:inline-flex;align-items:center;gap:8px}
+.generated-note .bolt{font-size:1rem}
+input.generated, input[readonly].generated{background:#f3f7f5;border-color:#d6eee6;color:#0b4d3f}
+
+/* Buttons */
+.panel-btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent-dark));color:#fff;padding:12px 18px;border-radius:12px;border:none;font-weight:800;box-shadow:0 12px 40px rgba(6,167,125,0.08)}
+.panel-btn.outline{background:transparent;border:1px solid rgba(6,167,125,0.08);padding:10px 14px;border-radius:10px}
+
+/* small helpers */
+.muted{color:var(--muted);font-size:0.88rem}
+
+/* Inline validation */
+.invalid{border-color:#ffb4b4 !important;box-shadow:0 8px 18px rgba(255,84,84,0.06) !important}
+
+/* Section card baseline (applies to main and sidebar) */
+.section-card{padding:14px;border-radius:10px;border:1px solid #eef7f4;background:linear-gradient(180deg,#fff,#fbffff);margin-bottom:12px}
+.section-card .section-body{display:grid;grid-template-columns:repeat(1,1fr);gap:12px}
+.main-col .section-card .section-body{grid-template-columns:repeat(2,1fr)}
+
+/* Date field wrapper created by JS */
+.date-field{position:relative}
+.date-field .date-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:26px;height:26px;display:flex;align-items:center;justify-content:center;color:var(--accent-dark);cursor:pointer}
+.date-field .date-clear{position:absolute;right:46px;top:50%;transform:translateY(-50%);background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:13px}
+.date-helper{display:none}
+
+/* Ensure sidebar sections use single column layout */
+.side-col .section-card .section-body{grid-template-columns:repeat(1,1fr)}
+
+/* Tighter spacing for labels and consistent input widths */
+.section-header h4{font-size:0.98rem}
+.group label{font-size:0.9rem}
+.cedula-wrap input{min-width:160px}
+
+/* Responsive adjustments */
+@media(max-width:1100px){
+    .grid{grid-template-columns:1fr}
+    .main-col{grid-template-columns:1fr}
+    .side-col{position:static}
+}
+
+@media(max-width:720px){
+    :root{--input-height:44px}
+    .group input, .group select, .group textarea{height:var(--input-height)}
+    .registro-persona .card-body{padding:14px}
+}
