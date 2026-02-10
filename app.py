@@ -1,21 +1,31 @@
 from flask import Flask, session, redirect, url_for, render_template
 from dotenv import load_dotenv
 import os
-from sqlalchemy import event
+import sys
+from sqlalchemy import event, text
 from sqlalchemy.engine import Engine
 
-# Cargar variables de entorno
+# Cargar variables de entorno .env
 load_dotenv()
 
 # --- IMPORTACIÓN DE MODELOS ---
 # Importamos desde la ruta que SQLAlchemy reconozca según tu estructura
 from database.models import db, Usuarios, Roles, StatusUser
 
-from utiled.start import login_bp
-# ---Importamos el mansejador de los permisos
-from utiled.permissions import get_user_context
+from utils.start import login_bp
 
-app = Flask(__name__)
+# ---Importamos el mansejador de los permisos
+from utils.permissions import get_user_context
+
+# Detectar si se está ejecutando desde un ejecutable PyInstaller esto es para evitar error al compilar
+if getattr(sys, 'frozen', False):
+    template_folder = os.path.join(sys._MEIPASS, 'templates')
+    static_folder = os.path.join(sys._MEIPASS, 'static')
+else:
+    template_folder = 'templates'
+    static_folder = 'static'
+
+app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
 app.secret_key = os.getenv("SECRET_KEY", "162618")
 
 # --- CONFIGURACIÓN DE BASE DE DATOS (FORZAR SQLITE) ---
@@ -47,6 +57,28 @@ with app.app_context():
     except Exception as e:
         print(f"Aviso: No se pudieron crear tablas automáticamente: {e}")
 
+    # Asegurar columnas adicionales en SQLite para compatibilidad con el esquema MySQL
+    try: 
+        if app.config['SQLALCHEMY_DATABASE_URI'].startswith("sqlite"):
+            conn = db.engine.connect()
+            res = conn.execute(text("PRAGMA table_info(personas)")).fetchall()
+            existing = [r[1] for r in res]
+            needed = {
+                'tipo_persona': 'TEXT',
+                'id_tipo_documento': 'INTEGER',
+                'numero_cedula': 'TEXT'
+            }
+            for col, ctype in needed.items():
+                if col not in existing:
+                    try:
+                        conn.execute(text(f'ALTER TABLE personas ADD COLUMN {col} {ctype}'))
+                        print(f'Columna {col} agregada a personas')
+                    except Exception as ex:
+                        print(f'No se pudo agregar columna {col}: {ex}')
+            conn.close()
+    except Exception as e:
+        print(f'No se pudo asegurar columnas en SQLite: {e}')
+
 # Registrar blueprint de autenticación
 app.register_blueprint(login_bp)
 
@@ -68,7 +100,22 @@ def inject_user_context():
     }
 
 # --- IMPORTACIÓN DE MANEJADORES DE VISTA ---
-import utiled.view_handlers as manejar_la_vista_de
+import utils.view_handlers as manejar_la_vista_de
+
+# APIs auxiliares para operaciones específicas, como creación de ocupaciones o búsqueda de personas por cédula
+@app.route('/api/ocupacion', methods=['POST'])
+def api_ocupacion():
+    return manejar_la_vista_de.api_create_ocupacion()
+
+#api para detectar si una persona ya existe por su cedula
+@app.route('/api/persona/lookup', methods=['GET'])
+def api_persona_lookup():
+    return manejar_la_vista_de.api_lookup_persona_by_cedula()
+
+#api para crear una profesión si no existe, esto es para evitar que el usuario tenga que crear la profesión cada vez que registra a una persona nueva
+@app.route('/api/profesion', methods=['POST'])
+def api_profesion():
+    return manejar_la_vista_de.api_create_profesion()
 
 # --- RUTAS ---
 

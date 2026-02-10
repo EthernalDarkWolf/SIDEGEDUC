@@ -1,0 +1,30 @@
+<div class="card">
+    <h3>Registro de Matrículas</h3>
+    {% if message %}
+        <p class="success">{{ message }}</p>
+    {% endif %}
+
+    <form method="post">
+        <div class="group">
+            <label>Estudiante</label>
+            <select name="id_estudiante">
+                <option value="">-- seleccionar --</option>
+                {% for e in estudiantes %}
+                    <option value="{{ e.id_estudiante }}">{{ e.id_estudiante }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="group">
+            <label>Sección</label>
+            <select name="id_seccion">
+                <option value="">-- seleccionar --</option>
+                {% for s in secciones %}
+                    <option value="{{ s.id_seccion }}">Sección {{ s.id_seccion }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="margin-top:12px">
+            <button class="panel-btn primary">Registrar matrícula</button>
+        </div>
+    </form>
+</div>

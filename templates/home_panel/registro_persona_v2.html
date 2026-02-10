@@ -48,6 +48,7 @@
                     {% for td in tipo_documentos %}
                         <option value="{{ td.id_tipo_documento }}">{{ td.nombre_tipo_documento }}</option>
                     {% endfor %}
+                    <option value="escolar">Cédula escolar</option>
                 </select>
             </div>
 
@@ -99,6 +100,10 @@
         .registro-persona .extra-group input{width:100%}
         .registro-persona .card{background:transparent;border-radius:10px}
         .registro-persona .card-body{padding:8px}
+        .registro-persona .disabled-field{background:#efefef !important;color:#666 !important;border-color:#ddd !important}
+        .registro-persona .found-notice{background:#fffbe6;border:1px solid #ffd54d;padding:10px;border-radius:8px;margin-bottom:12px;color:#6b4f00}
+        .registro-persona .small-actions{display:flex;gap:8px;align-items:center;margin-top:8px}
+        .registro-persona .panel-btn.ghost{background:transparent;border:1px solid #cfd8dc;color:var(--muted)}
         @media(max-width:600px){.registro-persona .grid{grid-template-columns:1fr}}
     </style>
 
@@ -160,6 +165,75 @@
                 const hidden = document.getElementById('fecha_nacimiento');
                 if(!hidden.value){ alert('Por favor seleccione la fecha de nacimiento.'); e.preventDefault(); }
             });
+
+            // Elemento para mostrar aviso cuando se encuentra persona existente
+            const foundNotice = document.createElement('div'); foundNotice.id='foundNotice'; foundNotice.className='found-notice'; foundNotice.style.display='none';
+            const form = document.getElementById('personaForm');
+            form.parentNode.insertBefore(foundNotice, form);
+
+            // Helper para desactivar/activar campos y aplicar estilos (incluye cédula)
+            function setFormDisabled(disabled){
+                form.querySelectorAll('input, select, textarea, button').forEach(function(el){
+                    if(el.classList && el.classList.contains('date-clear')) return;
+                    if(el === foundNotice) return;
+                    if(el.type === 'button' && el.classList && el.classList.contains('ghost-action')) return;
+                    if(el.tagName === 'BUTTON' && el.type === 'submit'){
+                        el.disabled = disabled;
+                        if(disabled){ el.dataset.origText = el.textContent; el.textContent = 'Persona ya registrada'; }
+                        else { if(el.dataset.origText) el.textContent = el.dataset.origText; }
+                        return;
+                    }
+                    el.disabled = disabled;
+                    if(disabled){ el.classList && el.classList.add('disabled-field'); }
+                    else { el.classList && el.classList.remove('disabled-field'); }
+                });
+            }
+
+            // No permitir reactivar ni navegar a ficha desde aquí: solo mostrar aviso
+            const actionsWrap = document.createElement('div'); actionsWrap.className='small-actions';
+
+            // Check cedula on blur/change
+            const ced = form.querySelector('input[name="numero_cedula"]');
+            if(ced){
+                let timeout = null;
+                function runCheck(){
+                    const v = ced.value && ced.value.trim();
+                    if(!v){ foundNotice.style.display='none'; setFormDisabled(false); return; }
+                    fetch(`/api/persona/lookup?numero=${encodeURIComponent(v)}`)
+                        .then(r => r.json())
+                        .then(function(j){
+                            if(j && j.found){
+                                // rellenar campos
+                                form.querySelector('input[name="primer_nombre"]').value = j.primer_nombre || '';
+                                form.querySelector('input[name="segundo_nombre"]').value = j.segundo_nombre || '';
+                                form.querySelector('input[name="primer_apellido"]').value = j.primer_apellido || '';
+                                form.querySelector('input[name="segundo_apellido"]').value = j.segundo_apellido || '';
+                                const fechaN = document.getElementById('fecha_nacimiento');
+                                if(fechaN){ if(j.fecha_nacimiento){ try{ if(fechaN._flatpickr) fechaN._flatpickr.setDate(j.fecha_nacimiento); else fechaN.value = j.fecha_nacimiento; }catch(e){ fechaN.value = j.fecha_nacimiento; } } }
+                                // selects
+                                const sexSel = form.querySelector('select[name="id_sexo"]'); if(sexSel) sexSel.value = j.id_sexo || '';
+                                const tdSel = form.querySelector('select[name="id_tipo_documento"]'); if(tdSel) tdSel.value = j.id_tipo_documento || '';
+                                const tipoSel = document.getElementById('tipo_persona'); if(tipoSel) tipoSel.value = j.tipo_persona || tipoSel.value;
+                                const fins = document.getElementById('fecha_inscripcion'); if(fins){ if(j.fecha_inscripcion){ try{ if(fins._flatpickr) fins._flatpickr.setDate(j.fecha_inscripcion); else fins.value = j.fecha_inscripcion; }catch(e){ fins.value = j.fecha_inscripcion; } } }
+
+                                foundNotice.innerHTML = `<strong>Datos autocompletados:</strong> ${j.primer_nombre} ${j.primer_apellido} — Cédula: ${j.numero_cedula}<div style="margin-top:8px;color:#a94442;font-weight:700">No puedes volver a registrar esta persona.</div>`;
+                                foundNotice.style.display = 'block';
+                                if(!foundNotice.querySelector('.small-actions')) foundNotice.appendChild(actionsWrap);
+                                // mostrar campos según tipo y desactivar todo el formulario
+                                if(document.getElementById('tipo_persona')){ document.getElementById('tipo_persona').value = j.tipo_persona || document.getElementById('tipo_persona').value; }
+                                // trigger toggle to show correct extra fields
+                                try{ const ev = new Event('change'); document.getElementById('tipo_persona').dispatchEvent(ev); }catch(e){}
+                                setFormDisabled(true);
+                            } else {
+                                foundNotice.style.display = 'none';
+                                setFormDisabled(false);
+                                if(foundNotice.querySelector('.small-actions')) foundNotice.removeChild(actionsWrap);
+                            }
+                        }).catch(function(){ foundNotice.style.display='none'; setFormDisabled(false); });
+                }
+                ced.addEventListener('input', function(){ clearTimeout(timeout); timeout = setTimeout(runCheck, 500); });
+                ced.addEventListener('blur', runCheck);
+            }
         })();
     </script>
 </div>

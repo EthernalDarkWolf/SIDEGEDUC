@@ -31,6 +31,13 @@
         .modal h2{margin:0 0 0.6rem;font-size:1.1rem}
         .modal p{color:#334155}
         .modal button{margin-top:1rem;padding:0.5rem 0.9rem;border-radius:8px;border:none;background:#111827;color:#fff}
+        /* Password toggle */
+        .password-field{position:relative;display:flex;align-items:center}
+        .password-field .pw-toggle{position:absolute;right:8px;background:transparent;border:0;color:rgba(234,246,241,0.55);font-size:1rem;padding:6px 8px;border-radius:8px;cursor:pointer}
+        .password-field .pw-toggle:focus{outline:2px solid rgba(43,214,182,0.14)}
+        /* simple panel transition */
+        .panel{transition:opacity .22s ease,transform .22s cubic-bezier(.2,.9,.2,1)}
+        .panel.hidden{opacity:0;transform:translateY(6px);pointer-events:none;height:0;overflow:hidden}
         @media(max-width:900px){.container{grid-template-columns:1fr;padding:1.2rem}.hero{display:none}.card{margin:0 auto;width:100%}}
     </style>
 </head>
@@ -61,7 +68,10 @@
 
                             <div class="form-group">
                                 <label for="clave">Contraseña</label>
-                                <input type="password" name="clave" id="clave" required placeholder="Contraseña">
+                                <div class="password-field">
+                                    <input type="password" name="clave" id="clave" required placeholder="Contraseña">
+                                    <button type="button" class="pw-toggle" aria-label="Mostrar contraseña">👁</button>
+                                </div>
                             </div>
 
                             <button type="submit" class="btn">Iniciar sesión</button>
@@ -80,7 +90,10 @@
 
                             <div class="form-group">
                                 <label for="reg-clave">Contraseña</label>
-                                <input type="password" name="clave" id="reg-clave" required placeholder="Contraseña">
+                                <div class="password-field">
+                                    <input type="password" name="clave" id="reg-clave" required placeholder="Contraseña">
+                                    <button type="button" class="pw-toggle" aria-label="Mostrar contraseña">👁</button>
+                                </div>
                             </div>
 
                             <div class="form-group">
@@ -174,5 +187,6 @@
             {% endif %}
         });
     </script>
+    <script src="{{ url_for('static', filename='login/main.js') }}"></script>
 </body>
 </html>

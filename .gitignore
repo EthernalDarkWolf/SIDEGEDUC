@@ -1,3 +1,4 @@
 #esto para ignorar archivos a la hora de subir cambios
 
 **/__pycache__/
+**/venv/

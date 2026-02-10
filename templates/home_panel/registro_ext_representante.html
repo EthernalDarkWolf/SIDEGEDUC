@@ -2,26 +2,99 @@
     <h3>Completar datos: Representante</h3>
     {% if message %}<p style="color:green">{{ message }}</p>{% endif %}
     <p class="muted">Persona: {{ persona[1] }} {{ persona[2] }}</p>
-    <form method="post">
-        <label>Número de hijos:<br><input type="number" name="numero_hijos" min="0" value="0"></label><br>
+    <form method="post" id="repForm">
         <label>Profesión:<br>
-            <select name="id_profesion">
-                <option value="">-- ninguno --</option>
-                {% for pr in profesiones %}
-                    <option value="{{ pr.id_profesion }}">{{ pr.nombre_profesion }}</option>
-                {% endfor %}
-            </select>
+            <div style="display:flex;gap:8px;align-items:center">
+                <select name="id_profesion" id="profesionSelect" style="flex:0 0 320px">
+                    <option value="">-- ninguno --</option>
+                    {% for pr in profesiones %}
+                        <option value="{{ pr.id_profesion }}">{{ pr.nombre_profesion }}</option>
+                    {% endfor %}
+                </select>
+                <a href="#" id="addProfLink" class="muted-link">¿No ves tu profesión?</a>
+            </div>
         </label><br>
         <label>Ocupación:<br>
-            <select name="id_ocupacion">
-                <option value="">-- ninguno --</option>
-                {% for oc in ocupaciones %}
-                    <option value="{{ oc.id_ocupacion }}">{{ oc.nombre_ocupacion }}</option>
-                {% endfor %}
-            </select>
-        </label><br>
+            <div style="display:flex;gap:8px;align-items:center">
+                <select name="id_ocupacion" id="ocupacionSelect" style="flex:0 0 320px">
+                    <option value="">-- ninguno --</option>
+                    {% for oc in ocupaciones %}
+                        <option value="{{ oc.id_ocupacion }}">{{ oc.nombre_ocupacion }}</option>
+                    {% endfor %}
+                </select>
+                <a href="#" id="addOcupLink" class="muted-link">¿No ves tu ocupación?</a>
+            </div>
+        </label>
+        <br>
         <div style="margin-top:8px">
             <button class="panel-btn" type="submit">Guardar Representante</button>
         </div>
     </form>
+
+    <style>
+        .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:1200}
+        .modal-card{background:var(--panel-bg);padding:18px;border-radius:10px;min-width:360px;box-shadow:0 8px 30px rgba(0,0,0,0.18)}
+        .modal-card h4{margin:0 0 8px;color:var(--accent-2)}
+        .muted-link{color:var(--muted);font-size:0.95rem;text-decoration:underline;cursor:pointer}
+        .modal-row{display:flex;gap:8px;margin-top:8px}
+        .modal-row input{flex:1;padding:8px;border-radius:8px;border:1px solid #e6eef2}
+        .modal-row button{padding:8px 12px;border-radius:8px}
+    </style>
+
+    <div id="modalBackdrop" class="modal-backdrop">
+        <div class="modal-card">
+            <h4 id="modalTitle">Agregar</h4>
+            <div>
+                <input id="modalInput" placeholder="Nombre">
+                <div style="margin-top:10px;text-align:right">
+                    <button id="modalCancel" class="panel-btn">Cancelar</button>
+                    <button id="modalSave" class="panel-btn primary">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function(){
+            const backdrop = document.getElementById('modalBackdrop');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalInput = document.getElementById('modalInput');
+            const btnCancel = document.getElementById('modalCancel');
+            const btnSave = document.getElementById('modalSave');
+            let currentTarget = null; // 'ocup' or 'prof'
+
+            function openModal(kind){
+                currentTarget = kind;
+                modalTitle.textContent = kind === 'ocup' ? 'Agregar ocupación' : 'Agregar profesión';
+                modalInput.value = '';
+                backdrop.style.display = 'flex';
+                modalInput.focus();
+            }
+            function closeModal(){ backdrop.style.display = 'none'; currentTarget = null }
+
+            document.getElementById('addOcupLink').addEventListener('click', function(e){ e.preventDefault(); openModal('ocup') });
+            document.getElementById('addProfLink').addEventListener('click', function(e){ e.preventDefault(); openModal('prof') });
+            btnCancel.addEventListener('click', function(e){ e.preventDefault(); closeModal() });
+
+            btnSave.addEventListener('click', async function(e){
+                e.preventDefault();
+                const name = (modalInput.value||'').trim(); if(!name) return alert('Escribe un nombre');
+                try{
+                    const url = currentTarget === 'ocup' ? '/api/ocupacion' : '/api/profesion';
+                    const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({nombre: name})});
+                    const j = await res.json();
+                    if(j.success){
+                        const sel = currentTarget === 'ocup' ? document.getElementById('ocupacionSelect') : document.getElementById('profesionSelect');
+                        const opt = document.createElement('option'); opt.value = j.id; opt.textContent = j.nombre; sel.appendChild(opt); sel.value = j.id;
+                        closeModal();
+                    } else {
+                        alert(j.error || 'No se pudo crear');
+                    }
+                }catch(err){ console.error(err); alert('Error de red') }
+            });
+
+            // cerrar modal al clickear fondo
+            backdrop.addEventListener('click', function(e){ if(e.target === backdrop) closeModal() });
+        })();
+    </script>
 </div>
