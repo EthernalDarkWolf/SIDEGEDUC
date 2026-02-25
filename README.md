@@ -88,7 +88,7 @@ cd C:/SIDEGEDUC && venv/Scripts/activate.bat && py app.py
 </a>
 
 ### **`👑 Lider Técnico`**
-<a href="https://github.com/Technolobito"><img src="https://github.com/Technolobito.png" width="130" height="130" alt="Anthony parada" title="Anthony Parada — Líder Técnico"/></a>
+<a href="https://github.com/Technolobito"><img src="https://github.com/Technolobito.png" width="130" height="130" alt="Anthony parada" title="Anthony Parada"/></a>
 
 ## **`⭐ CRÉDITOS`**
 <a href="https://github.com/Nmaker19"><img src="https://github.com/Nmaker19.png" width="130" height="130" alt="Noel Rodriguez(Mi Honorable Maestro)" title="Noel Rodriguez — Mi Honorable Maestro"/></a>
