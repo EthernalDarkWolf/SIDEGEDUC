@@ -78,19 +78,17 @@ cd C:/SIDEGEDUC && venv/Scripts/activate.bat && py app.py
 
 ### **`🪐Equipo de desarrallo`**
 <a href="https://github.com/endanli78">
-<img src="https://github.com/endanli78.png" width="50px" style="border-radius: 50%;" alt="Endanli Uzgategui(Database Designer)">
+<img src="https://github.com/endanli78.png" width="50px" style="border-radius: 50%;" alt="Endanli Uzgategui(Database Designer)" title="Endanli Uzgategui — Database Designer">
 </a> 
 <a href="https://github.com/carmenmorana21-code">
-<img src="https://github.com/carmenmorana21-code.png" width="50px" style="border-radius: 50%;" alt="Carmen Morales(Dev Backend)">
+<img src="https://github.com/carmenmorana21-code.png" width="50px" style="border-radius: 50%;" alt="Carmen Morales(Dev Backend)" title="Carmen Morales — Dev Backend">
 </a>
-<a href=https://github.com/Anduezajavierale>
-<img src="https://github.com/Anduezajavierale.png" width="50px" style= "border-radius: 50%;" alt="Javier Andueza(Dev Frontend)">
+<a href="https://github.com/Anduezajavierale">
+<img src="https://github.com/Anduezajavierale.png" width="50px" style= "border-radius: 50%;" alt="Javier Andueza(Dev Frontend)" title="Javier Andueza — Dev Frontend">
 </a>
 
 ### **`👑 Lider Técnico`**
-<a
-href="https://github.com/Technolobito"><img src="https://github.com/Technolobito.png" width="130" height="130" alt="Anthony parada"/></a>
+<a href="https://github.com/Technolobito"><img src="https://github.com/Technolobito.png" width="130" height="130" alt="Anthony parada" title="Anthony Parada — Líder Técnico"/></a>
 
 ## **`⭐ CRÉDITOS`**
-<a
-href="https://github.com/Nmaker19"><img src="https://github.com/Nmaker19.png" width="130" height="130" alt="Noel Rodriguez(Mi Honorable Maestro)"/></a>
+<a href="https://github.com/Nmaker19"><img src="https://github.com/Nmaker19.png" width="130" height="130" alt="Noel Rodriguez(Mi Honorable Maestro)" title="Noel Rodriguez — Mi Honorable Maestro"/></a>
