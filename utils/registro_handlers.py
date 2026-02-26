@@ -1,6 +1,7 @@
 from flask import render_template, redirect, url_for, request, session, abort
 from database.models import db
 from sqlalchemy import text
+from datetime import date
 
 
 def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
@@ -30,8 +31,36 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
             id_tipo_doc = f.get('id_tipo_documento') or None
             numero_cedula = f.get('numero_cedula') or None
 
-            if not primer or not pap or not fecha_nac or not tipo_persona:
-                message = 'Campos requeridos faltantes.'
+            if not numero_cedula or not primer or not pap or not fecha_nac or not tipo_persona:
+                message = 'Campos requeridos faltantes. Asegúrese de ingresar cédula, nombres, apellidos y fecha de nacimiento.'
+            else:
+                # Validaciones adicionales: fecha nacimiento no puede ser hoy ni en el futuro
+                try:
+                    # fecha_nac expected in YYYY-MM-DD (flatpickr config)
+                    y, m, d = map(int, fecha_nac.split('-'))
+                    dob = date(y, m, d)
+                    today = date.today()
+                    if dob >= today:
+                        message = 'Fecha de nacimiento inválida: no puede ser hoy ni en el futuro.'
+                except Exception:
+                    message = 'Formato de fecha inválido.'
+
+                # Si es representante, debe ser mayor de 18 años
+                if not message and tipo_persona == 'representante':
+                    try:
+                        # calcular edad
+                        y, m, d = map(int, fecha_nac.split('-'))
+                        dob = date(y, m, d)
+                        today = date.today()
+                        age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+                        if age < 18:
+                            message = 'El representante debe ser mayor de 18 años.'
+                    except Exception:
+                        message = 'Error al calcular la edad.'
+
+            if message:
+                # skip DB insertion and show message
+                pass
             else:
                 # Prevención: si la cédula ya existe, evitar re-registrar
                 try:

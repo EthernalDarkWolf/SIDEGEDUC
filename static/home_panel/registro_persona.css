@@ -96,3 +96,12 @@ input.generated, input[readonly].generated{background:#f3f7f5;border-color:#d6ee
     .group input, .group select, .group textarea{height:var(--input-height)}
     .registro-persona .card-body{padding:14px}
 }
+
+/* Modal overlay (mini ventana superpuesta, estilo login/index.html) */
+.modal-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,0.55);visibility:hidden;opacity:0;transition:all .18s;z-index:9999}
+.modal-overlay.visible{visibility:visible;opacity:1}
+/* use unique class for inner box to avoid Bootstrap conflicts */
+.modal-overlay .status-modal-box{background:#fff;color:#0b1220;padding:1.2rem;border-radius:10px;min-width:280px;max-width:520px;text-align:center;box-shadow:0 10px 30px rgba(2,6,23,.35);display:flex;flex-direction:column}
+.modal-overlay .status-modal-box h2{margin:0 0 .5rem;font-size:1.05rem}
+.modal-overlay .status-modal-box p{color:#334155}
+.modal-overlay .status-modal-box button{margin-top:0.9rem;padding:0.5rem 0.9rem;border-radius:8px;border:none;background:#111827;color:#fff;cursor:pointer}

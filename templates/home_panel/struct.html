@@ -10,149 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='home_panel/home_panel.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
-    <style>
-        /* Palette adapted from login: --bg/#071023, --card/#0f1724cc, --accent/#2bd6b6 */
-        :root{--sidebar-start:#071023;--sidebar-end:#0f1724cc;--accent:#2bd6b6;--accent2:#00bfa5;--bg:#f6f8fb;--muted:#9aa4ad}
-        body{margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#071023 0%, #071023 12%, #071023 12%, #f6f8fb 100%);color:#0b1220}
-
-        /* SIDEBAR */
-        .sidebar{
-            width: 280px;
-            background: linear-gradient(180deg,var(--sidebar-start),var(--sidebar-end));
-            color:#fff;
-            padding:0;
-            display:flex;
-            flex-direction:column;
-            border-right:1px solid rgba(255,255,255,0.04);
-            transition: transform 0.3s cubic-bezier(.2,.9,.2,1);
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-            z-index: 1050;
-            top: 0;
-            left: 0;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-        }
-        .sidebar.hidden{transform: translateX(-100%)}
-        .logo{font-weight:800;font-size:1.2rem;letter-spacing:1px;color:var(--accent);display:flex;align-items:center;gap:8px}
-        .sidebar-toggle{background:transparent;border:none;color:rgba(255,255,255,0.85);padding:8px;border-radius:8px;cursor:pointer;margin-left:auto;transition: all 0.2s}
-        .sidebar-toggle:hover{background: rgba(255,255,255,0.1); transform: scale(1.1)}
-        .nav-link{color: white !important;text-decoration: none;padding: 10px 15px;border-radius: 8px;margin-bottom: 4px;display: flex;align-items: center;width: 100%;transition: all .22s cubic-bezier(.2,.9,.2,1)}
-        .nav-link:hover{background:rgba(255,255,255,0.08) !important; transform: translateX(5px)}
-        .nav-link.btn-link{color: white !important;border: none;background: transparent;padding: 10px 15px}
-        .nav-link.btn-link:hover{background:rgba(255,255,255,0.08) !important}
-        .collapse ul.nav li a.nav-link{padding: 6px 12px;font-size: 0.9rem;margin-left: 20px}
-        .user-mini{font-weight:700;color:rgba(255,255,255,0.95);font-size: 0.9rem}
-
-        /* MAIN CONTENT */
-        .content{margin-left: 280px;padding:22px;background: var(--bg); min-height: 100vh; transition: margin-left 0.3s cubic-bezier(.2,.9,.2,1);}
-        .sidebar.hidden ~ .content{margin-left: 0}
-
-        /* TOPBAR */
-        .topbar{
-            background: white;
-            padding: 15px 25px;
-            border-bottom: 1px solid #e9ecef;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-left: 280px;
-            transition: margin-left 0.3s cubic-bezier(.2,.9,.2,1);
-            position: fixed;
-            top: 0;
-            right: 0;
-            left: 280px;
-            z-index: 1030;
-            height: 70px;
-        }
-        .sidebar.hidden ~ .topbar{
-            margin-left: 0;
-            left: 0;
-        }
-        .menu-toggle{
-            background: var(--accent);
-            border: none;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1.2rem;
-            transition: all 0.2s;
-            box-shadow: 0 2px 4px rgba(43,214,182,0.3);
-        }
-        .menu-toggle:hover{
-            background: var(--accent2);
-            transform: scale(1.05);
-            box-shadow: 0 4px 8px rgba(43,214,182,0.4);
-        }
-
-        /* MAIN CONTENT */
-        .content{
-            margin-left: 280px;
-            padding: 22px;
-            background: var(--bg);
-            min-height: 100vh;
-            transition: margin-left 0.3s cubic-bezier(.2,.9,.2,1);
-            margin-top: 70px;
-        }
-        .sidebar.hidden ~ .content{
-            margin-left: 0;
-        }
-
-        /* OVERLAY for mobile */
-        .sidebar-overlay{
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1040;
-        }
-        .sidebar.hidden .sidebar-overlay{
-            display: block;
-        }
-
-        /* Cards styling */
-        .card{box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important; border: 1px solid rgba(0, 0, 0, 0.125);}
-        .card-header{background: linear-gradient(90deg, var(--accent), var(--accent2)) !important; color: white !important;}
-
-        /* Responsive */
-        @media(max-width:768px){
-            .sidebar{
-                width: 280px;
-                z-index: 1050;
-            }
-            .sidebar.hidden{
-                transform: translateX(-100%);
-            }
-            .content{
-                margin-left: 0;
-                padding: 15px;
-                margin-top: 70px;
-            }
-            .topbar{
-                margin-left: 0;
-                left: 0;
-                padding: 10px 15px;
-            }
-            .menu-toggle{
-                padding: 8px 12px;
-                font-size: 1rem;
-            }
-            .sidebar-overlay{
-                display: block;
-            }
-            .sidebar.hidden .sidebar-overlay{
-                display: none;
-            }
-        }
-
-        /* focus states for accessibility */
-        .nav-link:focus{outline:3px solid rgba(43,214,182,0.14);outline-offset:3px}
-    </style>
+    <!-- Styles moved to static/home_panel/home_panel.css to avoid inline CSS -->
 </head>
 <body>
     <div class="app-layout">
@@ -327,8 +185,9 @@
                                 </div>
                                 <div class="card-body">
                                     {% if usuario %}
-                                        <div class="row mb-4">
-                                            <div class="col-md-6">
+                                        <!-- custom dashboard panels container (layout moved to CSS) -->
+                                        <div class="dashboard-panels">
+                                            <div class="panel-card">
                                                 <div class="card border-info">
                                                     <div class="card-body text-center">
                                                         <i class="fas fa-user-circle fa-3x text-info mb-3"></i>
@@ -342,7 +201,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="col-md-6">
+                                            <div class="panel-card">
                                                 <div class="card border-warning">
                                                     <div class="card-body text-center">
                                                         <i class="fas fa-users fa-3x text-warning mb-3"></i>

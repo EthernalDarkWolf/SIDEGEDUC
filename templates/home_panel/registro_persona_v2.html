@@ -1,8 +1,49 @@
 <div class="registro-persona">
-    <h3>Registro de Persona</h3>
-    {% if message %}
-        <p class="success">{{ message }}</p>
-    {% endif %}
+        <h3>Registro de Persona</h3>
+        <!-- Message modal will show validation/server messages (e.g. edad inválida) -->
+        <div id="status-modal" class="modal-overlay" aria-hidden="true">
+            <div class="status-modal-box">
+                <h2 id="modal-title">Aviso</h2>
+                <p id="modal-message">{{ message or '' }}</p>
+                <button id="modal-close">Cerrar</button>
+            </div>
+        </div>
+
+        <!-- confirm modal used when número de hijos excede 5 -->
+        <div id="confirm-modal" class="modal-overlay" aria-hidden="true">
+            <div class="status-modal-box" style="max-width:420px">
+                <h2>Advertencia</h2>
+                <p id="confirm-message" style="text-align:left"></p>
+                <div style="margin-top:1rem;display:flex;justify-content:center;gap:12px">
+                    <button id="confirm-yes" class="panel-btn primary" style="padding:8px 14px">Sí</button>
+                    <button id="confirm-no" class="panel-btn" style="background:#e3342f;color:#fff;padding:8px 14px">No</button>
+                </div>
+            </div>
+        </div>
+        <!-- define helper functions immediately so other scripts can use them -->
+        <script>
+            function showStatusModal(title, message){
+                console.log('showStatusModal invoked', title, message);
+                var overlay = document.getElementById('status-modal');
+                console.log('overlay element', overlay);
+                if(!overlay) return;
+                // ensure overlay is a direct child of body so fixed positioning works
+                if(overlay.parentNode !== document.body){ document.body.appendChild(overlay); console.log('moved overlay to body'); }
+                var t = document.getElementById('modal-title');
+                var m = document.getElementById('modal-message');
+                if(t) t.innerText = title || '';
+                if(m) m.innerText = message || '';
+                overlay.setAttribute('aria-hidden','false');
+                overlay.classList.add('visible');
+            }
+            function hideStatusModal(){
+                var overlay = document.getElementById('status-modal');
+                if(!overlay) return;
+                overlay.setAttribute('aria-hidden','true');
+                overlay.classList.remove('visible');
+            }
+            console.log('early showStatusModal defined=', typeof showStatusModal);
+        </script>
 
     <form method="post" id="personaForm">
         <div class="card">
@@ -12,6 +53,15 @@
                         <div class="section-card">
                             <div class="section-header"><span class="icon-badge"><i class="fas fa-user"></i></span><h4>Datos personales</h4></div>
                             <div class="section-body">
+                                <div class="group full">
+                                    <label>Número de cédula</label>
+                                    <div class="cedula-wrap">
+                                        <input name="numero_cedula" id="numero_cedula" placeholder="Ej: 31412298" required>
+                                        <div id="cedula_spinner" class="spinner" style="display:none" aria-hidden="true"></div>
+                                        <div id="cedula_generated_note" class="generated-note" style="display:none"><span class="bolt">⚡</span> Cédula escolar generada automáticamente</div>
+                                    </div>
+                                </div>
+
                                 <div class="group">
                                     <label>Primer nombre</label>
                                     <input name="primer_nombre" required placeholder="Ingrese primer nombre">
@@ -58,14 +108,7 @@
                                         <option value="escolar">Cédula escolar</option>
                                     </select>
                                 </div>
-                                <div class="group full">
-                                    <label>Número de cédula (opcional)</label>
-                                    <div class="cedula-wrap">
-                                        <input name="numero_cedula" id="numero_cedula" placeholder="Ej: 31412298">
-                                        <div id="cedula_spinner" class="spinner" style="display:none" aria-hidden="true"></div>
-                                        <div id="cedula_generated_note" class="generated-note" style="display:none"><span class="bolt">⚡</span> Cédula escolar generada automáticamente</div>
-                                    </div>
-                                </div>
+                                <!-- moved cedula field above as required -->
                             </div>
                         </div>
                     </div>
@@ -184,15 +227,106 @@
                 if(tipo.value === 'estudiante' || isEscolar){ if(escolarControls) escolarControls.style.display='block'; if(repCedulaWrap) repCedulaWrap.style.display='block'; if(generarWrap) generarWrap.style.display='block'; }
                 else { if(escolarControls) escolarControls.style.display='none'; if(repCedulaWrap) repCedulaWrap.style.display='none'; if(generarWrap) generarWrap.style.display='none'; }
             }
-            if(tipo) tipo.addEventListener('change', toggle);
+            if(tipo) {
+                tipo.addEventListener('change', function(){
+                    if(form) form.dataset.confirmed = '';
+                    toggle();
+                });
+            }
             const tipoDoc = document.querySelector('select[name="id_tipo_documento"]');
             if(tipoDoc) tipoDoc.addEventListener('change', toggle);
+            // clear confirmation whenever user edits number of hijos
+            const numeroHijosInput = document.getElementById('numero_hijos');
+            if(numeroHijosInput){
+                numeroHijosInput.addEventListener('input', function(){ if(form) form.dataset.confirmed = ''; });
+            }
             toggle();
 
             // Validate before submit
+            // helper to prompt user when jugador tiene más de 5 hijos
+            function showConfirm(numero, callback){
+                const overlay = document.getElementById('confirm-modal');
+                const msgEl = document.getElementById('confirm-message');
+                if(!overlay || !msgEl) return;
+                // ensure overlay is direct child of body for fixed positioning
+                if(overlay.parentNode !== document.body){ document.body.appendChild(overlay); }
+                msgEl.textContent = `Acabas de ingresar que esta persona tiene ${numero} hijos. Te sugerimos que verifiques y agregues un numero de hijos válido... Sin embargo el equipo de desarrolladores de SIDEGEDUC deja a tu consentimiento de validar que esta información sea correcta...y no nos hacemos responsables de las concecuencias de que valides una informacion inconsistente,  Estas seguro que esta informacion es valida y deseas continuar?`;
+                overlay.setAttribute('aria-hidden','false');
+                overlay.classList.add('visible');
+                const yes = document.getElementById('confirm-yes');
+                const no = document.getElementById('confirm-no');
+                function cleanup(){
+                    overlay.setAttribute('aria-hidden','true');
+                    overlay.classList.remove('visible');
+                    yes.removeEventListener('click', onYes);
+                    no.removeEventListener('click', onNo);
+                }
+                function onYes(){ cleanup(); callback(true); }
+                function onNo(){ cleanup(); callback(false); }
+                yes.addEventListener('click', onYes);
+                no.addEventListener('click', onNo);
+            }
+
             form.addEventListener('submit', function(e){
-                const hidden = document.getElementById('fecha_nacimiento');
-                if(!hidden.value){ alert('Por favor seleccione la fecha de nacimiento.'); e.preventDefault(); }
+                const ced = form.querySelector('input[name="numero_cedula"]');
+                const fechaEl = document.getElementById('fecha_nacimiento');
+                const tipoVal = document.getElementById('tipo_persona') && document.getElementById('tipo_persona').value;
+                // cedula required (moved to top) - extra guard
+                if(!ced || !ced.value || !ced.value.trim()){
+                    console.log('validation: cedula required');
+                    showStatusModal('Aviso','La cédula es requerida.');
+                    e.preventDefault(); return; }
+                // fecha required
+                if(!fechaEl || !fechaEl.value){
+                    console.log('validation: fecha required');
+                    showStatusModal('Aviso','Por favor seleccione la fecha de nacimiento.');
+                    e.preventDefault(); return; }
+
+                // parse fecha (format YYYY-MM-DD by flatpickr)
+                try{
+                    const parts = fechaEl.value.split('-');
+                    if(parts.length !== 3) throw new Error('fecha formato');
+                    const y = parseInt(parts[0],10), m = parseInt(parts[1],10)-1, d = parseInt(parts[2],10);
+                    const dob = new Date(y,m,d);
+                    const today = new Date();
+                    // normalize dates to YYYY-MM-DD
+                    const dobStr = new Date(dob.getFullYear(), dob.getMonth(), dob.getDate());
+                    const todayStr = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                    if(dobStr >= todayStr){
+                        console.log('validation: fecha in future/today');
+                        showStatusModal('Aviso','Fecha de nacimiento inválida: no puede ser hoy ni en el futuro.');
+                        e.preventDefault(); return; }
+
+                    // if representante, ensure >=18 años
+                    if(tipoVal === 'representante'){
+                        let age = today.getFullYear() - dob.getFullYear();
+                        const m2 = today.getMonth() - dob.getMonth();
+                        if(m2 < 0 || (m2 === 0 && today.getDate() < dob.getDate())) age--;
+                        if(age < 18){
+                            console.log('validation: representante menor');
+                            showStatusModal('Aviso','El representante debe ser mayor de 18 años.');
+                            e.preventDefault(); return; }
+                    }
+                }catch(err){
+                    console.log('validation: fecha formato error', err);
+                    showStatusModal('Aviso','Formato de fecha inválido. Use el selector de fecha.');
+                    e.preventDefault(); return; }
+
+                // check numero de hijos warning (only for representante)
+                if(tipoVal === 'representante'){
+                    const numEl = document.getElementById('numero_hijos');
+                    const num = numEl ? parseInt(numEl.value,10) || 0 : 0;
+                    if(num > 5 && !form.dataset.confirmed){
+                        e.preventDefault();
+                        showConfirm(num, function(ok){
+                            if(ok){
+                                form.dataset.confirmed = 'true';
+                                form.submit();
+                            }
+                        });
+                        return;
+                    }
+                }
             });
 
             // found notice
@@ -293,5 +427,42 @@
             if(fechaNEl){ fechaNEl.addEventListener('change', tryAutoGenerate); fechaNEl.addEventListener('blur', tryAutoGenerate); }
             if(tipoDoc) tipoDoc.addEventListener('change', tryAutoGenerate);
         })();
+    </script>
+    <script>
+        // modal helper replicated from login/index.html
+        function showModal(title, message) {
+            const overlay = document.getElementById('status-modal');
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            overlay.setAttribute('aria-hidden', 'false');
+            overlay.classList.add('visible');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded hook running, showModal=', typeof showModal);
+            const btn = document.getElementById('modal-close');
+            if (btn) {
+                btn.addEventListener('click', function() {
+                    const overlay = document.getElementById('status-modal');
+                    overlay.setAttribute('aria-hidden', 'true');
+                    overlay.classList.remove('visible');
+                });
+            }
+
+            // move overlay to body to avoid stacking/transform issues
+            const overlayEl = document.getElementById('status-modal');
+            if(overlayEl && overlayEl.parentNode !== document.body){
+                document.body.appendChild(overlayEl);
+            }
+
+            // client-side validations may call showModal, so expose it globally
+            window.showStatusModal = showModal;
+
+            // show server message if provided
+            {% if message %}
+                console.log('server message present, showing');
+                showModal('Aviso', {{ message|tojson }});
+            {% endif %}
+        });
     </script>
 </div>
