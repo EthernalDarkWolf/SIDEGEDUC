@@ -41,16 +41,18 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
             # validaciones iniciales
             # básicos de cédula y tipo
             if not numero_cedula or not primer or not pap or not fecha_nac or not tipo_persona:
-                message = 'Campos requeridos faltantes. Asegúrese de ingresar cédula, nombres, apellidos y fecha de nacimiento.'
+                message = 'Campos requeridos faltantes. Asegúrese de ingresar cédula, nombres, apellidos, fecha de nacimiento y tipo de persona.'
             elif not numero_cedula.isdigit():
                 message = 'La cédula debe contener solo dígitos.'
+            elif len(numero_cedula) < 7 or len(numero_cedula) > 9:
+                message = 'La cédula debe tener entre 7 y 9 dígitos.'
             elif tipo_persona not in ['estudiante','profesor','representante','empleado']:
                 message = 'Tipo de persona inválido.'
             # reglas de nombres
             elif any(char.isdigit() for char in primer+segundo+pap+sap):
                 message = 'Los nombres y apellidos no pueden contener números.'
-            elif len(primer) > 20 or (segundo and len(segundo) > 20) or len(pap) > 20 or (sap and len(sap) > 20):
-                message = 'Cada nombre o apellido debe tener como máximo 20 caracteres.'
+            elif len(primer) < 5 or len(primer) > 10 or (segundo and (len(segundo) < 5 or len(segundo) > 10)) or len(pap) < 5 or len(pap) > 10 or (sap and (len(sap) < 5 or len(sap) > 10)):
+                message = 'Los nombres y apellidos deben tener entre 5 y 10 caracteres.'
             elif primer == pap or primer == sap or segundo == pap or segundo == sap:
                 message = 'El nombre y los apellidos deben ser distintos entre sí.'
             elif segundo and segundo == primer:
@@ -66,17 +68,22 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                 except Exception:
                     message = 'Formato de fecha inválido.'
 
-                # Si es representante, debe ser mayor de 18 años
-                if not message and tipo_persona == 'representante':
+                # Validaciones adicionales de edad según rol
+                if not message:
                     try:
                         y, m, d = map(int, fecha_nac.split('-'))
                         dob = date(y, m, d)
                         today = date.today()
                         age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-                        if age < 18:
-                            message = 'El representante debe ser mayor de 18 años.'
+                        if tipo_persona == 'representante' or tipo_persona == 'profesor':
+                            if age < 18:
+                                message = 'La persona debe ser mayor de 18 años para el rol seleccionado.'
+                        elif tipo_persona == 'estudiante':
+                            if age < 3 or age > 18:
+                                message = 'Estudiante debe tener entre 3 y 18 años de edad.'
                     except Exception:
-                        message = 'Error al calcular la edad.'
+                        if not message:
+                            message = 'Error al calcular la edad.'
 
             # si hay error, mostramos sin tocar BD
             if message:
@@ -152,19 +159,27 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
     if tipo == 'plantel':
         if request.method == 'POST':
             f = request.form
-            nombre = f.get('nombre_plantel_nomina')
-            codigo_pa = f.get('codigo_pa')
-            try:
-                db.session.execute(
-                    text('INSERT INTO planteles (codigo_pa, nombre_plantel_nomina) '
-                         'VALUES (:codigo_pa, :nombre)')
-                    , {'codigo_pa': codigo_pa, 'nombre': nombre}
-                )
-                db.session.commit()
-                message = 'Plantel registrado correctamente'
-            except Exception as e:
-                db.session.rollback()
-                message = f'Error al registrar plantel: {e}'
+            nombre = (f.get('nombre_plantel_nomina') or '').strip()
+            codigo_pa = (f.get('codigo_pa') or '').strip()
+            # validaciones iniciales
+            if not nombre or not codigo_pa:
+                message = 'Debe indicar nombre y código del plantel.'
+            elif not codigo_pa.isdigit():
+                message = 'El código PA debe contener solo dígitos.'
+            elif len(codigo_pa) > 20:
+                message = 'El código PA no puede exceder 20 caracteres.'
+            else:
+                try:
+                    db.session.execute(
+                        text('INSERT INTO planteles (codigo_pa, nombre_plantel_nomina) '
+                             'VALUES (:codigo_pa, :nombre)')
+                        , {'codigo_pa': codigo_pa, 'nombre': nombre}
+                    )
+                    db.session.commit()
+                    message = 'Plantel registrado correctamente'
+                except Exception as e:
+                    db.session.rollback()
+                    message = f'Error al registrar plantel: {e}'
 
         # ya no necesitamos cargar niveles ni cargos
         return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'],

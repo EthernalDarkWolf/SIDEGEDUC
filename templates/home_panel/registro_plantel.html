@@ -9,7 +9,7 @@
                     {% if message %}
                         <div class="alert alert-success">{{ message }}</div>
                     {% endif %}
-                    <form method="post">
+                    <form method="post" id="plantelForm">
                         {% if edit and plantel %}
                             <input type="hidden" name="id_plantel" value="{{ plantel.id_plantel }}">
                         {% endif %}
@@ -23,6 +23,7 @@
                         </div>
                         <button type="submit" class="btn btn-primary">{% if edit %}Guardar cambios{% else %}Registrar Plantel{% endif %}</button>
                     </form>
+                    <script src="{{ url_for('static', filename='home_panel/form_validators.js') }}"></script>
                 </div>
             </div>
         </div>

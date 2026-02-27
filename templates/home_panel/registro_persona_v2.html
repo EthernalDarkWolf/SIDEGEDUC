@@ -109,7 +109,7 @@
                                         {% for td in tipo_documentos %}
                                             <option value="{{ td.id_tipo_documento }}" {% if person is defined and person.id_tipo_documento == td.id_tipo_documento %}selected{% endif %}>{{ td.nombre_tipo_documento }}</option>
                                         {% endfor %}
-                                        <option value="escolar" {% if person is defined and person.id_tipo_documento == 'escolar' %}selected{% endif %}>Cédula escolar</option>
+                                        
                                     </select>
                                 </div>
                                 <!-- moved cedula field above as required -->
@@ -175,6 +175,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+    <script src="{{ url_for('static', filename='home_panel/form_validators.js') }}"></script>
     <script>
         (function(){
             const cfg = {
@@ -272,65 +273,44 @@
             }
 
             form.addEventListener('submit', function(e){
-                const ced = form.querySelector('input[name="numero_cedula"]');
-                const fechaEl = document.getElementById('fecha_nacimiento');
-                const tipoVal = document.getElementById('tipo_persona') && document.getElementById('tipo_persona').value;
-                // cedula required (moved to top) - extra guard
-                if(!ced || !ced.value || !ced.value.trim()){
-                    console.log('validation: cedula required');
-                    showStatusModal('Aviso','La cédula es requerida.');
-                    e.preventDefault(); return; }
-                // nombre/apellidos no vacíos  y reglas de caracteres
-                var pnom = form.querySelector('input[name="primer_nombre"]').value.trim();
-                var pap = form.querySelector('input[name="primer_apellido"]').value.trim();
-                var snom = form.querySelector('input[name="segundo_nombre"]').value.trim();
-                var sap = form.querySelector('input[name="segundo_apellido"]').value.trim();
-                var reName = /^[A-Za-záéíóúÁÉÍÓÚñÑ ]{1,20}$/;
-                if(!reName.test(pnom) || !reName.test(pap) || (snom && !reName.test(snom)) || (sap && !reName.test(sap))){
-                    showStatusModal('Aviso','Nombres y apellidos deben ser solo letras y tener máximo 20 caracteres.');
-                    e.preventDefault(); return;
+                // run front‑end validators one last time
+                if(typeof updatePersonaSubmitState === 'function'){
+                    updatePersonaSubmitState();
                 }
-                if(pnom === pap || pnom === sap || (snom && (snom === pap || snom === sap)) || (snom && snom === pnom)){
-                    showStatusModal('Aviso','Nombra y apellidos no pueden repetirse entre sí.');
-                    e.preventDefault(); return;
+                var btn = form.querySelector('button[type="submit"]');
+                if(btn && btn.disabled){
+                    e.preventDefault();
+                    showStatusModal('Aviso','Por favor corrige los campos marcados antes de continuar.');
+                    return;
                 }
-                // fecha required
-                if(!fechaEl || !fechaEl.value){
-                    console.log('validation: fecha required');
-                    showStatusModal('Aviso','Por favor seleccione la fecha de nacimiento.');
-                    e.preventDefault(); return; }
 
-                // parse fecha (format YYYY-MM-DD by flatpickr)
-                try{
-                    const parts = fechaEl.value.split('-');
-                    if(parts.length !== 3) throw new Error('fecha formato');
-                    const y = parseInt(parts[0],10), m = parseInt(parts[1],10)-1, d = parseInt(parts[2],10);
-                    const dob = new Date(y,m,d);
-                    const today = new Date();
-                    // normalize dates to YYYY-MM-DD
-                    const dobStr = new Date(dob.getFullYear(), dob.getMonth(), dob.getDate());
-                    const todayStr = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                    if(dobStr >= todayStr){
-                        console.log('validation: fecha in future/today');
-                        showStatusModal('Aviso','Fecha de nacimiento inválida: no puede ser hoy ni en el futuro.');
-                        e.preventDefault(); return; }
-
-                    // if representante, ensure >=18 años
-                    if(tipoVal === 'representante'){
-                        let age = today.getFullYear() - dob.getFullYear();
-                        const m2 = today.getMonth() - dob.getMonth();
+                // cross‑age checks (again, should already be covered)
+                var tipoVal = document.getElementById('tipo_persona') && document.getElementById('tipo_persona').value;
+                var fechaEl = document.getElementById('fecha_nacimiento');
+                if(fechaEl && fechaEl.value){
+                    // compute age using same logic as earlier
+                    var parts = fechaEl.value.split('-');
+                    if(parts.length === 3){
+                        var y = parseInt(parts[0],10), m = parseInt(parts[1],10)-1, d = parseInt(parts[2],10);
+                        var dob = new Date(y,m,d);
+                        var today = new Date();
+                        var age = today.getFullYear() - dob.getFullYear();
+                        var m2 = today.getMonth() - dob.getMonth();
                         if(m2 < 0 || (m2 === 0 && today.getDate() < dob.getDate())) age--;
-                        if(age < 18){
-                            console.log('validation: representante menor');
-                            showStatusModal('Aviso','El representante debe ser mayor de 18 años.');
-                            e.preventDefault(); return; }
+                        if(tipoVal === 'estudiante' && (age < 3 || age > 18)){
+                            showStatusModal('Aviso','Edad inválida para estudiante (3–18 años).');
+                            e.preventDefault();
+                            return;
+                        }
+                        if((tipoVal === 'representante' || tipoVal === 'profesor') && age < 18){
+                            showStatusModal('Aviso','La persona debe tener al menos 18 años para este rol.');
+                            e.preventDefault();
+                            return;
+                        }
                     }
-                }catch(err){
-                    console.log('validation: fecha formato error', err);
-                    showStatusModal('Aviso','Formato de fecha inválido. Use el selector de fecha.');
-                    e.preventDefault(); return; }
+                }
 
-                // check numero de hijos warning (only for representante)
+                // numero de hijos confirmation remains
                 if(tipoVal === 'representante'){
                     const numEl = document.getElementById('numero_hijos');
                     const num = numEl ? parseInt(numEl.value,10) || 0 : 0;
