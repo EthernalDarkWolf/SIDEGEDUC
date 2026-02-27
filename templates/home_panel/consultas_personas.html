@@ -1,4 +1,7 @@
 <div class="container-fluid" style="margin-top:48px;">
+  <div style="margin-bottom:12px">
+    <a href="{{ url_for('consultas') }}" class="btn btn-sm btn-outline-secondary">← Volver</a>
+  </div>
   <div class="row mb-4">
     <div class="col-md-3">
       <a href="{{ url_for('consultas_personas_list', role='estudiante') }}" class="text-decoration-none text-reset">
@@ -11,6 +14,19 @@
       </div>
       </a>
     </div>
+    {% if total_sinrol and total_sinrol > 0 %}
+    <div class="col-md-3">
+      <a href="{{ url_for('consultas_personas_list', role='sinrol') }}" class="text-decoration-none text-reset">
+      <div class="card text-center border-dark shadow-sm" style="background:#f8f9fa">
+        <div class="card-body">
+          <i class="fas fa-user-circle fa-2x text-dark mb-2"></i>
+          <h6 class="card-title">Sin rol asignado</h6>
+          <p class="display-6 mb-0">{{ total_sinrol }}</p>
+        </div>
+      </div>
+      </a>
+    </div>
+    {% endif %}
     <div class="col-md-3">
       <a href="{{ url_for('consultas_personas_list', role='profesor') }}" class="text-decoration-none text-reset">
       <div class="card text-center border-secondary shadow-sm" style="background:#f3e8ff">

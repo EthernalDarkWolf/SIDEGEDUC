@@ -53,6 +53,24 @@ db.init_app(app)
 with app.app_context():
     try:
         db.create_all()
+        # en sqlite create_all no define algunas tablas si no hay un modelo
+        # aseguramos manualmente la tabla planteles con columnas mínimas si aún no existe
+        if app.config['SQLALCHEMY_DATABASE_URI'].startswith("sqlite"):
+            conn = db.engine.connect()
+            existing = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='planteles';")).fetchone()
+            if not existing:
+                try:
+                    conn.execute(text(
+                        "CREATE TABLE planteles ("
+                        "id_plantel INTEGER PRIMARY KEY AUTOINCREMENT,"
+                        "codigo_pa TEXT UNIQUE,"
+                        "nombre_plantel_nomina TEXT"
+                        ")"
+                    ))
+                    print("tabla 'planteles' creada manualmente")
+                except Exception as ex:
+                    print(f"Error creando tabla planteles: {ex}")
+            conn.close()
         print("--- Tablas verificadas/creadas correctamente ---")
     except Exception as e:
         print(f"Aviso: No se pudieron crear tablas automáticamente: {e}")
@@ -157,6 +175,16 @@ def consultas_materias():
     return manejar_la_vista_de.consultas_materias()
 
 
+@app.route('/consultas/materias/editar', methods=['GET', 'POST'])
+def consultas_materias_editar():
+    return manejar_la_vista_de.consultas_materias_editar()
+
+
+@app.route('/consultas/materias/borrar', methods=['POST'])
+def consultas_materias_borrar():
+    return manejar_la_vista_de.consultas_materias_borrar()
+
+
 @app.route('/consultas/secciones')
 def consultas_secciones():
     return manejar_la_vista_de.consultas_secciones()
@@ -165,6 +193,31 @@ def consultas_secciones():
 @app.route('/consultas/planteles')
 def consultas_planteles():
     return manejar_la_vista_de.consultas_planteles()
+
+
+@app.route('/consultas/planteles/editar', methods=['GET', 'POST'])
+def consultas_planteles_editar():
+    return manejar_la_vista_de.consultas_planteles_editar()
+
+
+@app.route('/consultas/planteles/borrar', methods=['POST'])
+def consultas_planteles_borrar():
+    return manejar_la_vista_de.consultas_planteles_borrar()
+
+
+@app.route('/consultas/personas/list/editar')
+def editar_registro_persona():
+    return manejar_la_vista_de.editar_registro_persona()
+
+
+@app.route('/consultas/personas/list/borrar', methods=['POST'])
+def borrar_registro_persona():
+    return manejar_la_vista_de.borrar_registro_persona()
+
+
+@app.route('/consultas/personas/editar', methods=['GET', 'POST'])
+def editar_persona():
+    return manejar_la_vista_de.editar_persona()
 
 @app.route('/admin_alumnos')
 def admin_alumnos():

@@ -46,6 +46,10 @@
         </script>
 
     <form method="post" id="personaForm">
+        {% if edit and person %}
+            <input type="hidden" name="id_persona" value="{{ person.id_persona }}">
+            <input type="hidden" name="role" value="{{ person.tipo_persona }}">
+        {% endif %}
         <div class="card">
             <div class="card-body">
                 <div class="grid">
@@ -56,7 +60,7 @@
                                 <div class="group full">
                                     <label>Número de cédula</label>
                                     <div class="cedula-wrap">
-                                        <input name="numero_cedula" id="numero_cedula" placeholder="Ej: 31412298" required>
+                                            <input name="numero_cedula" id="numero_cedula" placeholder="Ej: 31412298" required value="{{ person.numero_cedula if person is defined and person.numero_cedula else '' }}">
                                         <div id="cedula_spinner" class="spinner" style="display:none" aria-hidden="true"></div>
                                         <div id="cedula_generated_note" class="generated-note" style="display:none"><span class="bolt">⚡</span> Cédula escolar generada automáticamente</div>
                                     </div>
@@ -64,23 +68,23 @@
 
                                 <div class="group">
                                     <label>Primer nombre</label>
-                                    <input name="primer_nombre" required placeholder="Ingrese primer nombre">
+                                    <input name="primer_nombre" required placeholder="Ingrese primer nombre" maxlength="20" pattern="[A-Za-záéíóúÁÉÍÓÚñÑ ]+" title="Solo letras, max 20" value="{{ person.primer_nombre if person is defined and person.primer_nombre else '' }}">
                                 </div>
                                 <div class="group">
                                     <label>Segundo nombre</label>
-                                    <input name="segundo_nombre" placeholder="(opcional)">
+                                    <input name="segundo_nombre" placeholder="(opcional)" maxlength="20" pattern="[A-Za-záéíóúÁÉÍÓÚñÑ ]+" title="Solo letras, max 20" value="{{ person.segundo_nombre if person is defined and person.segundo_nombre else '' }}">
                                 </div>
                                 <div class="group">
                                     <label>Primer apellido</label>
-                                    <input name="primer_apellido" required placeholder="Ingrese primer apellido">
+                                    <input name="primer_apellido" required placeholder="Ingrese primer apellido" maxlength="20" pattern="[A-Za-záéíóúÁÉÍÓÚñÑ ]+" title="Solo letras, max 20" value="{{ person.primer_apellido if person is defined and person.primer_apellido else '' }}">
                                 </div>
                                 <div class="group">
                                     <label>Segundo apellido</label>
-                                    <input name="segundo_apellido" placeholder="(opcional)">
+                                    <input name="segundo_apellido" placeholder="(opcional)" maxlength="20" pattern="[A-Za-záéíóúÁÉÍÓÚñÑ ]+" title="Solo letras, max 20" value="{{ person.segundo_apellido if person is defined and person.segundo_apellido else '' }}">
                                 </div>
                                 <div class="group full">
                                     <label for="fecha_nacimiento">Fecha de nacimiento</label>
-                                    <input type="text" id="fecha_nacimiento" name="fecha_nacimiento" placeholder="DD/MM/AAAA" data-flatpickr="true" readonly>
+                                    <input type="text" id="fecha_nacimiento" name="fecha_nacimiento" placeholder="DD/MM/AAAA" data-flatpickr="true" readonly value="{{ person.fecha_nacimiento if person is defined and person.fecha_nacimiento else '' }}">
                                     <small class="muted">Formato: DD/MM/AAAA</small>
                                 </div>
                                 <div class="group">
@@ -88,7 +92,7 @@
                                     <select name="id_sexo">
                                         <option value="">-- sin especificar --</option>
                                         {% for s in sexos %}
-                                            <option value="{{ s.id_sexo }}">{{ s.letra_sexo }}</option>
+                                            <option value="{{ s.id_sexo }}" {% if person is defined and person.id_sexo == s.id_sexo %}selected{% endif %}>{{ s.letra_sexo }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -103,9 +107,9 @@
                                     <select name="id_tipo_documento">
                                         <option value="">-- ninguno --</option>
                                         {% for td in tipo_documentos %}
-                                            <option value="{{ td.id_tipo_documento }}">{{ td.nombre_tipo_documento }}</option>
+                                            <option value="{{ td.id_tipo_documento }}" {% if person is defined and person.id_tipo_documento == td.id_tipo_documento %}selected{% endif %}>{{ td.nombre_tipo_documento }}</option>
                                         {% endfor %}
-                                        <option value="escolar">Cédula escolar</option>
+                                        <option value="escolar" {% if person is defined and person.id_tipo_documento == 'escolar' %}selected{% endif %}>Cédula escolar</option>
                                     </select>
                                 </div>
                                 <!-- moved cedula field above as required -->
@@ -120,10 +124,10 @@
                                 <div class="group full">
                                     <label>Tipo de persona</label>
                                     <select name="tipo_persona" id="tipo_persona" required>
-                                        <option value="estudiante">Estudiante</option>
-                                        <option value="representante">Representante</option>
-                                        <option value="profesor">Profesor</option>
-                                        <option value="empleado">Empleado</option>
+                                        <option value="estudiante" {% if person is defined and person.tipo_persona == 'estudiante' %}selected{% endif %}>Estudiante</option>
+                                        <option value="representante" {% if person is defined and person.tipo_persona == 'representante' %}selected{% endif %}>Representante</option>
+                                        <option value="profesor" {% if person is defined and person.tipo_persona == 'profesor' %}selected{% endif %}>Profesor</option>
+                                        <option value="empleado" {% if person is defined and person.tipo_persona == 'empleado' %}selected{% endif %}>Empleado</option>
                                     </select>
                                 </div>
 
@@ -160,7 +164,7 @@
                 </div>
 
                 <div style="margin-top:18px">
-                    <button type="submit" class="panel-btn primary">Registrar persona</button>
+                    <button type="submit" class="panel-btn primary">{% if edit %}Guardar cambios{% else %}Registrar persona{% endif %}</button>
                 </div>
             </div>
         </div>
@@ -276,6 +280,20 @@
                     console.log('validation: cedula required');
                     showStatusModal('Aviso','La cédula es requerida.');
                     e.preventDefault(); return; }
+                // nombre/apellidos no vacíos  y reglas de caracteres
+                var pnom = form.querySelector('input[name="primer_nombre"]').value.trim();
+                var pap = form.querySelector('input[name="primer_apellido"]').value.trim();
+                var snom = form.querySelector('input[name="segundo_nombre"]').value.trim();
+                var sap = form.querySelector('input[name="segundo_apellido"]').value.trim();
+                var reName = /^[A-Za-záéíóúÁÉÍÓÚñÑ ]{1,20}$/;
+                if(!reName.test(pnom) || !reName.test(pap) || (snom && !reName.test(snom)) || (sap && !reName.test(sap))){
+                    showStatusModal('Aviso','Nombres y apellidos deben ser solo letras y tener máximo 20 caracteres.');
+                    e.preventDefault(); return;
+                }
+                if(pnom === pap || pnom === sap || (snom && (snom === pap || snom === sap)) || (snom && snom === pnom)){
+                    showStatusModal('Aviso','Nombra y apellidos no pueden repetirse entre sí.');
+                    e.preventDefault(); return;
+                }
                 // fecha required
                 if(!fechaEl || !fechaEl.value){
                     console.log('validation: fecha required');

@@ -114,6 +114,15 @@ class Cargos(db.Model):
     id_cargo = db.Column(db.Integer, primary_key=True)
     nombre_cargo = db.Column(db.String(100), unique=True, nullable=False)
 
+class Planteles(db.Model):
+    __tablename__ = 'planteles'
+    id_plantel = db.Column(db.Integer, primary_key=True)
+    nombre_plantel_nomina = db.Column(db.String(200))
+    codigo_pa = db.Column(db.String(100), unique=True)
+    # Additional columns exist in schema but are optional; include if needed
+    # id_nivel = db.Column(db.Integer, db.ForeignKey('niveles.id_nivel'))
+    # id_cargo = db.Column(db.Integer, db.ForeignKey('cargos.id_cargo'))
+
 class Personas(db.Model):
     __tablename__ = 'personas'
     id_persona = db.Column(db.Integer, primary_key=True)

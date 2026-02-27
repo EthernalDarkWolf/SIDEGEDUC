@@ -98,10 +98,21 @@ def consultas_personas():
         total_emp = int(db.session.execute(text('SELECT COUNT(*) FROM empleados')).scalar() or 0)
     except Exception:
         total_emp = 0
+    # Personas sin rol (no están en estudiantes/profesores/representantes/empleados)
+    try:
+        total_sinrol = int(db.session.execute(text('''
+            SELECT COUNT(*) FROM personas p
+            WHERE NOT EXISTS (SELECT 1 FROM estudiantes e WHERE e.id_persona = p.id_persona)
+              AND NOT EXISTS (SELECT 1 FROM profesores pr WHERE pr.id_persona = p.id_persona)
+              AND NOT EXISTS (SELECT 1 FROM representantes r WHERE r.id_persona = p.id_persona)
+              AND NOT EXISTS (SELECT 1 FROM empleados em WHERE em.id_persona = p.id_persona)
+        ''')).scalar() or 0)
+    except Exception:
+        total_sinrol = 0
 
     roles_count, users_by_role = compute_role_counts(ctx)
 
-    return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/consultas_personas.html', total_estudiantes=total_est, total_profesores=total_prof, total_representantes=total_rep, total_empleados=total_emp)
+    return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/consultas_personas.html', total_estudiantes=total_est, total_profesores=total_prof, total_representantes=total_rep, total_empleados=total_emp, total_sinrol=total_sinrol)
 
 
 def consultas_personas_list():
@@ -129,12 +140,243 @@ def consultas_personas_list():
             rows = db.session.execute(text('SELECT p.* FROM empleados em JOIN personas p ON em.id_persona = p.id_persona')).fetchall()
             role_display = 'Empleado'
             title = 'Listado de Empleados'
+        elif role == 'sinrol':
+            # personas que no tienen ninguna fila de rol
+            rows = db.session.execute(text('''
+                SELECT p.* FROM personas p
+                WHERE NOT EXISTS (SELECT 1 FROM estudiantes e WHERE e.id_persona = p.id_persona)
+                  AND NOT EXISTS (SELECT 1 FROM profesores pr WHERE pr.id_persona = p.id_persona)
+                  AND NOT EXISTS (SELECT 1 FROM representantes r WHERE r.id_persona = p.id_persona)
+                  AND NOT EXISTS (SELECT 1 FROM empleados em WHERE em.id_persona = p.id_persona)
+            ''')).fetchall()
+            role_display = 'Sin rol'
+            title = 'Personas sin rol'
     except Exception:
         rows = []
 
     roles_count, users_by_role = compute_role_counts(ctx)
 
+    # si no se logró identificar un role_display, hacerlo genérico
+    if not role_display:
+        role_display = role.capitalize() if role else ''
     return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/consultas_personas_list.html', rows=rows, role_display=role_display, title=title)
+
+
+def editar_registro_persona():
+    """Redirige al formulario de edición (reusa `registro_persona_ext_vista` para editar)."""
+    if 'user_id' not in session:
+        return redirect(url_for('login.login_handler'))
+    pid = request.args.get('id')
+    role = request.args.get('role')
+    if not pid:
+        return redirect(url_for('consultas_personas'))
+    # Map role to tipo: estudiante->estudiante, profesor->profesor, representante->representante, empleado->empleado
+    tipo = role
+    try:
+        pid_int = int(pid)
+    except Exception:
+        return redirect(url_for('consultas_personas'))
+    # Reusar vista de edición/extension si existe
+    return registro_persona_ext_vista(pid_int, tipo)
+
+
+def editar_persona():
+    """Editar datos básicos de una persona. GET: mostrar formulario prellenado. POST: actualizar la tabla `personas`.
+    Usa la misma plantilla `registro_persona_v2.html` pero con `person` y `edit=True`.
+    """
+    if 'user_id' not in session:
+        return redirect(url_for('login.login_handler'))
+
+    pid = request.args.get('id') if request.method == 'GET' else request.form.get('id_persona')
+    if not pid:
+        return redirect(url_for('consultas_personas'))
+    try:
+        pid_int = int(pid)
+    except Exception:
+        return redirect(url_for('consultas_personas'))
+
+    message = None
+    # POST => actualizar
+    if request.method == 'POST':
+        f = request.form
+        # validate names similar a registro (primera letra mayúscula, resto minúscula)
+        def _cap_first(s):
+            s = (s or '').strip()
+            return s[0].upper() + s[1:].lower() if s else ''
+
+        primer = _cap_first(f.get('primer_nombre'))
+        segundo = _cap_first(f.get('segundo_nombre'))
+        pap = _cap_first(f.get('primer_apellido'))
+        sap = _cap_first(f.get('segundo_apellido'))
+        if any(char.isdigit() for char in primer+segundo+pap+sap):
+            message = 'Los nombres y apellidos no pueden contener números.'
+        elif len(primer) > 20 or (segundo and len(segundo) > 20) or len(pap) > 20 or (sap and len(sap) > 20):
+            message = 'Cada nombre o apellido debe tener como máximo 20 caracteres.'
+        elif primer == pap or primer == sap or segundo == pap or segundo == sap:
+            message = 'El nombre y los apellidos deben ser distintos entre sí.'
+        elif segundo and segundo == primer:
+            message = 'Primer nombre y segundo nombre no pueden ser iguales.'
+        else:
+            try:
+                fecha = f.get('fecha_nacimiento') or None
+                db.session.execute(text('''
+                    UPDATE personas SET primer_nombre=:primer, segundo_nombre=:segundo, primer_apellido=:pap, segundo_apellido=:sap,
+                    fecha_nacimiento=:fecha, id_sexo=:id_sexo, tipo_persona=:tipo_persona, id_tipo_documento=:id_tipo_doc, numero_cedula=:num_ced
+                    WHERE id_persona = :idp
+                '''), {
+                    'primer': primer,
+                    'segundo': segundo or None,
+                    'pap': pap,
+                    'sap': sap or None,
+                    'fecha': fecha,
+                    'id_sexo': f.get('id_sexo') or None,
+                    'tipo_persona': f.get('tipo_persona'),
+                    'id_tipo_doc': int(f.get('id_tipo_documento')) if f.get('id_tipo_documento') and str(f.get('id_tipo_documento')).isdigit() else None,
+                    'num_ced': f.get('numero_cedula') or None,
+                    'idp': pid_int
+                })
+                db.session.commit()
+                message = 'Persona actualizada correctamente'
+            except Exception as e:
+                db.session.rollback()
+                message = f'Error al actualizar persona: {e}'
+
+        # después de editar, redirigir a la lista del rol si viene en el form
+        # Intentar también actualizar/crear filas en tablas de rol según el tipo
+        role = (f.get('role') or f.get('tipo_persona') or '').lower()
+        try:
+            if role == 'estudiante':
+                fins = f.get('fecha_inscripcion') or None
+                # si existe estudiante -> update, si no -> insert
+                exists = db.session.execute(text('SELECT id_estudiante FROM estudiantes WHERE id_persona = :id'), {'id': pid_int}).fetchone()
+                if exists:
+                    db.session.execute(text('UPDATE estudiantes SET fecha_inscripcion = :f WHERE id_persona = :id'), {'f': fins, 'id': pid_int})
+                else:
+                    db.session.execute(text('INSERT INTO estudiantes (id_persona, fecha_inscripcion) VALUES (:id, :f)'), {'id': pid_int, 'f': fins})
+            elif role == 'profesor':
+                id_esp = f.get('id_especialidad') or None
+                exists = db.session.execute(text('SELECT id_profesor FROM profesores WHERE id_persona = :id'), {'id': pid_int}).fetchone()
+                if exists:
+                    db.session.execute(text('UPDATE profesores SET id_especialidad = :idesp WHERE id_persona = :id'), {'idesp': id_esp, 'id': pid_int})
+                else:
+                    db.session.execute(text('INSERT INTO profesores (id_persona, id_especialidad) VALUES (:id, :idesp)'), {'id': pid_int, 'idesp': id_esp})
+            elif role == 'representante':
+                id_prof = f.get('id_profesion') or None
+                id_ocu = f.get('id_ocupacion') or None
+                id_niv = f.get('id_nivel_academico') or None
+                exists = db.session.execute(text('SELECT id_representante FROM representantes WHERE id_persona = :id'), {'id': pid_int}).fetchone()
+                if exists:
+                    db.session.execute(text('UPDATE representantes SET id_profesion = :prof, id_ocupacion = :ocu, id_nivel_academico = :niv WHERE id_persona = :id'), {'prof': id_prof, 'ocu': id_ocu, 'niv': id_niv, 'id': pid_int})
+                else:
+                    db.session.execute(text('INSERT INTO representantes (id_persona, id_profesion, id_ocupacion, id_nivel_academico) VALUES (:id, :prof, :ocu, :niv)'), {'id': pid_int, 'prof': id_prof, 'ocu': id_ocu, 'niv': id_niv})
+            elif role == 'empleado':
+                id_cargo = f.get('id_cargo') or None
+                fecha_cont = f.get('fecha_contratacion') or None
+                salario = f.get('salario') or None
+                exists = db.session.execute(text('SELECT id_empleado FROM empleados WHERE id_persona = :id'), {'id': pid_int}).fetchone()
+                if exists:
+                    db.session.execute(text('UPDATE empleados SET id_cargo = :idc, fecha_contratacion = :fcont, salario = :sal WHERE id_persona = :id'), {'idc': id_cargo, 'fcont': fecha_cont, 'sal': salario, 'id': pid_int})
+                else:
+                    db.session.execute(text('INSERT INTO empleados (id_persona, id_cargo, fecha_contratacion, salario) VALUES (:id, :idc, :fcont, :sal)'), {'id': pid_int, 'idc': id_cargo, 'fcont': fecha_cont, 'sal': salario})
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        if role:
+            return redirect(url_for('consultas_personas_list') + f'?role={role}')
+        return redirect(url_for('consultas_personas'))
+
+    # GET: cargar persona y selects
+    try:
+        p = db.session.execute(text('SELECT id_persona, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, fecha_nacimiento, id_sexo, id_tipo_documento, numero_cedula, tipo_persona FROM personas WHERE id_persona = :pid'), {'pid': pid_int}).fetchone()
+    except Exception:
+        p = None
+
+    if not p:
+        return redirect(url_for('consultas_personas'))
+
+    # fetch selects
+    try:
+        sexos = db.session.execute(text('SELECT id_sexo, letra_sexo FROM sexo')).fetchall()
+    except Exception:
+        sexos = []
+    try:
+        tipo_documentos = db.session.execute(text('SELECT id_tipo_documento, nombre_tipo_documento FROM tipo_documento')).fetchall()
+    except Exception:
+        tipo_documentos = []
+
+    # construir diccionario simple para template
+    person = {
+        'id_persona': p[0], 'primer_nombre': p[1], 'segundo_nombre': p[2], 'primer_apellido': p[3], 'segundo_apellido': p[4], 'fecha_nacimiento': str(p[5]) if p[5] is not None else None, 'id_sexo': p[6], 'id_tipo_documento': p[7], 'numero_cedula': p[8], 'tipo_persona': p[9]
+    }
+
+    roles_count, users_by_role = compute_role_counts(get_user_context(session))
+
+    return render_template('home_panel/struct.html', usuario=get_user_context(session)['user'], developer_priv=get_user_context(session)['developer_priv'], role_name=get_user_context(session).get('role_name'), role_desc=get_user_context(session).get('role_desc'), status=get_user_context(session).get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/registro_persona_v2.html', sexos=sexos, tipo_documentos=tipo_documentos, person=person, edit=True, message=message)
+
+
+def borrar_registro_persona():
+    if 'user_id' not in session:
+        return redirect(url_for('login.login_handler'))
+    pid = request.form.get('id')
+    role = (request.form.get('role') or '').lower()
+    if not pid:
+        return redirect(url_for('consultas_personas'))
+    try:
+        pid_int = int(pid)
+    except Exception:
+        return redirect(url_for('consultas_personas'))
+
+    try:
+        # Eliminar referencias dependientes de forma segura
+        # borrar relaciones con secciones si existen
+        try:
+            db.session.execute(text('DELETE FROM estudiante_seccion WHERE id_estudiante IN (SELECT id_estudiante FROM estudiantes WHERE id_persona = :id)'), {'id': pid_int})
+        except Exception:
+            pass
+        try:
+            db.session.execute(text('DELETE FROM profesor_seccion WHERE id_profesor IN (SELECT id_profesor FROM profesores WHERE id_persona = :id)'), {'id': pid_int})
+        except Exception:
+            pass
+        try:
+            db.session.execute(text('DELETE FROM materias_seccion WHERE id_seccion IN (SELECT id_seccion FROM secciones WHERE id_seccion IN (SELECT id_seccion FROM secciones))'))
+        except Exception:
+            pass
+
+        # eliminar fila en la tabla de rol
+        if role == 'estudiante':
+            db.session.execute(text('DELETE FROM estudiantes WHERE id_persona = :id'), {'id': pid_int})
+        elif role == 'profesor':
+            db.session.execute(text('DELETE FROM profesores WHERE id_persona = :id'), {'id': pid_int})
+        elif role == 'representante':
+            db.session.execute(text('DELETE FROM representantes WHERE id_persona = :id'), {'id': pid_int})
+        elif role == 'empleado':
+            db.session.execute(text('DELETE FROM empleados WHERE id_persona = :id'), {'id': pid_int})
+
+        # eliminar association usuario-persona si existe
+        try:
+            db.session.execute(text('DELETE FROM usuario_persona WHERE id_persona = :id'), {'id': pid_int})
+        except Exception:
+            pass
+
+        # eliminar entrada alternativa de cédula si existe
+        try:
+            db.session.execute(text('DELETE FROM persona_cedula WHERE id_persona = :id'), {'id': pid_int})
+        except Exception:
+            pass
+
+        # finalmente eliminar la persona si ya no tiene dependencias
+        try:
+            db.session.execute(text('DELETE FROM personas WHERE id_persona = :id'), {'id': pid_int})
+        except Exception:
+            # si no se puede eliminar por FK, ignorar
+            pass
+
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    return redirect(url_for('consultas_personas'))
 
 
 def consultas_materias():
@@ -145,6 +387,56 @@ def consultas_materias():
         materias = []
     roles_count, users_by_role = compute_role_counts(ctx)
     return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/consultas_personas_list.html', rows=materias, role_display='Materia', title='Listado de Materias')
+
+
+def consultas_materias_editar():
+    """Editar o crear materia desde la interfaz de consultas.
+    GET: mostrar formulario con nombre prellenado si id proporcionado
+    POST: crear o actualizar materia y redirigir al listado
+    """
+    if 'user_id' not in session:
+        return redirect(url_for('login.login_handler'))
+    ctx = get_user_context(session)
+    if request.method == 'POST':
+        mid = request.form.get('id_materia')
+        name = request.form.get('nombre_materia')
+        try:
+            if mid:
+                db.session.execute(text('UPDATE materias SET nombre_materia = :name WHERE id_materia = :id'), {'name': name, 'id': mid})
+            else:
+                db.session.execute(text('INSERT INTO materias (nombre_materia) VALUES (:name)'), {'name': name})
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+        return redirect(url_for('consultas_materias'))
+
+    # GET
+    mid = request.args.get('id')
+    materia = None
+    if mid:
+        try:
+            m = db.session.execute(text('SELECT id_materia, nombre_materia FROM materias WHERE id_materia = :id'), {'id': mid}).fetchone()
+            if m:
+                materia = {'id_materia': m[0], 'nombre_materia': m[1]}
+        except Exception:
+            materia = None
+
+    roles_count, users_by_role = compute_role_counts(ctx)
+    return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/registro_materias.html', materia=materia, edit=bool(materia))
+
+
+def consultas_materias_borrar():
+    if 'user_id' not in session:
+        return redirect(url_for('login.login_handler'))
+    mid = request.form.get('id')
+    if not mid:
+        return redirect(url_for('consultas_materias'))
+    try:
+        db.session.execute(text('DELETE FROM materias WHERE id_materia = :id'), {'id': mid})
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+    return redirect(url_for('consultas_materias'))
 
 
 def consultas_secciones():
@@ -172,6 +464,53 @@ def consultas_planteles():
         planteles = []
     roles_count, users_by_role = compute_role_counts(ctx)
     return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/consultas_personas_list.html', rows=planteles, role_display='Plantel', title='Listado de Planteles')
+
+
+def consultas_planteles_editar():
+    if 'user_id' not in session:
+        return redirect(url_for('login.login_handler'))
+    ctx = get_user_context(session)
+    if request.method == 'POST':
+        pid = request.form.get('id_plantel')
+        nombre = request.form.get('nombre_plantel_nomina')
+        codigo = request.form.get('codigo_pa')
+        try:
+            if pid:
+                db.session.execute(text('UPDATE planteles SET nombre_plantel_nomina = :nom, codigo_pa = :cod WHERE id_plantel = :id'), {'nom': nombre, 'cod': codigo, 'id': pid})
+            else:
+                db.session.execute(text('INSERT INTO planteles (codigo_pa, nombre_plantel_nomina) VALUES (:codigo_pa, :nombre)'), {'codigo_pa': codigo, 'nombre': nombre})
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+        return redirect(url_for('consultas_planteles'))
+
+    pid = request.args.get('id')
+    plantel = None
+
+    if pid:
+        try:
+            p = db.session.execute(text('SELECT id_plantel, nombre_plantel_nomina, codigo_pa FROM planteles WHERE id_plantel = :id'), {'id': pid}).fetchone()
+            if p:
+                plantel = {'id_plantel': p[0], 'nombre_plantel_nomina': p[1], 'codigo_pa': p[2]}
+        except Exception:
+            plantel = None
+
+    roles_count, users_by_role = compute_role_counts(ctx)
+    return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/registro_plantel.html', plantel=plantel, edit=bool(plantel))
+
+
+def consultas_planteles_borrar():
+    if 'user_id' not in session:
+        return redirect(url_for('login.login_handler'))
+    pid = request.form.get('id')
+    if not pid:
+        return redirect(url_for('consultas_planteles'))
+    try:
+        db.session.execute(text('DELETE FROM planteles WHERE id_plantel = :id'), {'id': pid})
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+    return redirect(url_for('consultas_planteles'))
 
 
 def admin_alumnos():

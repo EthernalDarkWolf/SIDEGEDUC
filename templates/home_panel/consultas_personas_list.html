@@ -1,15 +1,89 @@
 <div class="container-fluid" style="margin-top:48px;">
   <div class="row mb-3">
     <div class="col-12">
-      <h4>{{ title }}</h4>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+        <a href="{% if role_display in ['Materia','Plantel'] %}{{ url_for('consultas') }}{% elif role_display == 'Sin rol' %}{{ url_for('consultas_personas') }}{% else %}{{ url_for('consultas_personas') }}{% endif %}" class="btn btn-sm btn-outline-secondary" title="Atrás">← Volver</a>
+        <h4 style="margin:0">{{ title }}</h4>
+      </div>
     </div>
   </div>
   <div class="row">
     <div class="col-12">
       {% if rows %}
+      {% if role_display == 'Materia' %}
+      <table class="table table-striped">
+        <thead><tr><th>#</th><th>Nombre</th><th>Acciones</th></tr></thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ r[1] }}</td>
+            <td>
+              <div class="btn-group" role="group">
+                <a class="btn btn-sm btn-outline-primary" href="/consultas/materias/editar?id={{ r[0] }}" title="Editar">
+                  <i class="fas fa-pencil-alt"></i>
+                </a>
+                <form method="post" action="/consultas/materias/borrar" style="display:inline-block;margin:0;">
+                  <input type="hidden" name="id" value="{{ r[0] }}">
+                  <button class="btn btn-sm btn-outline-danger" title="Borrar" onclick="return confirm('¿Eliminar esta materia?')">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% elif role_display == 'Plantel' %}
+      <table class="table table-striped">
+        <thead><tr><th>#</th><th>Nombre</th><th>Código</th><th>Acciones</th></tr></thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ r[1] }}</td>
+            <td>{{ r[2] if r|length > 2 else '' }}</td>
+            <td>
+              <div class="btn-group" role="group">
+                <a class="btn btn-sm btn-outline-primary" href="/consultas/planteles/editar?id={{ r[0] }}" title="Editar"><i class="fas fa-pencil-alt"></i></a>
+                <form method="post" action="/consultas/planteles/borrar" style="display:inline-block;margin:0;">
+                  <input type="hidden" name="id" value="{{ r[0] }}">
+                  <button class="btn btn-sm btn-outline-danger" title="Borrar" onclick="return confirm('¿Eliminar este plantel?')"><i class="fas fa-trash"></i></button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% elif role_display == 'Sin rol' %}
+      <table class="table table-striped">
+        <thead><tr><th>#</th><th>Nombre</th><th>Cédula</th><th>Acciones</th></tr></thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ r.primer_nombre }} {% if r.segundo_nombre %}{{ r.segundo_nombre }}{% endif %} {{ r.primer_apellido }} {% if r.segundo_apellido %}{{ r.segundo_apellido }}{% endif %}</td>
+            <td>{{ r.numero_cedula or '' }}</td>
+            <td>
+              <div class="btn-group" role="group">
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('editar_persona') }}?id={{ r.id_persona }}&role=sinrol" title="Editar"><i class="fas fa-pencil-alt"></i></a>
+                <form method="post" action="{{ url_for('borrar_registro_persona') }}" style="display:inline-block;margin:0;">
+                  <input type="hidden" name="id" value="{{ r.id_persona }}">
+                  <input type="hidden" name="role" value="sinrol">
+                  <button class="btn btn-sm btn-outline-danger" title="Borrar" onclick="return confirm('¿Eliminar este registro?')"><i class="fas fa-trash"></i></button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
       <table class="table table-striped">
         <thead>
-          <tr><th>#</th><th>Nombre</th><th>Tipo</th></tr>
+          <tr><th>#</th><th>Nombre</th><th>Tipo</th><th>Acciones</th></tr>
         </thead>
         <tbody>
           {% for r in rows %}
@@ -17,10 +91,25 @@
             <td>{{ loop.index }}</td>
             <td>{{ r.primer_nombre }} {% if r.segundo_nombre %}{{ r.segundo_nombre }}{% endif %} {{ r.primer_apellido }} {% if r.segundo_apellido %}{{ r.segundo_apellido }}{% endif %}</td>
             <td>{{ role_display }}</td>
+            <td>
+              <div class="btn-group" role="group">
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('editar_persona') }}?id={{ r.id_persona }}&role={{ role_display|lower }}" title="Editar">
+                  <i class="fas fa-pencil-alt"></i>
+                </a>
+                <form method="post" action="{{ url_for('borrar_registro_persona') }}" style="display:inline-block;margin:0;">
+                  <input type="hidden" name="id" value="{{ r.id_persona }}">
+                  <input type="hidden" name="role" value="{{ role_display|lower }}">
+                  <button class="btn btn-sm btn-outline-danger" title="Borrar" onclick="return confirm('¿Eliminar este registro?')">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
+      {% endif %}
       {% else %}
       <div class="alert alert-info">No se encontraron registros para {{ role_display }}.</div>
       {% endif %}

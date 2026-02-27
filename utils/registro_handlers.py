@@ -18,25 +18,46 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
     message = None
 
     # Personas (crear persona y redirigir a extensión según tipo)
+    def _cap_first(s):
+        s = (s or '').strip()
+        if not s:
+            return ''
+        return s[0].upper() + s[1:].lower()
+
     if tipo == 'personas':
         if request.method == 'POST':
             f = request.form
-            primer = f.get('primer_nombre')
-            segundo = f.get('segundo_nombre')
-            pap = f.get('primer_apellido')
-            sap = f.get('segundo_apellido')
-            fecha_nac = f.get('fecha_nacimiento')
-            tipo_persona = f.get('tipo_persona')
+            # normalizar entradas (primera letra mayúscula, resto minúscula)
+            primer = _cap_first(f.get('primer_nombre'))
+            segundo = _cap_first(f.get('segundo_nombre'))
+            pap = _cap_first(f.get('primer_apellido'))
+            sap = _cap_first(f.get('segundo_apellido'))
+            fecha_nac = (f.get('fecha_nacimiento') or '').strip()
+            tipo_persona = (f.get('tipo_persona') or '').strip().lower()
             id_sexo = f.get('id_sexo') or None
             id_tipo_doc = f.get('id_tipo_documento') or None
-            numero_cedula = f.get('numero_cedula') or None
+            numero_cedula = (f.get('numero_cedula') or '').strip()
 
+            # validaciones iniciales
+            # básicos de cédula y tipo
             if not numero_cedula or not primer or not pap or not fecha_nac or not tipo_persona:
                 message = 'Campos requeridos faltantes. Asegúrese de ingresar cédula, nombres, apellidos y fecha de nacimiento.'
+            elif not numero_cedula.isdigit():
+                message = 'La cédula debe contener solo dígitos.'
+            elif tipo_persona not in ['estudiante','profesor','representante','empleado']:
+                message = 'Tipo de persona inválido.'
+            # reglas de nombres
+            elif any(char.isdigit() for char in primer+segundo+pap+sap):
+                message = 'Los nombres y apellidos no pueden contener números.'
+            elif len(primer) > 20 or (segundo and len(segundo) > 20) or len(pap) > 20 or (sap and len(sap) > 20):
+                message = 'Cada nombre o apellido debe tener como máximo 20 caracteres.'
+            elif primer == pap or primer == sap or segundo == pap or segundo == sap:
+                message = 'El nombre y los apellidos deben ser distintos entre sí.'
+            elif segundo and segundo == primer:
+                message = 'Primer nombre y segundo nombre no pueden ser iguales.'
             else:
                 # Validaciones adicionales: fecha nacimiento no puede ser hoy ni en el futuro
                 try:
-                    # fecha_nac expected in YYYY-MM-DD (flatpickr config)
                     y, m, d = map(int, fecha_nac.split('-'))
                     dob = date(y, m, d)
                     today = date.today()
@@ -48,7 +69,6 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                 # Si es representante, debe ser mayor de 18 años
                 if not message and tipo_persona == 'representante':
                     try:
-                        # calcular edad
                         y, m, d = map(int, fecha_nac.split('-'))
                         dob = date(y, m, d)
                         today = date.today()
@@ -58,16 +78,21 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                     except Exception:
                         message = 'Error al calcular la edad.'
 
+            # si hay error, mostramos sin tocar BD
             if message:
-                # skip DB insertion and show message
                 pass
             else:
-                # Prevención: si la cédula ya existe, evitar re-registrar
+                # comprobar duplicados no solo en personas sino también en persona_cedula
                 try:
+                    existing = None
                     if numero_cedula:
-                        existing = db.session.execute(text('SELECT id_persona FROM personas WHERE numero_cedula = :num'), {'num': numero_cedula}).fetchone()
-                    else:
-                        existing = None
+                        existing = db.session.execute(text(
+                            'SELECT id_persona FROM personas WHERE numero_cedula = :num'
+                        ), {'num': numero_cedula}).fetchone()
+                        if not existing:
+                            existing = db.session.execute(text(
+                                'SELECT pc.id_persona FROM persona_cedula pc WHERE pc.numero_cedula = :num'
+                            ), {'num': numero_cedula}).fetchone()
                 except Exception:
                     existing = None
 
@@ -89,7 +114,7 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                             'fecha': fecha_nac or None,
                             'id_sexo': id_sexo,
                             'tipo_persona': tipo_persona,
-                            'id_tipo_doc': int(id_tipo_doc) if id_tipo_doc and id_tipo_doc.isdigit() else None,
+                            'id_tipo_doc': int(id_tipo_doc) if id_tipo_doc and str(id_tipo_doc).isdigit() else None,
                             'num_ced': numero_cedula or None
                         })
                         db.session.commit()
@@ -129,13 +154,11 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
             f = request.form
             nombre = f.get('nombre_plantel_nomina')
             codigo_pa = f.get('codigo_pa')
-            id_nivel = f.get('id_nivel') or None
-            id_cargo = f.get('id_cargo') or None
             try:
                 db.session.execute(
-                    text('INSERT INTO planteles (codigo_pa, nombre_plantel_nomina, id_nivel, id_cargo) '
-                         'VALUES (:codigo_pa, :nombre, :id_nivel, :id_cargo)')
-                    , {'codigo_pa': codigo_pa, 'nombre': nombre, 'id_nivel': id_nivel, 'id_cargo': id_cargo}
+                    text('INSERT INTO planteles (codigo_pa, nombre_plantel_nomina) '
+                         'VALUES (:codigo_pa, :nombre)')
+                    , {'codigo_pa': codigo_pa, 'nombre': nombre}
                 )
                 db.session.commit()
                 message = 'Plantel registrado correctamente'
@@ -143,12 +166,11 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                 db.session.rollback()
                 message = f'Error al registrar plantel: {e}'
 
-        niveles = db.session.execute(text('SELECT id_nivel, nombre_nivel FROM niveles')).fetchall()
-        cargos = db.session.execute(text('SELECT id_cargo, nombre_cargo FROM cargos')).fetchall()
+        # ya no necesitamos cargar niveles ni cargos
         return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'],
                                role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'),
                                roles_count=roles_count, users_by_role=users_by_role,
-                               content_template='home_panel/registro_plantel.html', niveles=niveles, cargos=cargos, message=message)
+                               content_template='home_panel/registro_plantel.html', message=message)
 
     # Materias
     if tipo == 'materias':
