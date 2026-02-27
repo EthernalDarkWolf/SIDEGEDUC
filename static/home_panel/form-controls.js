@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', function(){
+    console.log('form-controls.js loaded, attaching validators');
     // Form controls helper: normalize date inputs display (DD/MM/YYYY helper)
     function formatDateYYYYtoDDMMYYYY(val){
         if(!val) return '';
@@ -98,4 +99,88 @@ document.addEventListener('DOMContentLoaded', function(){
             icon.addEventListener('click', function(){ input.focus(); input.click(); });
         }
     });
+
+    // generic input validation (letters vs numbers, uppercase first letter, red highlight)
+    function setupFieldValidators(){
+        const nameBasedLetters = /nombre|apellido|razon|direccion|lugar|ciudad|estado|municipio|titulo/i;
+        const nameBasedNumbers = /cedula|numero|tel|edad|hijos|matricula|codigo|cantidad|anio|ano|id_/i;
+
+        document.querySelectorAll('input').forEach(function(input){
+            let isLetters = false;
+            let isNumbers = false;
+
+            if(input.pattern){
+                if(/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(input.pattern)) isLetters = true;
+                if(/[0-9\\d]/.test(input.pattern)) isNumbers = true;
+            }
+            if(input.type === 'number'){
+                isNumbers = true;
+            }
+            if(nameBasedLetters.test(input.name)){
+                isLetters = true;
+            }
+            if(nameBasedNumbers.test(input.name)){
+                isNumbers = true;
+            }
+            // if both detected, give up (ambiguous)
+            if(isLetters && isNumbers){
+                isLetters = isNumbers = false;
+            }
+
+            if(isLetters || isNumbers){
+                console.log('validator attach:', input.name, 'letters=', isLetters, 'numbers=', isNumbers);
+                const sanitize = function(val){
+                    let out = val;
+                    if(isLetters){
+                        out = out.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ ]/g,'');
+                    }
+                    if(isNumbers){
+                        out = out.replace(/\D/g,'');
+                    }
+                    return out;
+                };
+
+                input.addEventListener('input', function(){
+                    const v = this.value;
+                    const clean = sanitize(v);
+                    if(clean !== v){
+                        this.value = clean;
+                        addError(this, isLetters ? 'solo letras' : 'solo números');
+                    } else {
+                        clearError(this);
+                    }
+                });
+
+                input.addEventListener('blur', function(){
+                    if(isLetters && this.value){
+                        // uppercase first letter of each word
+                        this.value = this.value.split(/\s+/).map(w=> w? w.charAt(0).toUpperCase()+w.slice(1).toLowerCase(): '').join(' ');
+                    }
+                });
+            }
+        });
+    }
+
+    function addError(input, msg){
+        input.classList.add('invalid');
+        input.setAttribute('title', msg);
+        let span = input.nextElementSibling;
+        if(!span || !span.classList.contains('validation-error')){
+            span = document.createElement('small');
+            span.className = 'validation-error';
+            input.parentNode.insertBefore(span, input.nextSibling);
+        }
+        span.textContent = msg;
+    }
+
+    function clearError(input){
+        input.classList.remove('invalid');
+        input.removeAttribute('title');
+        let span = input.nextElementSibling;
+        if(span && span.classList.contains('validation-error')){
+            span.remove();
+        }
+    }
+
+    setupFieldValidators();
 });

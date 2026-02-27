@@ -15,11 +15,11 @@
                         {% endif %}
                         <div class="mb-3">
                             <label for="nombre_plantel" class="form-label">Nombre del plantel:</label>
-                            <input type="text" id="nombre_plantel" name="nombre_plantel_nomina" class="form-control" required value="{{ plantel.nombre_plantel_nomina if plantel }}">
+                            <input type="text" id="nombre_plantel" name="nombre_plantel_nomina" class="form-control" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ ]+" title="Solo letras y espacios" value="{{ plantel.nombre_plantel_nomina if plantel }}">
                         </div>
                         <div class="mb-3">
                             <label for="codigo_pa" class="form-label">Código PA:</label>
-                            <input type="text" id="codigo_pa" name="codigo_pa" class="form-control" required value="{{ plantel.codigo_pa if plantel }}">
+                            <input type="text" id="codigo_pa" name="codigo_pa" class="form-control" required pattern="\d+" inputmode="numeric" title="Solo números" value="{{ plantel.codigo_pa if plantel }}">
                         </div>
                         <button type="submit" class="btn btn-primary">{% if edit %}Guardar cambios{% else %}Registrar Plantel{% endif %}</button>
                     </form>

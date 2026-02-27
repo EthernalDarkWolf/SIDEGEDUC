@@ -1,3 +1,7 @@
+/* Inline validation styling */
+.invalid{border-color:#ffb4b4 !important;box-shadow:0 8px 18px rgba(255,84,84,0.06) !important;}
+.validation-error{color:#e3342f;font-size:0.85rem;margin-top:4px;display:block;}
+
 /* Styles for home panel components, including manage user enhancements */
 
 :root{
