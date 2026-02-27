@@ -1,0 +1,48 @@
+<div class="container-fluid" style="margin-top:88px;">
+    <div class="row">
+        <div class="col-md-3">
+            <a href="{{ url_for('consultas_personas') }}" class="text-decoration-none text-reset">
+            <div class="card text-center border-primary shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                    <h6 class="card-title">Total Personas Registradas</h6>
+                    <p class="display-6 mb-0">{{ total_personas }}</p>
+                </div>
+            </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('consultas_materias') }}" class="text-decoration-none text-reset">
+            <div class="card text-center border-secondary shadow-sm" style="background:#e9d8ff">
+                <div class="card-body">
+                    <i class="fas fa-book fa-2x text-secondary mb-2"></i>
+                    <h6 class="card-title">Total Materias Registradas</h6>
+                    <p class="display-6 mb-0">{{ total_materias }}</p>
+                </div>
+            </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('consultas_secciones') }}" class="text-decoration-none text-reset">
+            <div class="card text-center border-success shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-layer-group fa-2x text-success mb-2"></i>
+                    <h6 class="card-title">Total Secciones Creadas</h6>
+                    <p class="display-6 mb-0">{{ total_secciones }}</p>
+                </div>
+            </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('consultas_planteles') }}" class="text-decoration-none text-reset">
+            <div class="card text-center border-warning shadow-sm" style="background:#fff9e6">
+                <div class="card-body">
+                    <i class="fas fa-building fa-2x text-warning mb-2"></i>
+                    <h6 class="card-title">Total Planteles Registrados</h6>
+                    <p class="display-6 mb-0">{{ total_planteles }}</p>
+                </div>
+            </div>
+            </a>
+        </div>
+    </div>
+</div>

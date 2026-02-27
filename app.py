@@ -126,13 +126,46 @@ def dashboard():
 @app.route('/')
 def index():
     return manejar_la_vista_de.login()
+
 @app.route('/boleta')
 def boleta():
     return manejar_la_vista_de.boleta()
 
 @app.route('/constancia')
 def constancia():
-    return manejar_la_vista_de.constancia() 
+    # Mantener ruta antigua, redirige/usa la nueva vista de consultas
+    return manejar_la_vista_de.constancia()
+
+
+@app.route('/consultas')
+def consultas():
+    return manejar_la_vista_de.consultas()
+
+
+@app.route('/consultas/personas')
+def consultas_personas():
+    return manejar_la_vista_de.consultas_personas()
+
+
+@app.route('/consultas/personas/list')
+def consultas_personas_list():
+    return manejar_la_vista_de.consultas_personas_list()
+
+
+@app.route('/consultas/materias')
+def consultas_materias():
+    return manejar_la_vista_de.consultas_materias()
+
+
+@app.route('/consultas/secciones')
+def consultas_secciones():
+    return manejar_la_vista_de.consultas_secciones()
+
+
+@app.route('/consultas/planteles')
+def consultas_planteles():
+    return manejar_la_vista_de.consultas_planteles()
+
 @app.route('/admin_alumnos')
 def admin_alumnos():
     return manejar_la_vista_de.admin_alumnos()

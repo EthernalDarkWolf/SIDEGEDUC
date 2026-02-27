@@ -50,7 +50,128 @@ def boleta():
 
 
 def constancia():
-    return 'Constancia - en desarrollo'
+    # Mantener compatibilidad: redirigir a la nueva vista de consultas
+    return consultas()
+
+
+def consultas():
+    """Vista de consultas: muestra conteos de personas, materias y secciones."""
+    ctx = get_user_context(session)
+    try:
+        total_personas = db.session.execute(text('SELECT COUNT(*) FROM personas')).scalar() or 0
+    except Exception:
+        total_personas = 0
+    try:
+        total_materias = db.session.execute(text('SELECT COUNT(*) FROM materias')).scalar() or 0
+    except Exception:
+        total_materias = 0
+    try:
+        total_secciones = db.session.execute(text('SELECT COUNT(*) FROM secciones')).scalar() or 0
+    except Exception:
+        total_secciones = 0
+    try:
+        total_planteles = db.session.execute(text('SELECT COUNT(*) FROM planteles')).scalar() or 0
+    except Exception:
+        total_planteles = 0
+
+    roles_count, users_by_role = compute_role_counts(ctx)
+
+    return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/consultas.html', total_personas=total_personas, total_materias=total_materias, total_secciones=total_secciones, total_planteles=total_planteles)
+
+
+def consultas_personas():
+    """Página de detalle para Personas: muestra mini-cuadros por rol (estudiante, profesor, representante, empleado)."""
+    ctx = get_user_context(session)
+    try:
+        total_est = int(db.session.execute(text('SELECT COUNT(*) FROM estudiantes')).scalar() or 0)
+    except Exception:
+        total_est = 0
+    try:
+        total_prof = int(db.session.execute(text('SELECT COUNT(*) FROM profesores')).scalar() or 0)
+    except Exception:
+        total_prof = 0
+    try:
+        total_rep = int(db.session.execute(text('SELECT COUNT(*) FROM representantes')).scalar() or 0)
+    except Exception:
+        total_rep = 0
+    try:
+        total_emp = int(db.session.execute(text('SELECT COUNT(*) FROM empleados')).scalar() or 0)
+    except Exception:
+        total_emp = 0
+
+    roles_count, users_by_role = compute_role_counts(ctx)
+
+    return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/consultas_personas.html', total_estudiantes=total_est, total_profesores=total_prof, total_representantes=total_rep, total_empleados=total_emp)
+
+
+def consultas_personas_list():
+    """Listado de personas por rol. Query param: role (estudiante|profesor|representante|empleado)"""
+    ctx = get_user_context(session)
+    role = request.args.get('role') or request.view_args.get('role') if request.view_args else request.args.get('role')
+    role = (role or '').lower()
+    rows = []
+    role_display = ''
+    title = ''
+    try:
+        if role == 'estudiante':
+            rows = db.session.execute(text('SELECT p.* FROM estudiantes e JOIN personas p ON e.id_persona = p.id_persona')).fetchall()
+            role_display = 'Estudiante'
+            title = 'Listado de Estudiantes'
+        elif role == 'profesor' or role == 'profesores':
+            rows = db.session.execute(text('SELECT p.* FROM profesores pr JOIN personas p ON pr.id_persona = p.id_persona')).fetchall()
+            role_display = 'Profesor'
+            title = 'Listado de Profesores'
+        elif role == 'representante' or role == 'representantes':
+            rows = db.session.execute(text('SELECT p.* FROM representantes r JOIN personas p ON r.id_persona = p.id_persona')).fetchall()
+            role_display = 'Representante'
+            title = 'Listado de Representantes'
+        elif role == 'empleado' or role == 'empleados':
+            rows = db.session.execute(text('SELECT p.* FROM empleados em JOIN personas p ON em.id_persona = p.id_persona')).fetchall()
+            role_display = 'Empleado'
+            title = 'Listado de Empleados'
+    except Exception:
+        rows = []
+
+    roles_count, users_by_role = compute_role_counts(ctx)
+
+    return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/consultas_personas_list.html', rows=rows, role_display=role_display, title=title)
+
+
+def consultas_materias():
+    ctx = get_user_context(session)
+    try:
+        materias = db.session.execute(text('SELECT id_materia, nombre_materia FROM materias')).fetchall()
+    except Exception:
+        materias = []
+    roles_count, users_by_role = compute_role_counts(ctx)
+    return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/consultas_personas_list.html', rows=materias, role_display='Materia', title='Listado de Materias')
+
+
+def consultas_secciones():
+    # reutilizar query de developer_secciones_existentes_vista
+    ctx = get_user_context(session)
+    try:
+        secciones = db.session.execute(text('''
+            SELECT s.id_seccion, g.numero_grado, l.letra, n.nombre_nivel
+            FROM secciones s
+            LEFT JOIN grados g ON s.id_grado = g.id_grado
+            LEFT JOIN letra_seccion l ON s.id_letra_seccion = l.id_letra_seccion
+            LEFT JOIN niveles n ON s.id_nivel = n.id_nivel
+        ''')).fetchall()
+    except Exception:
+        secciones = []
+    roles_count, users_by_role = compute_role_counts(ctx)
+    return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/developer_secciones_existentes.html', secciones=secciones)
+
+
+def consultas_planteles():
+    ctx = get_user_context(session)
+    try:
+        planteles = db.session.execute(text('SELECT id_plantel, nombre_plantel_nomina, codigo_pa FROM planteles')).fetchall()
+    except Exception:
+        planteles = []
+    roles_count, users_by_role = compute_role_counts(ctx)
+    return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/consultas_personas_list.html', rows=planteles, role_display='Plantel', title='Listado de Planteles')
 
 
 def admin_alumnos():

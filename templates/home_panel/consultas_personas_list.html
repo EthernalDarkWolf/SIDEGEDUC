@@ -1,0 +1,29 @@
+<div class="container-fluid" style="margin-top:48px;">
+  <div class="row mb-3">
+    <div class="col-12">
+      <h4>{{ title }}</h4>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-12">
+      {% if rows %}
+      <table class="table table-striped">
+        <thead>
+          <tr><th>#</th><th>Nombre</th><th>Tipo</th></tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ r.primer_nombre }} {% if r.segundo_nombre %}{{ r.segundo_nombre }}{% endif %} {{ r.primer_apellido }} {% if r.segundo_apellido %}{{ r.segundo_apellido }}{% endif %}</td>
+            <td>{{ role_display }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="alert alert-info">No se encontraron registros para {{ role_display }}.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
