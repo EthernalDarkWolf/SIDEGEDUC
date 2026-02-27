@@ -86,9 +86,11 @@
         let val = input.value;
 
         // eliminar caracteres prohibidos en vivo
+        let invalidChar = false;
         if (rule && regexMap[rule]) {
             const cleaned = val.replace(regexMap[rule], '');
             if (cleaned !== val) {
+                invalidChar = true;
                 val = cleaned;
                 input.value = cleaned;
             }
@@ -96,9 +98,13 @@
 
         // verificar longitud
         const errEl = getErrorElement(input);
-        if (val && !checkLength(val, min, max)) {
+        if (invalidChar) {
             input.style.borderColor = 'red';
-            errEl.textContent = 'No se permiten letras/números o caracteres especiales en este campo';
+            errEl.textContent = input.dataset.invalidMessage || 'No se permiten letras/números o caracteres especiales en este campo';
+        } else if (val && !checkLength(val, min, max)) {
+            input.style.borderColor = 'red';
+            // permite mensaje específico configurado en data-length-message
+            errEl.textContent = input.dataset.lengthMessage || 'No se permiten letras/números o caracteres especiales en este campo';
         } else {
             input.style.borderColor = '';
             errEl.textContent = '';

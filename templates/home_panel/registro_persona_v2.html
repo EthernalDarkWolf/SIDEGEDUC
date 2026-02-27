@@ -60,7 +60,7 @@
                                 <div class="group full">
                                     <label>Número de cédula</label>
                                     <div class="cedula-wrap">
-                                            <input name="numero_cedula" id="numero_cedula" placeholder="Ej: 31412298" required data-rule="numbers" data-minlength="7" data-maxlength="9" value="{{ person.numero_cedula if person is defined and person.numero_cedula else '' }}">
+                                            <input name="numero_cedula" id="numero_cedula" placeholder="Ej: 31412298" required data-rule="numbers" data-minlength="7" data-maxlength="9" data-invalid-message="Solo se permiten números en este campo" data-length-message="Ingrese una cédula válida de 7-9 dígitos" value="{{ person.numero_cedula if person is defined and person.numero_cedula else '' }}">
                                         <div id="cedula_spinner" class="spinner" style="display:none" aria-hidden="true"></div>
                                         <div id="cedula_generated_note" class="generated-note" style="display:none"><span class="bolt">⚡</span> Cédula escolar generada automáticamente</div>
                                     </div>
