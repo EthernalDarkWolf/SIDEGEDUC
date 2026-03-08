@@ -1,15 +1,42 @@
 <div class="container-fluid" style="margin-top:48px;">
   <div class="row mb-3">
     <div class="col-12">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-        <a href="{% if role_display in ['Materia','Plantel'] %}{{ url_for('consultas') }}{% elif role_display == 'Sin rol' %}{{ url_for('consultas_personas') }}{% else %}{{ url_for('consultas_personas') }}{% endif %}" class="btn btn-sm btn-outline-secondary" title="Atrás">← Volver</a>
-        <h4 style="margin:0">{{ title }}</h4>
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <a href="{% if role_display in ['Materia','Plantel'] %}{{ url_for('consultas') }}{% elif role_display == 'Sin rol' %}{{ url_for('consultas_personas') }}{% else %}{{ url_for('consultas_personas') }}{% endif %}" class="btn btn-sm btn-outline-secondary" title="Atrás">← Volver</a>
+          <h4 style="margin:0">{{ title }}</h4>
+        </div>
+        <div style="min-width:240px;max-width:320px;">
+          <div class="input-group">
+            <input id="filtro-listado" type="text" class="form-control" placeholder="Filtrar resultados..." autocomplete="off">
+            <span class="input-group-text"><i class="fas fa-filter"></i></span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
   <div class="row">
     <div class="col-12">
       {% if rows %}
+      <script>
+      function filtrarListado() {
+        var input = document.getElementById('filtro-listado');
+        var filtro = input.value.toLowerCase();
+        var filas = document.querySelectorAll('table tbody tr');
+        filas.forEach(function(fila) {
+          var texto = fila.innerText.toLowerCase();
+          fila.style.display = texto.includes(filtro) ? '' : 'none';
+        });
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        var input = document.getElementById('filtro-listado');
+        if(input) {
+          input.addEventListener('input', filtrarListado);
+        }
+      });
+      </script>
+      <link rel="stylesheet" href="/static/home_panel/filtro-dinamico.css">
+      <script src="/static/home_panel/filtro-dinamico.js"></script>
       {% if role_display == 'Materia' %}
       <table class="table table-striped">
         <thead><tr><th>#</th><th>Nombre</th><th>Acciones</th></tr></thead>
@@ -81,6 +108,36 @@
         </tbody>
       </table>
       {% else %}
+      {% set roles_unicos = ['Representante', 'Profesor', 'Estudiante', 'Empleado'] %}
+      {% if role_display in roles_unicos %}
+      <table class="table table-striped">
+        <thead>
+          <tr><th>#</th><th>Nombre</th><th>Acciones</th></tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ r.primer_nombre }} {% if r.segundo_nombre %}{{ r.segundo_nombre }}{% endif %} {{ r.primer_apellido }} {% if r.segundo_apellido %}{{ r.segundo_apellido }}{% endif %}</td>
+            <td>
+              <div class="btn-group" role="group">
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('editar_persona') }}?id={{ r.id_persona }}&role={{ role_display|lower }}" title="Editar">
+                  <i class="fas fa-pencil-alt"></i>
+                </a>
+                <form method="post" action="{{ url_for('borrar_registro_persona') }}" style="display:inline-block;margin:0;">
+                  <input type="hidden" name="id" value="{{ r.id_persona }}">
+                  <input type="hidden" name="role" value="{{ role_display|lower }}">
+                  <button class="btn btn-sm btn-outline-danger" title="Borrar" onclick="return confirm('¿Eliminar este registro?')">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
       <table class="table table-striped">
         <thead>
           <tr><th>#</th><th>Nombre</th><th>Tipo</th><th>Acciones</th></tr>
@@ -109,6 +166,7 @@
           {% endfor %}
         </tbody>
       </table>
+      {% endif %}
       {% endif %}
       {% else %}
       <div class="alert alert-info">No se encontraron registros para {{ role_display }}.</div>

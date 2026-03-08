@@ -1,0 +1,37 @@
+/* Estilos profesionales para filtro dinámico y sugerencias */
+#filtro-sugerencias {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 1.5px 4px rgba(30,233,182,0.08);
+  margin-top: 4px;
+  padding: 0.25rem 0;
+  max-height: 220px;
+  overflow-y: auto;
+  transition: box-shadow 0.2s;
+}
+#filtro-sugerencias .list-group-item {
+  border: none;
+  border-radius: 0;
+  padding: 0.55rem 1rem;
+  font-size: 1rem;
+  color: #222;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+#filtro-sugerencias .list-group-item:hover {
+  background: #e0f7fa;
+  color: #009688;
+}
+.filtro-resaltado {
+  background: #1de9b6 !important;
+  color: #fff !important;
+  border-radius: 4px;
+  padding: 0 3px;
+  transition: background 0.2s, color 0.2s;
+}
+#filtro-listado:focus {
+  border-color: #1de9b6;
+  box-shadow: 0 0 0 2px #1de9b633;
+}
