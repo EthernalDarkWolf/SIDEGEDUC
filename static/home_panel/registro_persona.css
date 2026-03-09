@@ -1,3 +1,146 @@
+/* --- STEPPER PREMIUM --- */
+.stepper-flow-premium {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin: 32px 0 28px 0;
+}
+.stepper-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    min-width: 110px;
+    z-index: 2;
+}
+.stepper-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #e6f4ef 60%, #fff 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 6px;
+    border: 2.5px solid #e6f4ef;
+    color: #b0cfc7;
+    transition: border-color .2s, color .2s, box-shadow .2s;
+}
+.stepper-step.active .stepper-icon {
+    border-color: #06a77d;
+    color: #06a77d;
+    box-shadow: 0 0 0 4px #2bd6b633;
+}
+.stepper-step.completed .stepper-icon {
+    border-color: #2bd6b6;
+    color: #2bd6b6;
+}
+.stepper-label {
+    font-size: 0.98rem;
+    color: #7b8a90;
+    font-weight: 600;
+    margin-top: 2px;
+}
+.stepper-step.active .stepper-label {
+    color: #06a77d;
+}
+.stepper-line {
+    flex: 1 1 0%;
+    height: 4px;
+    background: linear-gradient(90deg, #e6f4ef 60%, #2bd6b6 100%);
+    margin: 0 0.5rem;
+    border-radius: 2px;
+    min-width: 40px;
+    max-width: 80px;
+    z-index: 1;
+}
+
+/* --- GÉNERO PREMIUM --- */
+.gender-cards {
+    display: flex;
+    gap: 24px;
+    margin: 12px 0 0 0;
+}
+.gender-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f9fffd;
+    border: 2.5px solid #e6f4ef;
+    border-radius: 16px;
+    padding: 18px 32px 12px 32px;
+    font-size: 1.08rem;
+    font-weight: 700;
+    color: #06a77d;
+    cursor: pointer;
+    transition: border-color .18s, box-shadow .18s, background .18s;
+    outline: none;
+    min-width: 120px;
+    min-height: 80px;
+    box-shadow: 0 4px 18px rgba(6,167,125,0.06);
+}
+.gender-card.selected, .gender-card:focus {
+    border-color: #2bd6b6;
+    background: linear-gradient(180deg, #e6f4ef 60%, #fff 100%);
+    box-shadow: 0 0 0 4px #2bd6b633;
+}
+.gender-card .gender-icon {
+    margin-bottom: 6px;
+}
+
+/* --- PASOS Y ACCIONES --- */
+.step-content {
+    max-width: 420px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(6,167,125,0.07);
+    padding: 32px 28px 24px 28px;
+    margin-bottom: 18px;
+    display: block;
+}
+.step-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    margin-top: 24px;
+}
+.next-btn, .prev-btn, .submit-btn {
+    padding: 12px 24px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 800;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #2bd6b6, #06a77d);
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(6,167,125,0.08);
+    cursor: pointer;
+    transition: background .18s, box-shadow .18s;
+}
+.prev-btn {
+    background: #e6f4ef;
+    color: #06a77d;
+    box-shadow: none;
+}
+.next-btn:disabled, .submit-btn:disabled {
+    background: #b0cfc7;
+    color: #fff;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* --- VALIDACIONES MODERNAS --- */
+.group input:invalid, .group select:invalid {
+    border-color: #ffb4b4 !important;
+    box-shadow: 0 8px 18px rgba(255,84,84,0.06) !important;
+}
+.group input:focus:invalid, .group select:focus:invalid {
+    border-color: #ffb4b4 !important;
+    box-shadow: 0 8px 18px rgba(255,84,84,0.12) !important;
+}
 /* Estilos modernos para Registro de Persona - registro_persona.css */
 :root{
     --bg:#ffffff;

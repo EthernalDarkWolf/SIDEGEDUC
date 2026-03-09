@@ -10,7 +10,7 @@ load_dotenv()
 
 # --- IMPORTACIÓN DE MODELOS ---
 # Importamos desde la ruta que SQLAlchemy reconozca según tu estructura
-from database.models import db, Usuarios, Roles, StatusUser
+from database.models import db, Usuarios, Roles, StatusUser, TipoPersona
 
 from utils.start import login_bp
 
@@ -135,8 +135,65 @@ def api_persona_lookup():
 def api_profesion():
     return manejar_la_vista_de.api_create_profesion()
 
+
 # --- RUTAS ---
 
+# Registro de personas tipo wizard (paso a paso)
+from flask import request, flash
+
+
+@app.route('/registro_wizard', methods=['GET', 'POST'])
+def registro_wizard_tipo():
+    if request.method == 'POST':
+        tipo_persona = request.form.get('tipo_persona')
+        if tipo_persona:
+            session['wizard_tipo_persona'] = tipo_persona
+            return redirect(url_for('registro_wizard_datos'))
+        else:
+            flash('Selecciona un tipo de persona')
+    tipos_persona = TipoPersona.query.all()
+    return render_template('home_panel/registro_wizard_tipo.html', tipos_persona=tipos_persona)
+
+@app.route('/registro_wizard/datos', methods=['GET', 'POST'])
+def registro_wizard_datos():
+    if request.method == 'POST':
+        # Guardar datos personales en sesión
+        session['wizard_primer_nombre'] = request.form.get('nombre1')
+        session['wizard_segundo_nombre'] = request.form.get('nombre2')
+        session['wizard_primer_apellido'] = request.form.get('apellido1')
+        session['wizard_segundo_apellido'] = request.form.get('apellido2')
+        session['wizard_fecha_nacimiento'] = request.form.get('fecha_nacimiento')
+        session['wizard_tipo_cedula'] = request.form.get('tipo_cedula')
+        # Validar aquí si es necesario
+        return redirect(url_for('registro_wizard_familia'))
+    # Pass the type of person name (not id) to the template so client-side scripts can read it
+    tipo_nombre = ''
+    tipo_id = session.get('wizard_tipo_persona')
+    if tipo_id:
+        try:
+            tipo_obj = TipoPersona.query.get(int(tipo_id))
+            if tipo_obj:
+                # SQLAlchemy attribute name may vary
+                tipo_nombre = getattr(tipo_obj, 'nombre_tipo_persona', '') or getattr(tipo_obj, 'nombre', '')
+        except Exception:
+            tipo_nombre = ''
+    return render_template('home_panel/registro_wizard_datos.html',
+                           wizard_tipo_persona=tipo_nombre)
+
+@app.route('/registro_wizard/familia', methods=['GET', 'POST'])
+def registro_wizard_familia():
+    if request.method == 'POST':
+        session['wizard_cedula'] = request.form.get('cedula')
+        session['wizard_num_hijos'] = request.form.get('num_hijos')
+        session['wizard_relacion'] = request.form.get('relacion')
+        # Aquí puedes guardar todo en la BD o mostrar resumen
+        # Limpiar sesión si es necesario
+        flash('Registro completado exitosamente')
+        return redirect(url_for('dashboard'))
+    return render_template('home_panel/registro_wizard_familia.html')
+
+
+# -- MANEJO DEL RESTO DE LAS RUTAS ---
 @app.route('/dashboard')
 def dashboard():
     return manejar_la_vista_de.home_panel()

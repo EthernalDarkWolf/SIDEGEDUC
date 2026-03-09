@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+    .error-border { border-color: red !important; }
+    .error-text { color: red; font-size: 0.8em; margin-top: 4px; }
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    .form-group.full-width {
+        grid-column: span 2;
+    }
+</style>
+
+<div class="registro-wizard">
+    <div class="wizard-progress">
+        <ul>
+            <li class="completed">Tipo de persona</li>
+            <li class="active">Datos personales</li>
+            <li>Cédula y familia</li>
+        </ul>
+    </div>
+    <form method="post">
+        <h2>Datos personales</h2>
+        <!-- hidden field so JS knows what kind of person was chosen in step 1 -->
+        <input type="hidden" id="wizard_tipo_persona" value="{{ wizard_tipo_persona }}">
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="nombre1">Primer nombre:</label>
+                <input type="text" name="nombre1" id="nombre1" required value="{{ session.get('wizard_primer_nombre','') }}">
+                <div class="error-text" id="error-nombre1"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="nombre2">Segundo nombre:</label>
+                <input type="text" name="nombre2" id="nombre2" value="{{ session.get('wizard_segundo_nombre','') }}">
+                <div class="error-text" id="error-nombre2"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="apellido1">Primer apellido:</label>
+                <input type="text" name="apellido1" id="apellido1" required value="{{ session.get('wizard_primer_apellido','') }}">
+                <div class="error-text" id="error-apellido1"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="apellido2">Segundo apellido:</label>
+                <input type="text" name="apellido2" id="apellido2" value="{{ session.get('wizard_segundo_apellido','') }}">
+                <div class="error-text" id="error-apellido2"></div>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="fecha_nacimiento">Fecha de nacimiento:</label>
+                <input type="date" name="fecha_nacimiento" id="fecha_nacimiento" required value="{{ session.get('wizard_fecha_nacimiento','') }}">
+                <div class="error-text" id="error-fecha_nacimiento"></div>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="tipo_cedula">Tipo de cédula:</label>
+                <input type="text" name="tipo_cedula" id="tipo_cedula" readonly value="{{ session.get('wizard_tipo_cedula','') }}">
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="btnSig" disabled>Siguiente</button>
+    </form>
+</div>
+<script src="{{ url_for('static', filename='js/registro_wizard_validaciones.js') }}"></script>
+{% endblock %}

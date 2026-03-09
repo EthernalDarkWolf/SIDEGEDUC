@@ -1,5 +1,13 @@
+
+
 from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
+
+# Modelo para tipos de persona (wizard)
+class TipoPersona(db.Model):
+    __tablename__ = 'tipo_persona'
+    id_tipo_persona = db.Column(db.Integer, primary_key=True)
+    nombre_tipo_persona = db.Column(db.String(50), unique=True, nullable=False)
 
 class Roles(db.Model):
     __tablename__ = 'roles'

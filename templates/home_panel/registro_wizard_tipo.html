@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="registro-wizard">
+    <div class="wizard-progress">
+        <ul>
+            <li class="active">Tipo de persona</li>
+            <li>Datos personales</li>
+            <li>Cédula y familia</li>
+        </ul>
+    </div>
+    <form method="post">
+        <h2>Selecciona el tipo de persona</h2>
+        <div class="form-group">
+            <label for="tipo_persona">Tipo de persona:</label>
+            <select name="tipo_persona" id="tipo_persona" required>
+                {% for tipo in tipos_persona %}
+                <option value="{{ tipo.id }}">{{ tipo.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Siguiente</button>
+    </form>
+</div>
+{% endblock %}

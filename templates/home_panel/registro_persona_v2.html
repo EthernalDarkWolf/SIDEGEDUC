@@ -1,466 +1,381 @@
+
+<style>
+    .error-border { border-color: red !important; }
+    .error-text { color: red; font-size: 0.8em; margin-top: 2px; }
+</style>
 <div class="registro-persona">
-        <h3>Registro de Persona</h3>
-        <!-- Message modal will show validation/server messages (e.g. edad inválida) -->
-        <div id="status-modal" class="modal-overlay" aria-hidden="true">
-            <div class="status-modal-box">
-                <h2 id="modal-title">Aviso</h2>
-                <p id="modal-message">{{ message or '' }}</p>
-                <button id="modal-close">Cerrar</button>
+    <h3>Registro de Persona</h3>
+    <!-- Modal de mensajes -->
+    <div id="status-modal" class="modal-overlay" aria-hidden="true">
+        <div class="status-modal-box">
+            <h2 id="modal-title">Aviso</h2>
+            <p id="modal-message">{{ message or '' }}</p>
+            <button id="modal-close">Cerrar</button>
+        </div>
+    </div>
+    <!-- Modal de confirmación para número de hijos -->
+    <div id="confirm-modal" class="modal-overlay" aria-hidden="true">
+        <div class="status-modal-box" style="max-width:420px">
+            <h2>Advertencia</h2>
+            <p id="confirm-message" style="text-align:left"></p>
+            <div style="margin-top:1rem;display:flex;justify-content:center;gap:12px">
+                <button id="confirm-yes" class="panel-btn primary" style="padding:8px 14px">Sí</button>
+                <button id="confirm-no" class="panel-btn" style="background:#e3342f;color:#fff;padding:8px 14px">No</button>
             </div>
         </div>
+    </div>
 
-        <!-- confirm modal used when número de hijos excede 5 -->
-        <div id="confirm-modal" class="modal-overlay" aria-hidden="true">
-            <div class="status-modal-box" style="max-width:420px">
-                <h2>Advertencia</h2>
-                <p id="confirm-message" style="text-align:left"></p>
-                <div style="margin-top:1rem;display:flex;justify-content:center;gap:12px">
-                    <button id="confirm-yes" class="panel-btn primary" style="padding:8px 14px">Sí</button>
-                    <button id="confirm-no" class="panel-btn" style="background:#e3342f;color:#fff;padding:8px 14px">No</button>
+    <!-- Stepper visual -->
+    <div class="stepper-flow-premium">
+        <div class="stepper-step" data-step="1">
+            <span class="stepper-icon"> <!-- usuario/género -->
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M4 20c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="currentColor" stroke-width="1.5"/></svg>
+            </span>
+            <span class="stepper-label">Tipo y Género</span>
+        </div>
+        <div class="stepper-line"></div>
+        <div class="stepper-step" data-step="2">
+            <span class="stepper-icon"> <!-- carnet -->
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M14 12h4" stroke="currentColor" stroke-width="1.5"/></svg>
+            </span>
+            <span class="stepper-label">Identidad</span>
+        </div>
+        <div class="stepper-line"></div>
+        <div class="stepper-step" data-step="3">
+            <span class="stepper-icon"> <!-- familia -->
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="7" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/><circle cx="17" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M2 20c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" stroke-width="1.5"/><path d="M10 20c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" stroke-width="1.5"/></svg>
+            </span>
+            <span class="stepper-label">Familia</span>
+        </div>
+        <div class="stepper-line"></div>
+        <div class="stepper-step" data-step="4">
+            <span class="stepper-icon"> <!-- maletín -->
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="18" height="12" rx="3" stroke="currentColor" stroke-width="1.5"/><path d="M8 7V5a4 4 0 0 1 8 0v2" stroke="currentColor" stroke-width="1.5"/></svg>
+            </span>
+            <span class="stepper-label">Laboral</span>
+        </div>
+    </div>
+
+    <!-- Formulario único con pasos -->
+    <form id="personaForm" method="POST" autocomplete="off">
+        <div class="step-content" data-step="1">
+            <div class="group">
+                <label for="tipo_persona">Tipo de Persona</label>
+                <select name="tipo_persona" id="tipo_persona" required>
+                    <option value="">Seleccione</option>
+                    <option value="Estudiante">Estudiante</option>
+                    <option value="Empleado">Empleado</option>
+                    <option value="Representante">Representante</option>
+                    <option value="Profesor">Profesor</option>
+                </select>
+            </div>
+            <div class="group">
+                <label>Género</label>
+                <div class="gender-cards">
+                    <button type="button" class="gender-card" data-value="M">
+                        <span class="gender-icon">
+                            <!-- Símbolo masculino (♂) universal: círculo con flecha -->
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                                <circle cx="16" cy="16" r="9" stroke="#06a77d" stroke-width="2"/>
+                                <path d="M21 11 L27 5" stroke="#06a77d" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M24.5 5H27V7.5" stroke="#06a77d" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        Masculino
+                    </button>
+                    <button type="button" class="gender-card" data-value="F">
+                        <span class="gender-icon">
+                            <!-- Símbolo femenino (♀) universal: círculo con cruz -->
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                                <circle cx="16" cy="14" r="9" stroke="#06a77d" stroke-width="2"/>
+                                <path d="M16 23V29" stroke="#06a77d" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M13 26h6" stroke="#06a77d" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        Femenino
+                    </button>
                 </div>
+                <input type="hidden" name="genero" id="genero" required>
+            </div>
+            <div class="step-actions">
+                <button type="button" class="next-btn" id="next-1" disabled>Siguiente</button>
             </div>
         </div>
-        <!-- define helper functions immediately so other scripts can use them -->
-        <script>
-            function showStatusModal(title, message){
-                console.log('showStatusModal invoked', title, message);
-                var overlay = document.getElementById('status-modal');
-                console.log('overlay element', overlay);
-                if(!overlay) return;
-                // ensure overlay is a direct child of body so fixed positioning works
-                if(overlay.parentNode !== document.body){ document.body.appendChild(overlay); console.log('moved overlay to body'); }
-                var t = document.getElementById('modal-title');
-                var m = document.getElementById('modal-message');
-                if(t) t.innerText = title || '';
-                if(m) m.innerText = message || '';
-                overlay.setAttribute('aria-hidden','false');
-                overlay.classList.add('visible');
-            }
-            function hideStatusModal(){
-                var overlay = document.getElementById('status-modal');
-                if(!overlay) return;
-                overlay.setAttribute('aria-hidden','true');
-                overlay.classList.remove('visible');
-            }
-            console.log('early showStatusModal defined=', typeof showStatusModal);
-        </script>
-
-    <form method="post" id="personaForm">
-        {% if edit and person %}
-            <input type="hidden" name="id_persona" value="{{ person.id_persona }}">
-            <input type="hidden" name="role" value="{{ person.tipo_persona }}">
-        {% endif %}
-        <div class="card">
-            <div class="card-body">
-                <div class="grid">
-                    <div class="main-col">
-                        <div class="section-card">
-                            <div class="section-header"><span class="icon-badge"><i class="fas fa-user"></i></span><h4>Datos personales</h4></div>
-                            <div class="section-body">
-                                <div class="group full">
-                                    <label>Número de cédula</label>
-                                    <div class="cedula-wrap">
-                                            <input name="numero_cedula" id="numero_cedula" placeholder="Ej: 31412298" required data-rule="numbers" data-minlength="7" data-maxlength="9" data-invalid-message="Solo se permiten números en este campo" data-length-message="Ingrese una cédula válida de 7-9 dígitos" value="{{ person.numero_cedula if person is defined and person.numero_cedula else '' }}">
-                                        <div id="cedula_spinner" class="spinner" style="display:none" aria-hidden="true"></div>
-                                        <div id="cedula_generated_note" class="generated-note" style="display:none"><span class="bolt">⚡</span> Cédula escolar generada automáticamente</div>
-                                    </div>
-                                </div>
-
-                                <div class="group">
-                                    <label>Primer nombre</label>
-                                    <input name="primer_nombre" required placeholder="Ingrese primer nombre" maxlength="10" data-rule="letters" data-minlength="5" data-maxlength="10" data-duplicate-group="nombres" pattern="[A-Za-záéíóúÁÉÍÓÚñÑ ]+" title="Solo letras, max 10" value="{{ person.primer_nombre if person is defined and person.primer_nombre else '' }}">
-                                </div>
-                                <div class="group">
-                                    <label>Segundo nombre</label>
-                                    <input name="segundo_nombre" placeholder="(opcional)" maxlength="10" data-rule="letters" data-minlength="5" data-maxlength="10" data-duplicate-group="nombres" pattern="[A-Za-záéíóúÁÉÍÓÚñÑ ]+" title="Solo letras, max 10" value="{{ person.segundo_nombre if person is defined and person.segundo_nombre else '' }}">
-                                </div>
-                                <div class="group">
-                                    <label>Primer apellido</label>
-                                    <input name="primer_apellido" required placeholder="Ingrese primer apellido" maxlength="10" data-rule="letters" data-minlength="5" data-maxlength="10" data-duplicate-group="apellidos" pattern="[A-Za-záéíóúÁÉÍÓÚñÑ ]+" title="Solo letras, max 10" value="{{ person.primer_apellido if person is defined and person.primer_apellido else '' }}">
-                                </div>
-                                <div class="group">
-                                    <label>Segundo apellido</label>
-                                    <input name="segundo_apellido" placeholder="(opcional)" maxlength="10" data-rule="letters" data-minlength="5" data-maxlength="10" data-duplicate-group="apellidos" pattern="[A-Za-záéíóúÁÉÍÓÚñÑ ]+" title="Solo letras, max 10" value="{{ person.segundo_apellido if person is defined and person.segundo_apellido else '' }}">
-                                </div>
-                                <div class="group full">
-                                    <label for="fecha_nacimiento">Fecha de nacimiento</label>
-                                    <input type="text" id="fecha_nacimiento" name="fecha_nacimiento" placeholder="DD/MM/AAAA" data-flatpickr="true" readonly value="{{ person.fecha_nacimiento if person is defined and person.fecha_nacimiento else '' }}">
-                                    <small class="muted">Formato: DD/MM/AAAA</small>
-                                </div>
-                                <div class="group">
-                                    <label>Sexo</label>
-                                    <select name="id_sexo">
-                                        <option value="">-- sin especificar --</option>
-                                        {% for s in sexos %}
-                                            <option value="{{ s.id_sexo }}" {% if person is defined and person.id_sexo == s.id_sexo %}selected{% endif %}>{{ s.letra_sexo }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="section-card">
-                            <div class="section-header"><span class="icon-badge"><i class="fas fa-id-card"></i></span><h4>Identificación</h4></div>
-                            <div class="section-body">
-                                <div class="group full">
-                                    <label>Tipo de documento (opcional)</label>
-                                    <select name="id_tipo_documento">
-                                        <option value="">-- ninguno --</option>
-                                        {% for td in tipo_documentos %}
-                                            <option value="{{ td.id_tipo_documento }}" {% if person is defined and person.id_tipo_documento == td.id_tipo_documento %}selected{% endif %}>{{ td.nombre_tipo_documento }}</option>
-                                        {% endfor %}
-                                        
-                                    </select>
-                                </div>
-                                <!-- moved cedula field above as required -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <aside class="side-col">
-                        <div class="section-card">
-                            <div class="section-header"><span class="icon-badge"><i class="fas fa-user-tie"></i></span><h4>Tipo & roles</h4></div>
-                            <div class="section-body">
-                                <div class="group full">
-                                    <label>Tipo de persona</label>
-                                    <select name="tipo_persona" id="tipo_persona" required>
-                                        <option value="estudiante" {% if person is defined and person.tipo_persona == 'estudiante' %}selected{% endif %}>Estudiante</option>
-                                        <option value="representante" {% if person is defined and person.tipo_persona == 'representante' %}selected{% endif %}>Representante</option>
-                                        <option value="profesor" {% if person is defined and person.tipo_persona == 'profesor' %}selected{% endif %}>Profesor</option>
-                                        <option value="empleado" {% if person is defined and person.tipo_persona == 'empleado' %}selected{% endif %}>Empleado</option>
-                                    </select>
-                                </div>
-
-                                <div id="fields_estudiante" class="group extra-group full" style="display:block">
-                                    <label for="fecha_inscripcion">Fecha inscripción (estudiante)</label>
-                                    <input type="text" id="fecha_inscripcion" name="fecha_inscripcion" placeholder="DD/MM/AAAA" data-flatpickr="true" readonly>
-                                </div>
-
-                                <div id="escolar-controls" class="group extra-group full" style="display:none">
-                                    <label>Número de hijo (orden)</label>
-                                    <input type="number" id="numero_hijo" name="numero_hijo" min="1" placeholder="Ej: 1">
-                                    <small class="muted">Número orden del hijo para el representante.</small>
-                                </div>
-
-                                <div id="rep-cedula-wrap" class="group extra-group full" style="display:none">
-                                    <label>Cédula del representante (para escolar)</label>
-                                    <input type="text" id="cedula_representante" name="cedula_representante" placeholder="Ej: 12345678">
-                                    <small class="muted">Se usarán los 2 últimos dígitos para generar la cédula escolar.</small>
-                                </div>
-
-                                <div id="generar_escolar_wrap" class="group full" style="display:none;margin-top:6px">
-                                    <button type="button" id="btn_generar_escolar" class="panel-btn outline">Generar cédula escolar</button>
-                                    <small class="muted" style="margin-left:8px">Llena fecha de nacimiento, número de hijo y cédula representante.</small>
-                                </div>
-
-                                <div id="fields_representante" class="group extra-group full" style="display:none">
-                                    <label>Número de hijos (representante)</label>
-                                    <input type="number" id="numero_hijos" name="numero_hijos" min="0" value="0">
-                                    <small class="muted">Indica cuántos hijos tiene este representante.</small>
-                                </div>
-                            </div>
-                        </div>
-                    </aside>
+        <div class="step-content" data-step="2" style="display:none">
+            <!-- identidad paso: nombres y apellidos separados en grid 2 columnas -->
+            <div class="group" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                <div>
+                    <label for="primer_nombre">Primer nombre</label>
+                    <input type="text" name="primer_nombre" id="primer_nombre" required data-rule="letters" maxlength="11">
+                    <div class="error-text" id="error-primer_nombre"></div>
                 </div>
-
-                <div style="margin-top:18px">
-                    <button type="submit" class="panel-btn primary">{% if edit %}Guardar cambios{% else %}Registrar persona{% endif %}</button>
+                <div>
+                    <label for="segundo_nombre">Segundo nombre</label>
+                    <input type="text" name="segundo_nombre" id="segundo_nombre" data-rule="letters" maxlength="11">
+                    <div class="error-text" id="error-segundo_nombre"></div>
                 </div>
+                <div>
+                    <label for="primer_apellido">Primer apellido</label>
+                    <input type="text" name="primer_apellido" id="primer_apellido" required data-rule="letters" maxlength="11">
+                    <div class="error-text" id="error-primer_apellido"></div>
+                </div>
+                <div>
+                    <label for="segundo_apellido">Segundo apellido</label>
+                    <input type="text" name="segundo_apellido" id="segundo_apellido" data-rule="letters" maxlength="11">
+                    <div class="error-text" id="error-segundo_apellido"></div>
+                </div>
+            </div>
+            <div class="group">
+                <label for="fecha_nacimiento">Fecha de Nacimiento</label>
+                <input type="date" name="fecha_nacimiento" id="fecha_nacimiento" required style="cursor:pointer;background:#fff;" onfocus="this.showPicker && this.showPicker()" onclick="this.showPicker && this.showPicker()">
+                <div class="error-text" id="error-fecha_nacimiento"></div>
+            </div>
+            <div class="step-actions">
+                <button type="button" class="prev-btn">Anterior</button>
+                <button type="button" class="next-btn" id="next-2" disabled>Siguiente</button>
+            </div>
+        </div>
+        <div class="step-content" data-step="3" style="display:none">
+            <div class="group">
+                <label for="cedula">Número de Cédula</label>
+                <input type="text" name="cedula" id="cedula" required data-rule="numbers" maxlength="10">
+            </div>
+            <div class="group">
+                <label for="num_hijos">Número de Hijos</label>
+                <input type="number" name="num_hijos" id="num_hijos" min="0" required>
+            </div>
+            <div class="group">
+                <label for="relacion_familiar">Relación Familiar</label>
+                <input type="text" name="relacion_familiar" id="relacion_familiar" required maxlength="30">
+            </div>
+            <div class="step-actions">
+                <button type="button" class="prev-btn">Anterior</button>
+                <button type="button" class="next-btn" id="next-3" disabled>Siguiente</button>
+            </div>
+        </div>
+        <div class="step-content" data-step="4" style="display:none">
+            <div class="group">
+                <label for="ocupacion">Ocupación</label>
+                <input type="text" name="ocupacion" id="ocupacion" required maxlength="40">
+            </div>
+            <div class="group">
+                <label for="profesion">Profesión</label>
+                <input type="text" name="profesion" id="profesion" required maxlength="40">
+            </div>
+            <div class="step-actions">
+                <button type="button" class="prev-btn">Anterior</button>
+                <button type="submit" class="submit-btn" id="submit-btn" disabled>Completar Registro</button>
             </div>
         </div>
     </form>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='home_panel/registro_persona.css') }}">
-
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='home_panel/flatpickr.min.css') }}">
+    <script src="{{ url_for('static', filename='home_panel/flatpickr.min.js') }}"></script>
     <script src="{{ url_for('static', filename='home_panel/form_validators.js') }}"></script>
     <script>
+        // Stepper y lógica de pasos
         (function(){
-            const cfg = {
-                altInput: true,
-                altFormat: 'd/m/Y',
-                dateFormat: 'Y-m-d',
-                locale: flatpickr.l10ns && flatpickr.l10ns.es ? flatpickr.l10ns.es : undefined,
-                allowInput: true,
-                clickOpens: true,
-                wrap: false,
-                disableMobile: true
-            };
-
-            document.querySelectorAll('input[data-flatpickr]').forEach(function(el){
-                try{
-                    if(!el.closest('.date-field')){
-                        const wrapper = document.createElement('div'); wrapper.className='date-field';
-                        el.parentNode.insertBefore(wrapper, el); wrapper.appendChild(el);
-                        const icon = document.createElement('span'); icon.className='date-icon';
-                        icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none"><path d="M17 3v2M7 3v2M3 7h18M21 21H3V7h18v14z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
-                        wrapper.appendChild(icon);
-                        const clearBtn = document.createElement('button'); clearBtn.type='button'; clearBtn.className='date-clear'; clearBtn.title='Limpiar fecha'; clearBtn.innerHTML='✕';
-                        clearBtn.style.position='absolute'; clearBtn.style.right='46px'; clearBtn.style.top='50%'; clearBtn.style.transform='translateY(-50%)'; clearBtn.style.border='none'; clearBtn.style.background='transparent'; clearBtn.style.cursor='pointer'; clearBtn.style.fontSize='14px';
-                        wrapper.appendChild(clearBtn);
-                        const help = document.createElement('span'); help.className='date-helper'; help.textContent = el.getAttribute('placeholder') || 'DD/MM/AAAA'; wrapper.appendChild(help);
-                        icon.addEventListener('click', function(){ el.focus(); el.click(); });
-                        clearBtn.addEventListener('click', function(){ if(el._flatpickr) el._flatpickr.clear(); });
-                    }
-                    const instance = flatpickr(el, cfg);
-                    el._flatpickr = instance;
-                } catch(e){ console.warn('flatpickr init failed', e); }
-            });
-
+            let currentStep = 1;
+            const totalSteps = 4;
+            const stepContents = document.querySelectorAll('.step-content');
+            const stepperSteps = document.querySelectorAll('.stepper-step');
             const form = document.getElementById('personaForm');
-            const tipo = document.getElementById('tipo_persona');
-            const fe = document.getElementById('fields_estudiante');
-            const fr = document.getElementById('fields_representante');
-            const escolarControls = document.getElementById('escolar-controls');
-            const repCedulaWrap = document.getElementById('rep-cedula-wrap');
-            const generarWrap = document.getElementById('generar_escolar_wrap');
-            const numeroHijoInput = document.getElementById('numero_hijo');
-            const cedulaRepInput = document.getElementById('cedula_representante');
-            const numeroCedulaField = document.querySelector('input[name="numero_cedula"]');
-            const spinner = document.getElementById('cedula_spinner');
-            const generatedNote = document.getElementById('cedula_generated_note');
+            const nextBtns = form.querySelectorAll('.next-btn');
+            const prevBtns = form.querySelectorAll('.prev-btn');
+            const submitBtn = document.getElementById('submit-btn');
+            const generoInput = document.getElementById('genero');
+            const genderCards = document.querySelectorAll('.gender-card');
 
-            function toggle(){
-                if(!tipo) return;
-                if(tipo.value === 'estudiante'){ fe.style.display = 'block'; fr.style.display = 'none'; }
-                else if(tipo.value === 'representante'){ fe.style.display = 'none'; fr.style.display = 'block'; }
-                else { fe.style.display = 'none'; fr.style.display = 'none'; }
-                const td = document.querySelector('select[name="id_tipo_documento"]');
-                const isEscolar = td && td.value === 'escolar';
-                if(tipo.value === 'estudiante' || isEscolar){ if(escolarControls) escolarControls.style.display='block'; if(repCedulaWrap) repCedulaWrap.style.display='block'; if(generarWrap) generarWrap.style.display='block'; }
-                else { if(escolarControls) escolarControls.style.display='none'; if(repCedulaWrap) repCedulaWrap.style.display='none'; if(generarWrap) generarWrap.style.display='none'; }
-            }
-            if(tipo) {
-                tipo.addEventListener('change', function(){
-                    if(form) form.dataset.confirmed = '';
-                    toggle();
+            function updateStepper(){
+                stepperSteps.forEach((el, idx) => {
+                    el.classList.toggle('active', idx+1 === currentStep);
+                    el.classList.toggle('completed', idx+1 < currentStep);
                 });
             }
-            const tipoDoc = document.querySelector('select[name="id_tipo_documento"]');
-            if(tipoDoc) tipoDoc.addEventListener('change', toggle);
-            // clear confirmation whenever user edits number of hijos
-            const numeroHijosInput = document.getElementById('numero_hijos');
-            if(numeroHijosInput){
-                numeroHijosInput.addEventListener('input', function(){ if(form) form.dataset.confirmed = ''; });
+            function showStep(n){
+                stepContents.forEach((el, idx) => {
+                    el.style.display = (idx+1 === n) ? '' : 'none';
+                });
+                updateStepper();
             }
-            toggle();
-
-            // Validate before submit
-            // helper to prompt user when jugador tiene más de 5 hijos
-            function showConfirm(numero, callback){
-                const overlay = document.getElementById('confirm-modal');
-                const msgEl = document.getElementById('confirm-message');
-                if(!overlay || !msgEl) return;
-                // ensure overlay is direct child of body for fixed positioning
-                if(overlay.parentNode !== document.body){ document.body.appendChild(overlay); }
-                msgEl.textContent = `Acabas de ingresar que esta persona tiene ${numero} hijos. Te sugerimos que verifiques y agregues un numero de hijos válido... Sin embargo el equipo de desarrolladores de SIDEGEDUC deja a tu consentimiento de validar que esta información sea correcta...y no nos hacemos responsables de las concecuencias de que valides una informacion inconsistente,  Estas seguro que esta informacion es valida y deseas continuar?`;
-                overlay.setAttribute('aria-hidden','false');
-                overlay.classList.add('visible');
-                const yes = document.getElementById('confirm-yes');
-                const no = document.getElementById('confirm-no');
-                function cleanup(){
-                    overlay.setAttribute('aria-hidden','true');
-                    overlay.classList.remove('visible');
-                    yes.removeEventListener('click', onYes);
-                    no.removeEventListener('click', onNo);
+            // helpers for validation
+            function calcularEdad(fecha) {
+                const hoy = new Date();
+                const nacimiento = new Date(fecha);
+                let edad = hoy.getFullYear() - nacimiento.getFullYear();
+                const m = hoy.getMonth() - nacimiento.getMonth();
+                if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) {
+                    edad--;
                 }
-                function onYes(){ cleanup(); callback(true); }
-                function onNo(){ cleanup(); callback(false); }
-                yes.addEventListener('click', onYes);
-                no.addEventListener('click', onNo);
+                return edad;
             }
 
-            form.addEventListener('submit', function(e){
-                // run front‑end validators one last time
-                if(typeof updatePersonaSubmitState === 'function'){
-                    updatePersonaSubmitState();
-                }
-                var btn = form.querySelector('button[type="submit"]');
-                if(btn && btn.disabled){
-                    e.preventDefault();
-                    showStatusModal('Aviso','Por favor corrige los campos marcados antes de continuar.');
-                    return;
-                }
+            function setError(el, msg) {
+                el.classList.add('error-border');
+                const div = document.getElementById('error-' + el.id);
+                if (div) div.textContent = msg;
+            }
 
-                // cross‑age checks (again, should already be covered)
-                var tipoVal = document.getElementById('tipo_persona') && document.getElementById('tipo_persona').value;
-                var fechaEl = document.getElementById('fecha_nacimiento');
-                if(fechaEl && fechaEl.value){
-                    // compute age using same logic as earlier
-                    var parts = fechaEl.value.split('-');
-                    if(parts.length === 3){
-                        var y = parseInt(parts[0],10), m = parseInt(parts[1],10)-1, d = parseInt(parts[2],10);
-                        var dob = new Date(y,m,d);
-                        var today = new Date();
-                        var age = today.getFullYear() - dob.getFullYear();
-                        var m2 = today.getMonth() - dob.getMonth();
-                        if(m2 < 0 || (m2 === 0 && today.getDate() < dob.getDate())) age--;
-                        if(tipoVal === 'estudiante' && (age < 3 || age > 18)){
-                            showStatusModal('Aviso','Edad inválida para estudiante (3–18 años).');
-                            e.preventDefault();
-                            return;
+            function clearError(el) {
+                el.classList.remove('error-border');
+                const div = document.getElementById('error-' + el.id);
+                if (div) div.textContent = '';
+            }
+
+            function validarLongitud(el, required = true) {
+                const v = el.value.trim();
+                clearError(el);
+                if (!v) {
+                    if (required) { setError(el, 'Este campo es obligatorio'); return false; }
+                    return true;
+                }
+                if (v.length < 3 || v.length > 11) {
+                    setError(el, 'Debe tener entre 3 y 11 caracteres');
+                    return false;
+                }
+                return true;
+            }
+
+            function validarEspejo() {
+                const n1 = form.primer_nombre.value.trim().toLowerCase();
+                const n2 = form.segundo_nombre.value.trim().toLowerCase();
+                const a1 = form.primer_apellido.value.trim().toLowerCase();
+                const a2 = form.segundo_apellido.value.trim().toLowerCase();
+                let ok = true;
+                [n1,n2].forEach(n => {
+                    [a1,a2].forEach(a => {
+                        if (n && a && n === a) {
+                            if (n1 === n) setError(form.primer_nombre,'Error: Los nombres y apellidos no pueden ser iguales');
+                            if (n2 === n) setError(form.segundo_nombre,'Error: Los nombres y apellidos no pueden ser iguales');
+                            if (a1 === a) setError(form.primer_apellido,'Error: Los nombres y apellidos no pueden ser iguales');
+                            if (a2 === a) setError(form.segundo_apellido,'Error: Los nombres y apellidos no pueden ser iguales');
+                            ok = false;
                         }
-                        if((tipoVal === 'representante' || tipoVal === 'profesor') && age < 18){
-                            showStatusModal('Aviso','La persona debe tener al menos 18 años para este rol.');
-                            e.preventDefault();
-                            return;
-                        }
+                    });
+                });
+                return ok;
+            }
+
+            function validarFechaStep2() {
+                clearError(form.fecha_nacimiento);
+                if (!form.fecha_nacimiento.value) {
+                    setError(form.fecha_nacimiento,'La fecha es obligatoria');
+                    return false;
+                }
+                if (form.tipo_persona.value.toLowerCase() === 'representante') {
+                    const edad = calcularEdad(form.fecha_nacimiento.value);
+                    if (edad < 18 || edad > 65) {
+                        setError(form.fecha_nacimiento,'Error: Un representante no debe ser menor de 18 años, Y no puede ser mayor de 65 años');
+                        return false;
                     }
                 }
+                return true;
+            }
 
-                // numero de hijos confirmation remains
-                if(tipoVal === 'representante'){
-                    const numEl = document.getElementById('numero_hijos');
-                    const num = numEl ? parseInt(numEl.value,10) || 0 : 0;
-                    if(num > 5 && !form.dataset.confirmed){
-                        e.preventDefault();
-                        showConfirm(num, function(ok){
-                            if(ok){
-                                form.dataset.confirmed = 'true';
-                                form.submit();
+            // Flatpickr calendar para fecha_nacimiento
+            document.addEventListener('DOMContentLoaded', function() {
+                if (window.flatpickr) {
+                    var input = document.getElementById('fecha_nacimiento');
+                    if (input) {
+                        let minDate = '1900-01-01';
+                        let maxDate = new Date().toISOString().split('T')[0];
+                        // Si es representante, limitar rango a 18-65 años
+                        function getMinMax() {
+                            const tipo = form.tipo_persona.value.toLowerCase();
+                            const today = new Date();
+                            if (tipo === 'representante') {
+                                let max = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+                                let min = new Date(today.getFullYear() - 65, today.getMonth(), today.getDate());
+                                return {
+                                    minDate: min.toISOString().split('T')[0],
+                                    maxDate: max.toISOString().split('T')[0]
+                                };
                             }
+                            return { minDate, maxDate };
+                        }
+                        let fp = flatpickr(input, Object.assign({
+                            dateFormat: 'Y-m-d',
+                            allowInput: true,
+                            locale: 'es',
+                            disableMobile: true
+                        }, getMinMax()));
+                        form.tipo_persona.addEventListener('change', function() {
+                            let opts = getMinMax();
+                            fp.set('minDate', opts.minDate);
+                            fp.set('maxDate', opts.maxDate);
                         });
-                        return;
                     }
                 }
             });
 
-            // found notice
-            const foundNotice = document.createElement('div'); foundNotice.id='foundNotice'; foundNotice.className='found-notice'; foundNotice.style.display='none';
-            form.parentNode.insertBefore(foundNotice, form);
-
-            function setFormDisabled(disabled){
-                form.querySelectorAll('input, select, textarea, button').forEach(function(el){
-                    if(el.classList && el.classList.contains('date-clear')) return;
-                    if(el === foundNotice) return;
-                    if(el.type === 'button' && el.classList && el.classList.contains('ghost-action')) return;
-                    if(el.tagName === 'BUTTON' && el.type === 'submit'){
-                        el.disabled = disabled;
-                        if(disabled){ el.dataset.origText = el.textContent; el.textContent = 'Persona ya registrada'; }
-                        else { if(el.dataset.origText) el.textContent = el.dataset.origText; }
-                        return;
-                    }
-                    el.disabled = disabled;
-                    if(disabled){ el.classList && el.classList.add('disabled-field'); }
-                    else { el.classList && el.classList.remove('disabled-field'); }
+            function validateStep1(){
+                const tipo = form.tipo_persona.value;
+                const genero = generoInput.value;
+                return tipo && genero;
+            }
+            function validateStep2(){
+                // run validations on each field and return overall result
+                let valid = true;
+                valid = valid && validarLongitud(form.primer_nombre, true);
+                valid = valid && validarLongitud(form.segundo_nombre, false);
+                valid = valid && validarLongitud(form.primer_apellido, true);
+                valid = valid && validarLongitud(form.segundo_apellido, false);
+                valid = valid && validarEspejo();
+                valid = valid && validarFechaStep2();
+                return valid;
+            }
+            function validateStep3(){
+                return form.cedula.value.trim() && form.num_hijos.value !== '' && form.relacion_familiar.value.trim();
+            }
+            function validateStep4(){
+                return form.ocupacion.value.trim() && form.profesion.value.trim();
+            }
+            function updateNextBtns(){
+                nextBtns[0].disabled = !validateStep1();
+                nextBtns[1].disabled = !validateStep2();
+                nextBtns[2].disabled = !validateStep3();
+                submitBtn.disabled = !validateStep4();
+            }
+            // Género premium
+            genderCards.forEach(btn => {
+                btn.addEventListener('click', function(){
+                    genderCards.forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    generoInput.value = btn.dataset.value;
+                    updateNextBtns();
                 });
-            }
-
-            // cedula lookup
-            const ced = form.querySelector('input[name="numero_cedula"]');
-            if(ced){
-                let timeout = null;
-                function runCheck(){
-                    const v = ced.value && ced.value.trim();
-                    if(!v){ foundNotice.style.display='none'; setFormDisabled(false); return; }
-                    fetch(`/api/persona/lookup?numero=${encodeURIComponent(v)}`)
-                        .then(r => r.json())
-                        .then(function(j){
-                            if(j && j.found){
-                                form.querySelector('input[name="primer_nombre"]').value = j.primer_nombre || '';
-                                form.querySelector('input[name="segundo_nombre"]').value = j.segundo_nombre || '';
-                                form.querySelector('input[name="primer_apellido"]').value = j.primer_apellido || '';
-                                form.querySelector('input[name="segundo_apellido"]').value = j.segundo_apellido || '';
-                                const fechaN = document.getElementById('fecha_nacimiento');
-                                if(fechaN){ if(j.fecha_nacimiento){ try{ if(fechaN._flatpickr) fechaN._flatpickr.setDate(j.fecha_nacimiento); else fechaN.value = j.fecha_nacimiento; }catch(e){ fechaN.value = j.fecha_nacimiento; } } }
-                                const sexSel = form.querySelector('select[name="id_sexo"]'); if(sexSel) sexSel.value = j.id_sexo || '';
-                                const tdSel = form.querySelector('select[name="id_tipo_documento"]'); if(tdSel) tdSel.value = j.id_tipo_documento || '';
-                                const tipoSel = document.getElementById('tipo_persona'); if(tipoSel) tipoSel.value = j.tipo_persona || tipoSel.value;
-                                const fins = document.getElementById('fecha_inscripcion'); if(fins){ if(j.fecha_inscripcion){ try{ if(fins._flatpickr) fins._flatpickr.setDate(j.fecha_inscripcion); else fins.value = j.fecha_inscripcion; }catch(e){ fins.value = j.fecha_inscripcion; } } }
-                                foundNotice.innerHTML = `<strong>Datos autocompletados:</strong> ${j.primer_nombre} ${j.primer_apellido} — Cédula: ${j.numero_cedula}<div style="margin-top:8px;color:#a94442;font-weight:700">No puedes volver a registrar esta persona.</div>`;
-                                foundNotice.style.display = 'block';
-                                setFormDisabled(true);
-                            } else {
-                                foundNotice.style.display = 'none';
-                                setFormDisabled(false);
-                            }
-                        }).catch(function(){ foundNotice.style.display='none'; setFormDisabled(false); });
-                }
-                ced.addEventListener('input', function(){ clearTimeout(timeout); timeout = setTimeout(runCheck, 500); });
-                ced.addEventListener('blur', runCheck);
-            }
-
-            // auto-generate escolar
-            function cleanDigits(s){ return String(s||'').replace(/\D+/g,''); }
-            function getAltDateString(el){
-                try{ if(el && el._flatpickr){ const d = el._flatpickr.selectedDates[0]; if(d instanceof Date) return ('0'+d.getDate()).slice(-2)+('0'+(d.getMonth()+1)).slice(-2)+d.getFullYear(); } }catch(e){}
-                if(!el) return '';
-                const v = el.value || el.getAttribute('placeholder') || '';
-                const m = v.match(/(\d{2})\D?(\d{2})\D?(\d{4})/);
-                if(m) return m[1]+m[2]+m[3];
-                return '';
-            }
-
-            let genTimeout = null; let busyGenerating = false;
-            function tryAutoGenerate(){
-                if(busyGenerating) return;
-                const td = document.querySelector('select[name="id_tipo_documento"]');
-                const isEscolar = td && td.value === 'escolar';
-                if(!isEscolar) return;
-                const fechaEl = document.getElementById('fecha_nacimiento');
-                const numH = numeroHijoInput && numeroHijoInput.value ? String(numeroHijoInput.value).trim() : '';
-                const fechaStr = getAltDateString(fechaEl);
-                const repCed = cleanDigits(cedulaRepInput && cedulaRepInput.value ? cedulaRepInput.value : (document.querySelector('input[name="numero_cedula"]').value || ''));
-                if(!numH || !fechaStr || !repCed || repCed.length < 2) return;
-                if(genTimeout) clearTimeout(genTimeout);
-                genTimeout = setTimeout(function(){
-                    busyGenerating = true;
-                    if(spinner) spinner.style.display = 'inline-block';
-                    setTimeout(function(){
-                        const ult2 = repCed.slice(-2);
-                        const cedulaEscolar = ''+numH+fechaStr+ult2;
-                        if(numeroCedulaField){ numeroCedulaField.value = cedulaEscolar; numeroCedulaField.disabled = true; numeroCedulaField.classList.add('generated'); numeroCedulaField.setAttribute('readonly','readonly'); }
-                        if(spinner) spinner.style.display = 'none';
-                        if(generatedNote) generatedNote.style.display = 'inline-flex';
-                        busyGenerating = false;
-                    }, 3000);
-                }, 400);
-            }
-
-            if(numeroHijoInput) numeroHijoInput.addEventListener('input', tryAutoGenerate);
-            if(cedulaRepInput) cedulaRepInput.addEventListener('input', tryAutoGenerate);
-            const fechaNEl = document.getElementById('fecha_nacimiento');
-            if(fechaNEl){ fechaNEl.addEventListener('change', tryAutoGenerate); fechaNEl.addEventListener('blur', tryAutoGenerate); }
-            if(tipoDoc) tipoDoc.addEventListener('change', tryAutoGenerate);
+            });
+            // Navegación
+            nextBtns[0].addEventListener('click', function(){ if(validateStep1()){ currentStep=2; showStep(currentStep); } });
+            nextBtns[1].addEventListener('click', function(){ if(validateStep2()){ currentStep=3; showStep(currentStep); } });
+            nextBtns[2].addEventListener('click', function(){ if(validateStep3()){ currentStep=4; showStep(currentStep); } });
+            prevBtns.forEach((btn, idx) => {
+                btn.addEventListener('click', function(){ currentStep=Math.max(1,currentStep-1); showStep(currentStep); });
+            });
+            // Validación bloqueante
+            form.addEventListener('input', updateNextBtns);
+            form.addEventListener('change', updateNextBtns);
+            // Inicial
+            showStep(currentStep);
+            updateNextBtns();
+            updateStepper();
         })();
-    </script>
-    <script>
-        // modal helper replicated from login/index.html
-        function showModal(title, message) {
-            const overlay = document.getElementById('status-modal');
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-message').innerText = message;
-            overlay.setAttribute('aria-hidden', 'false');
+        // Modal helpers y validaciones extra (reutiliza lógica anterior)
+        document.getElementById('modal-close').onclick = function(){
+            document.getElementById('status-modal').setAttribute('aria-hidden','true');
+            document.getElementById('status-modal').classList.remove('visible');
+        };
+        window.showStatusModal = function(title, message){
+            var overlay = document.getElementById('status-modal');
+            document.getElementById('modal-title').innerText = title || '';
+            document.getElementById('modal-message').innerText = message || '';
+            overlay.setAttribute('aria-hidden','false');
             overlay.classList.add('visible');
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOMContentLoaded hook running, showModal=', typeof showModal);
-            const btn = document.getElementById('modal-close');
-            if (btn) {
-                btn.addEventListener('click', function() {
-                    const overlay = document.getElementById('status-modal');
-                    overlay.setAttribute('aria-hidden', 'true');
-                    overlay.classList.remove('visible');
-                });
-            }
-
-            // move overlay to body to avoid stacking/transform issues
-            const overlayEl = document.getElementById('status-modal');
-            if(overlayEl && overlayEl.parentNode !== document.body){
-                document.body.appendChild(overlayEl);
-            }
-
-            // client-side validations may call showModal, so expose it globally
-            window.showStatusModal = showModal;
-
-            // show server message if provided
-            {% if message %}
-                console.log('server message present, showing');
-                showModal('Aviso', {{ message|tojson }});
-            {% endif %}
-        });
+        };
+        // Mensaje de servidor
+        {% if message %}
+            showStatusModal('Aviso', {{ message|tojson }});
+        {% endif %}
     </script>
 </div>
