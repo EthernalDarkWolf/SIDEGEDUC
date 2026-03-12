@@ -1,7 +1,16 @@
 
 
+
 from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
+
+# Modelo para relaciones de parentesco (familiares)
+
+# Modelo para relaciones familiares
+class RelacionFamiliar(db.Model):
+    __tablename__ = 'relaciones_familiares'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nombre = db.Column(db.String(50), unique=True, nullable=False)
 
 # Modelo para tipos de persona (wizard)
 class TipoPersona(db.Model):
@@ -80,15 +89,15 @@ class Especialidades(db.Model):
     id_especialidad = db.Column(db.Integer, primary_key=True)
     nombre_especialidad = db.Column(db.String(100), unique=True, nullable=False)
 
-class Profesiones(db.Model):
+class Profesion(db.Model):
     __tablename__ = 'profesiones'
-    id_profesion = db.Column(db.Integer, primary_key=True)
-    nombre_profesion = db.Column(db.String(100), unique=True, nullable=False)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nombre = db.Column(db.String(100), unique=True, nullable=False)
 
-class Ocupaciones(db.Model):
+class Ocupacion(db.Model):
     __tablename__ = 'ocupaciones'
-    id_ocupacion = db.Column(db.Integer, primary_key=True)
-    nombre_ocupacion = db.Column(db.String(100), unique=True, nullable=False)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nombre = db.Column(db.String(100), unique=True, nullable=False)
 
 class Niveles(db.Model):
     __tablename__ = 'niveles'
@@ -140,6 +149,13 @@ class Personas(db.Model):
     segundo_apellido = db.Column(db.String(50))
     fecha_nacimiento = db.Column(db.Date)
     id_sexo = db.Column(db.Integer, db.ForeignKey('sexo.id_sexo'))
+    id_tipo_persona = db.Column(db.Integer, db.ForeignKey('tipo_persona.id_tipo_persona'), nullable=False)
+    id_tipo_documento = db.Column(db.Integer, db.ForeignKey('tipo_documento.id_tipo_documento'), nullable=True)
+    numero_cedula = db.Column(db.String(20), nullable=True)
+    id_ocupacion = db.Column(db.Integer, db.ForeignKey('ocupaciones.id'), nullable=True)
+    id_profesion = db.Column(db.Integer, db.ForeignKey('profesiones.id'), nullable=True)
+    num_hijos = db.Column(db.Integer, nullable=True)
+    id_relacion_familiar = db.Column(db.Integer, db.ForeignKey('relaciones_familiares.id'), nullable=True)
 
 class UsuarioPersona(db.Model):
     __tablename__ = 'usuario_persona'

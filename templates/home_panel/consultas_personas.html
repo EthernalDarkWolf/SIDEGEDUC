@@ -5,65 +5,65 @@
   <div class="row mb-4">
     <div class="col-md-3">
       <a href="{{ url_for('consultas_personas_list', role='estudiante') }}" class="text-decoration-none text-reset">
-      <div class="card text-center border-info shadow-sm">
-        <div class="card-body">
-          <i class="fas fa-user-graduate fa-2x text-info mb-2"></i>
-          <h6 class="card-title">Total Estudiantes</h6>
-          <p class="display-6 mb-0">{{ total_estudiantes }}</p>
+        <div class="card text-center border-info shadow-sm">
+          <div class="card-body">
+            <i class="fas fa-user-graduate fa-2x text-info mb-2"></i>
+            <h6 class="card-title">Total Estudiantes</h6>
+            <p class="display-6 mb-0">{{ total_estudiantes }}</p>
+          </div>
         </div>
-      </div>
+      </a>
+    </div>
+    <div class="col-md-3">
+      <a href="{{ url_for('consultas_personas_list', role='profesor') }}" class="text-decoration-none text-reset">
+        <div class="card text-center border-secondary shadow-sm" style="background:#f3e8ff">
+          <div class="card-body">
+            <i class="fas fa-chalkboard-teacher fa-2x text-secondary mb-2"></i>
+            <h6 class="card-title">Total Profesores</h6>
+            <p class="display-6 mb-0">{{ total_profesores }}</p>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-3">
+      <a href="{{ url_for('consultas_personas_list', role='representante') }}" class="text-decoration-none text-reset">
+        <div class="card text-center border-success shadow-sm">
+          <div class="card-body">
+            <i class="fas fa-user-tie fa-2x text-success mb-2"></i>
+            <h6 class="card-title">Total Representantes</h6>
+            <p class="display-6 mb-0">{{ total_representantes }}</p>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-3">
+      <a href="{{ url_for('consultas_personas_list', role='empleado') }}" class="text-decoration-none text-reset">
+        <div class="card text-center border-warning shadow-sm" style="background:#fff9e6">
+          <div class="card-body">
+            <i class="fas fa-briefcase fa-2x text-warning mb-2"></i>
+            <h6 class="card-title">Total Empleados</h6>
+            <p class="display-6 mb-0">{{ total_empleados }}</p>
+          </div>
+        </div>
       </a>
     </div>
     {% if total_sinrol and total_sinrol > 0 %}
     <div class="col-md-3">
       <a href="{{ url_for('consultas_personas_list', role='sinrol') }}" class="text-decoration-none text-reset">
-      <div class="card text-center border-dark shadow-sm" style="background:#f8f9fa">
-        <div class="card-body">
-          <i class="fas fa-user-circle fa-2x text-dark mb-2"></i>
-          <h6 class="card-title">Sin rol asignado</h6>
-          <p class="display-6 mb-0">{{ total_sinrol }}</p>
+        <div class="card text-center border-dark shadow-sm" style="background:#f8f9fa">
+          <div class="card-body">
+            <i class="fas fa-user-circle fa-2x text-dark mb-2"></i>
+            <h6 class="card-title">Sin rol asignado</h6>
+            <p class="display-6 mb-0">{{ total_sinrol }}</p>
+          </div>
         </div>
-      </div>
       </a>
     </div>
     {% endif %}
-    <div class="col-md-3">
-      <a href="{{ url_for('consultas_personas_list', role='profesor') }}" class="text-decoration-none text-reset">
-      <div class="card text-center border-secondary shadow-sm" style="background:#f3e8ff">
-        <div class="card-body">
-          <i class="fas fa-chalkboard-teacher fa-2x text-secondary mb-2"></i>
-          <h6 class="card-title">Total Profesores</h6>
-          <p class="display-6 mb-0">{{ total_profesores }}</p>
-        </div>
-      </div>
-      </a>
-    </div>
-    <div class="col-md-3">
-      <a href="{{ url_for('consultas_personas_list', role='representante') }}" class="text-decoration-none text-reset">
-      <div class="card text-center border-success shadow-sm">
-        <div class="card-body">
-          <i class="fas fa-user-tie fa-2x text-success mb-2"></i>
-          <h6 class="card-title">Total Representantes</h6>
-          <p class="display-6 mb-0">{{ total_representantes }}</p>
-        </div>
-      </div>
-      </a>
-    </div>
-    <div class="col-md-3">
-      <a href="{{ url_for('consultas_personas_list', role='empleado') }}" class="text-decoration-none text-reset">
-      <div class="card text-center border-warning shadow-sm" style="background:#fff9e6">
-        <div class="card-body">
-          <i class="fas fa-briefcase fa-2x text-warning mb-2"></i>
-          <h6 class="card-title">Total Empleados</h6>
-          <p class="display-6 mb-0">{{ total_empleados }}</p>
-        </div>
-      </div>
-      </a>
-    </div>
   </div>
   <div class="row">
     <div class="col-12">
-      <p class="text-muted">Haz clic en cualquiera de los mini-cuadros para ver la lista completa.</p>
+      <p class="text-muted">Haz clic en cualquiera de los Cuadros para ver la lista completa.</p>
     </div>
   </div>
   <!-- ...existing code... -->

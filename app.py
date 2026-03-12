@@ -1,20 +1,18 @@
-from flask import Flask, session, redirect, url_for, render_template
+
+from flask import Flask, session, redirect, url_for, render_template, jsonify, request
 from dotenv import load_dotenv
 import os
 import sys
 from sqlalchemy import event, text
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import IntegrityError
 
 # Cargar variables de entorno .env
 load_dotenv()
 
 # --- IMPORTACIÓN DE MODELOS ---
-# Importamos desde la ruta que SQLAlchemy reconozca según tu estructura
-from database.models import db, Usuarios, Roles, StatusUser, TipoPersona
-
+from database.models import db, Usuarios, Roles, StatusUser, TipoPersona, RelacionFamiliar, Ocupacion, Profesion
 from utils.start import login_bp
-
-# ---Importamos el mansejador de los permisos
 from utils.permissions import get_user_context
 
 # Detectar si se está ejecutando desde un ejecutable PyInstaller esto es para evitar error al compilar
@@ -27,6 +25,64 @@ else:
 
 app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
 app.secret_key = os.getenv("SECRET_KEY", "162618")
+
+# --- ENDPOINTS OCUPACIONES Y PROFESIONES (OPTIMIZADOS) ---
+@app.route('/api/tipo_persona', methods=['GET'])
+def get_tipo_persona():
+    try:
+        tipos = TipoPersona.query.all()
+        return jsonify([{'id': t.id_tipo_persona, 'nombre': t.nombre_tipo_persona} for t in tipos])
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'Error al obtener tipos de persona: {str(e)}'}), 500
+@app.route('/api/ocupaciones', methods=['GET'])
+def get_ocupaciones():
+    try:
+        ocupaciones = Ocupacion.query.all()
+        return jsonify([{'id': o.id, 'nombre': o.nombre} for o in ocupaciones])
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'Error al obtener ocupaciones: {str(e)}'}), 500
+
+@app.route('/api/ocupaciones', methods=['POST'])
+def add_ocupacion():
+    nombre = request.json.get('nombre', '').strip()
+    if not nombre:
+        return jsonify({'success': False, 'error': 'Nombre requerido.'})
+    try:
+        nueva = Ocupacion(nombre=nombre)
+        db.session.add(nueva)
+        db.session.commit()
+        return jsonify({'success': True})
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': 'Ya existe.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'Error inesperado: {str(e)}'})
+
+@app.route('/api/profesiones', methods=['GET'])
+def get_profesiones():
+    try:
+        profesiones = Profesion.query.all()
+        return jsonify([{'id': p.id, 'nombre': p.nombre} for p in profesiones])
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'Error al obtener profesiones: {str(e)}'}), 500
+
+@app.route('/api/profesiones', methods=['POST'])
+def add_profesion():
+    nombre = request.json.get('nombre', '').strip()
+    if not nombre:
+        return jsonify({'success': False, 'error': 'Nombre requerido.'})
+    try:
+        nueva = Profesion(nombre=nombre)
+        db.session.add(nueva)
+        db.session.commit()
+        return jsonify({'success': True})
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': 'Ya existe.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'Error inesperado: {str(e)}'})
 
 # --- CONFIGURACIÓN DE BASE DE DATOS (FORZAR SQLITE) ---
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -117,6 +173,18 @@ def inject_user_context():
         'usuario': ctx.get('user')
     }
 
+    # Endpoint para ocupaciones
+    @app.route('/api/ocupaciones')
+    def get_ocupaciones():
+        ocupaciones = Ocupaciones.query.all()
+        return jsonify([{'id': o.id_ocupacion, 'nombre': o.nombre_ocupacion} for o in ocupaciones])
+
+    # Endpoint para profesiones
+    @app.route('/api/profesiones')
+    def get_profesiones():
+        profesiones = Profesiones.query.all()
+        return jsonify([{'id': p.id_profesion, 'nombre': p.nombre_profesion} for p in profesiones])
+
 # --- IMPORTACIÓN DE MANEJADORES DE VISTA ---
 import utils.view_handlers as manejar_la_vista_de
 
@@ -134,6 +202,11 @@ def api_persona_lookup():
 @app.route('/api/profesion', methods=['POST'])
 def api_profesion():
     return manejar_la_vista_de.api_create_profesion()
+
+@app.route('/api/relaciones_familiares')
+def get_relaciones_familiares():
+    relaciones = RelacionFamiliar.query.all()
+    return jsonify([{'id': r.id, 'nombre': r.nombre} for r in relaciones])
 
 
 # --- RUTAS ---
@@ -186,11 +259,38 @@ def registro_wizard_familia():
         session['wizard_cedula'] = request.form.get('cedula')
         session['wizard_num_hijos'] = request.form.get('num_hijos')
         session['wizard_relacion'] = request.form.get('relacion')
-        # Aquí puedes guardar todo en la BD o mostrar resumen
-        # Limpiar sesión si es necesario
         flash('Registro completado exitosamente')
         return redirect(url_for('dashboard'))
-    return render_template('home_panel/registro_wizard_familia.html')
+        try:
+            import sqlite3
+            conn = sqlite3.connect(sqlite_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT id_parentesco, nombre_parentesco FROM parentescos")
+            relaciones = cursor.fetchall()
+            conn.close()
+        except Exception as e:
+            print(f"Error consultando parentescos: {e}")
+            relaciones = []
+        return render_template('home_panel/registro_wizard_familia.html', relaciones=relaciones)
+
+# API para obtener parentescos en formato JSON
+@app.route('/api/parentescos', methods=['GET'])
+def api_parentescos():
+    from database.models import Parentesco
+    try:
+        parentescos = Parentesco.query.all()
+        if not parentescos:
+            return jsonify([])
+        return jsonify([
+            {
+                'id_parentesco': p.id_parentesco,
+                'nombre_parentesco': p.nombre_parentesco
+            } for p in parentescos
+        ])
+    except Exception as e:
+        print(f'Error consultando parentescos: {e}')
+        return jsonify([])
 
 
 # -- MANEJO DEL RESTO DE LAS RUTAS ---

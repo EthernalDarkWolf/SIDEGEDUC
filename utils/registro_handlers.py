@@ -33,10 +33,14 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
             pap = _cap_first(f.get('primer_apellido'))
             sap = _cap_first(f.get('segundo_apellido'))
             fecha_nac = (f.get('fecha_nacimiento') or '').strip()
-            tipo_persona = (f.get('tipo_persona') or '').strip().lower()
+            id_tipo_persona = int(f.get('id_tipo_persona') or 0)
             id_sexo = f.get('id_sexo') or None
             id_tipo_doc = f.get('id_tipo_documento') or None
             numero_cedula = (f.get('numero_cedula') or '').strip()
+            id_ocupacion = int(f.get('id_ocupacion') or 0) if f.get('id_ocupacion') else None
+            id_profesion = int(f.get('id_profesion') or 0) if f.get('id_profesion') else None
+            num_hijos = int(f.get('num_hijos') or 0) if f.get('num_hijos') else None
+            id_relacion_familiar = int(f.get('id_relacion_familiar') or 0) if f.get('id_relacion_familiar') else None
 
             # validaciones iniciales
             # básicos de cédula y tipo
@@ -109,9 +113,8 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                     try:
                         insert_person = text(
                             'INSERT INTO personas '
-                            '(primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, '
-                            'fecha_nacimiento, id_sexo, tipo_persona, id_tipo_documento, numero_cedula) '
-                            'VALUES (:primer, :segundo, :pap, :sap, :fecha, :id_sexo, :tipo_persona, :id_tipo_doc, :num_ced)'
+                            '(primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, fecha_nacimiento, id_sexo, id_tipo_persona, id_tipo_documento, numero_cedula, id_ocupacion, id_profesion, num_hijos, id_relacion_familiar) '
+                            'VALUES (:primer, :segundo, :pap, :sap, :fecha, :id_sexo, :id_tipo_persona, :id_tipo_doc, :num_ced, :id_ocupacion, :id_profesion, :num_hijos, :id_relacion_familiar)'
                         )
                         db.session.execute(insert_person, {
                             'primer': primer,
@@ -120,9 +123,13 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                             'sap': sap or None,
                             'fecha': fecha_nac or None,
                             'id_sexo': id_sexo,
-                            'tipo_persona': tipo_persona,
+                            'id_tipo_persona': id_tipo_persona,
                             'id_tipo_doc': int(id_tipo_doc) if id_tipo_doc and str(id_tipo_doc).isdigit() else None,
-                            'num_ced': numero_cedula or None
+                            'num_ced': numero_cedula or None,
+                            'id_ocupacion': id_ocupacion,
+                            'id_profesion': id_profesion,
+                            'num_hijos': num_hijos,
+                            'id_relacion_familiar': id_relacion_familiar
                         })
                         db.session.commit()
 
@@ -132,7 +139,7 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                             r = db.session.execute(text('SELECT LAST_INSERT_ID() as id')).fetchone()
                             new_id = int(r[0]) if r else 0
 
-                        return redirect(url_for('registro_persona_ext', pid=new_id, tipo=tipo_persona))
+                        return redirect(url_for('registro_persona_ext', pid=new_id, tipo=id_tipo_persona))
                     except Exception as e:
                         db.session.rollback()
                         message = f'Error al registrar persona: {e}'

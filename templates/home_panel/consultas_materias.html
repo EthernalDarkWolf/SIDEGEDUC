@@ -1,4 +1,3 @@
-
 <div class="container-fluid" style="margin-top:90px;">
   <div class="row align-items-center mb-3">
     <div class="col-auto">
@@ -7,11 +6,11 @@
       </a>
     </div>
     <div class="col-auto">
-      <h2 class="mb-0" style="font-weight:600; font-size:2rem;">Listado de Personas</h2>
+      <h2 class="mb-0" style="font-weight:600; font-size:2rem;">Listado de Materias</h2>
     </div>
     <div class="col text-end">
       <div class="input-group" style="max-width:260px; float:right;">
-        <input id="filtro-listado" type="text" class="form-control" placeholder="Filtrar resultados..." autocomplete="off">
+        <input id="filtro-listado" type="text" class="form-control" placeholder="Filtrar materias..." autocomplete="off">
         <span class="input-group-text"><i class="fas fa-filter"></i></span>
       </div>
     </div>
@@ -32,24 +31,13 @@
       {% for r in rows %}
       <tr>
         <td>{{ loop.index }}</td>
-        <td>{{ r.primer_nombre }} {% if r.segundo_nombre %}{{ r.segundo_nombre }}{% endif %} {{ r.primer_apellido }} {% if r.segundo_apellido %}{{ r.segundo_apellido }}{% endif %}</td>
-        <td>
-          {% if r.tipo_persona %}
-            {{ r.tipo_persona }}
-          {% elif r.rol %}
-            {{ r.rol }}
-          {% elif role_display %}
-            {{ role_display }}
-          {% else %}
-            Sin rol
-          {% endif %}
-        </td>
+        <td>{{ r[1] }}</td>
+        <td>Materia</td>
         <td style="text-align:center;">
-          <a class="btn btn-sm btn-outline-primary" href="{{ url_for('editar_persona') }}?id={{ r.id_persona }}&role={{ r.rol or role_display|lower or 'sinrol' }}" title="Editar"><i class="fas fa-pencil-alt"></i></a>
-          <form method="post" action="{{ url_for('borrar_registro_persona') }}" style="display:inline-block;margin:0;">
-            <input type="hidden" name="id" value="{{ r.id_persona }}">
-            <input type="hidden" name="role" value="{{ r.rol or role_display|lower or 'sinrol' }}">
-            <button class="btn btn-sm btn-outline-danger" title="Borrar" onclick="return confirm('¿Eliminar este registro?')"><i class="fas fa-trash"></i></button>
+          <a class="btn btn-sm btn-outline-primary" href="/consultas/materias/editar?id={{ r[0] }}" title="Editar"><i class="fas fa-pencil-alt"></i></a>
+          <form method="post" action="/consultas/materias/borrar" style="display:inline-block;margin:0;">
+            <input type="hidden" name="id" value="{{ r[0] }}">
+            <button class="btn btn-sm btn-outline-danger" title="Borrar" onclick="return confirm('¿Eliminar esta materia?')"><i class="fas fa-trash"></i></button>
           </form>
         </td>
       </tr>

@@ -1,31 +1,12 @@
-
 <style>
     .error-border { border-color: red !important; }
     .error-text { color: red; font-size: 0.8em; margin-top: 2px; }
 </style>
 <div class="registro-persona">
     <h3>Registro de Persona</h3>
-    <!-- Modal de mensajes -->
-    <div id="status-modal" class="modal-overlay" aria-hidden="true">
-        <div class="status-modal-box">
-            <h2 id="modal-title">Aviso</h2>
-            <p id="modal-message">{{ message or '' }}</p>
-            <button id="modal-close">Cerrar</button>
-        </div>
-    </div>
-    <!-- Modal de confirmación para número de hijos -->
-    <div id="confirm-modal" class="modal-overlay" aria-hidden="true">
-        <div class="status-modal-box" style="max-width:420px">
-            <h2>Advertencia</h2>
-            <p id="confirm-message" style="text-align:left"></p>
-            <div style="margin-top:1rem;display:flex;justify-content:center;gap:12px">
-                <button id="confirm-yes" class="panel-btn primary" style="padding:8px 14px">Sí</button>
-                <button id="confirm-no" class="panel-btn" style="background:#e3342f;color:#fff;padding:8px 14px">No</button>
-            </div>
-        </div>
-    </div>
+   
 
-    <!-- Stepper visual -->
+    <!-- Stepper visual pasos para el registro -->
     <div class="stepper-flow-premium">
         <div class="stepper-step" data-step="1">
             <span class="stepper-icon"> <!-- usuario/género -->
@@ -38,7 +19,7 @@
             <span class="stepper-icon"> <!-- carnet -->
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M14 12h4" stroke="currentColor" stroke-width="1.5"/></svg>
             </span>
-            <span class="stepper-label">Identidad</span>
+            <span class="stepper-label">Nombre y Edad</span>
         </div>
         <div class="stepper-line"></div>
         <div class="stepper-step" data-step="3">
@@ -137,16 +118,84 @@
         </div>
         <div class="step-content" data-step="3" style="display:none">
             <div class="group">
-                <label for="cedula">Número de Cédula</label>
-                <input type="text" name="cedula" id="cedula" required data-rule="numbers" maxlength="10">
+                <label for="tipo_documento">Tipo de Documento</label>
+                <input type="text" id="tipo_documento" name="tipo_documento" class="form-control" readonly required>
+            </div>
+            <div class="group">
+                                <label for="cedula" id="label-cedula">Número de Cédula</label>
+                                <input type="text" name="cedula" id="cedula" required data-rule="numbers" maxlength="10" placeholder="Cédula del representante o persona principal">
+                                                                <div class="error-text" id="error-cedula"></div>
+                                <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    // Validación de cédula ya registrada y bloqueo de siguiente
+                                    var errorCedula = document.getElementById('error-cedula');
+                                    var nextBtn3 = document.getElementById('next-3');
+                                    function validarCedulaRegistrada() {
+                                        var cedula = cedulaInput.value.trim();
+                                        if (!cedula) {
+                                            cedulaInput.classList.remove('error-border');
+                                            if (errorCedula) errorCedula.textContent = '';
+                                            if (nextBtn3) nextBtn3.disabled = false;
+                                            return;
+                                        }
+                                        fetch('/api/persona/lookup?numero=' + encodeURIComponent(cedula))
+                                            .then(function(resp) { return resp.json ? resp.json() : resp.text().then(JSON.parse); })
+                                            .then(function(data) {
+                                                if (data && data.found) {
+                                                    cedulaInput.classList.add('error-border');
+                                                    if (errorCedula) errorCedula.textContent = 'Esta cedula ya esta registrada con otra persona';
+                                                    if (nextBtn3) nextBtn3.disabled = true;
+                                                } else {
+                                                    cedulaInput.classList.remove('error-border');
+                                                    if (errorCedula) errorCedula.textContent = '';
+                                                    if (nextBtn3) nextBtn3.disabled = false;
+                                                }
+                                            })
+                                            .catch(function() {
+                                                cedulaInput.classList.remove('error-border');
+                                                if (errorCedula) errorCedula.textContent = '';
+                                                if (nextBtn3) nextBtn3.disabled = false;
+                                            });
+                                    }
+                                    cedulaInput.addEventListener('blur', validarCedulaRegistrada);
+                                    cedulaInput.addEventListener('input', function() {
+                                        // Si el usuario borra o cambia, limpiar error y desbloquear hasta que se valide de nuevo
+                                        cedulaInput.classList.remove('error-border');
+                                        if (errorCedula) errorCedula.textContent = '';
+                                        if (nextBtn3) nextBtn3.disabled = false;
+                                    });
+                                    var tipoPersona = document.getElementById('tipo_persona');
+                                    var labelCedula = document.getElementById('label-cedula');
+                                    var cedulaInput = document.getElementById('cedula');
+                                    if (tipoPersona && labelCedula && cedulaInput) {
+                                        function actualizarLabelYPlaceholderCedula() {
+                                            let tipo = tipoPersona.options[tipoPersona.selectedIndex].text;
+                                            if (tipoPersona.value) {
+                                                labelCedula.textContent = 'Número de Cédula del ' + tipo.toLowerCase();
+                                                cedulaInput.placeholder = 'Cédula del ' + tipo.toLowerCase();
+                                            } else {
+                                                labelCedula.textContent = 'Número de Cédula';
+                                                cedulaInput.placeholder = 'Cédula del representante o persona principal';
+                                            }
+                                        }
+                                        tipoPersona.addEventListener('change', actualizarLabelYPlaceholderCedula);
+                                        actualizarLabelYPlaceholderCedula();
+                                    }
+                                });
+                                </script>
             </div>
             <div class="group">
                 <label for="num_hijos">Número de Hijos</label>
                 <input type="number" name="num_hijos" id="num_hijos" min="0" required>
+                <div class="error-text" id="error-num_hijos"></div>
             </div>
-            <div class="group">
-                <label for="relacion_familiar">Relación Familiar</label>
-                <input type="text" name="relacion_familiar" id="relacion_familiar" required maxlength="30">
+            <div class="group" style="margin-bottom:0;">
+                <label style="margin-bottom:4px;display:block;">Relación familiar con el/los hijo(s)</label>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <select name="relacion_familiar" id="relacion_familiar" class="form-control" required style="flex:1;">
+                        <option value="">Seleccione...</option>
+                    </select>
+                </div>
             </div>
             <div class="step-actions">
                 <button type="button" class="prev-btn">Anterior</button>
@@ -154,13 +203,31 @@
             </div>
         </div>
         <div class="step-content" data-step="4" style="display:none">
+                <div id="modal-parentesco" class="modal-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:1000;align-items:center;justify-content:center;">
+                    <div style="background:#fff;padding:24px 18px;border-radius:8px;min-width:260px;box-shadow:0 2px 16px #0002;display:flex;flex-direction:column;gap:12px;align-items:stretch;">
+                        <input type="text" id="nuevo_parentesco" class="form-control" maxlength="30" autocomplete="off" placeholder="Ej: Tutor legal">
+                        <div id="error-nuevo-parentesco" class="error-text"></div>
+                        <div style="display:flex;gap:10px;justify-content:flex-end;">
+                            <button type="button" id="guardar-parentesco" class="btn btn-success">Guardar</button>
+                            <button type="button" id="cancelar-parentesco" class="btn btn-danger">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
             <div class="group">
                 <label for="ocupacion">Ocupación</label>
-                <input type="text" name="ocupacion" id="ocupacion" required maxlength="40">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <select name="ocupacion" id="ocupacion" required style="flex:1;">
+                        <option value="">Seleccione...</option>
+                    </select>
+                </div>
             </div>
             <div class="group">
-                <label for="profesion">Profesión</label>
-                <input type="text" name="profesion" id="profesion" required maxlength="40">
+                <label for="profesion">Nivel de Instrucción</label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <select name="profesion" id="profesion" required style="flex:1;">
+                        <option value="">Seleccione...</option>
+                    </select>
+                </div>
             </div>
             <div class="step-actions">
                 <button type="button" class="prev-btn">Anterior</button>
@@ -168,11 +235,367 @@
             </div>
         </div>
     </form>
+<div id="modal-ocupacion" class="modal-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;padding:24px 18px;border-radius:8px;min-width:260px;box-shadow:0 2px 16px #0002;display:flex;flex-direction:column;gap:12px;align-items:stretch;">
+        <label for="nuevo_ocupacion">Nueva ocupación</label>
+        <input type="text" id="nuevo_ocupacion" class="form-control" maxlength="40" autocomplete="off" placeholder="Ej: Freelancer">
+        <div id="error-nuevo-ocupacion" class="error-text"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button type="button" id="guardar-ocupacion" class="btn btn-success">Guardar</button>
+            <button type="button" id="cancelar-ocupacion" class="btn btn-danger">Cancelar</button>
+        </div>
+    </div>
+</div>
+<div id="modal-profesion" class="modal-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;padding:24px 18px;border-radius:8px;min-width:260px;box-shadow:0 2px 16px #0002;display:flex;flex-direction:column;gap:12px;align-items:stretch;">
+        <label for="nuevo_profesion">Nueva profesión</label>
+        <input type="text" id="nuevo_profesion" class="form-control" maxlength="40" autocomplete="off" placeholder="Ej: Arquitecto">
+        <div id="error-nuevo-profesion" class="error-text"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button type="button" id="guardar-profesion" class="btn btn-success">Guardar</button>
+            <button type="button" id="cancelar-profesion" class="btn btn-danger">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Forzar recarga de modales y asegurar que los elementos existen antes de asignar eventos
+window.addEventListener('DOMContentLoaded', function() {
+    // Relaciones familiares
+    fetch('/api/relaciones_familiares')
+        .then(res => res.json())
+        .then(data => {
+            const select = document.getElementById('relacion_familiar');
+            data.forEach(rel => {
+                const option = document.createElement('option');
+                option.value = rel.id;
+                option.textContent = rel.nombre;
+                select.appendChild(option);
+            });
+        });
+
+    // Ocupaciones
+    function cargarOcupaciones() {
+        fetch('/api/ocupaciones')
+            .then(res => res.json())
+            .then(data => {
+                const select = document.getElementById('ocupacion');
+                select.innerHTML = '<option value="">Seleccione...</option>';
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.nombre;
+                    select.appendChild(option);
+                });
+            });
+    }
+    cargarOcupaciones();
+
+    // Profesiones
+    function cargarProfesiones() {
+        fetch('/api/profesiones')
+            .then(res => res.json())
+            .then(data => {
+                const select = document.getElementById('profesion');
+                select.innerHTML = '<option value="">Seleccione...</option>';
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.nombre;
+                    select.appendChild(option);
+                });
+            });
+    }
+    cargarProfesiones();
+
+    // Modal Ocupación
+    const modalOcupacion = document.getElementById('modal-ocupacion');
+    const btnAddOcupacion = document.getElementById('add-ocupacion');
+    if (btnAddOcupacion) {
+    const inputNuevoOcupacion = document.getElementById('nuevo_ocupacion');
+    const errorNuevoOcupacion = document.getElementById('error-nuevo-ocupacion');
+    const btnGuardarOcupacion = document.getElementById('guardar-ocupacion');
+    const btnCancelarOcupacion = document.getElementById('cancelar-ocupacion');
+        btnAddOcupacion.onclick = function() {
+            inputNuevoOcupacion.value = '';
+            errorNuevoOcupacion.textContent = '';
+            modalOcupacion.style.display = 'flex';
+        };
+    }
+    btnCancelarOcupacion.onclick = function() {
+        modalOcupacion.style.display = 'none';
+    };
+    btnGuardarOcupacion.onclick = function() {
+        const nombre = inputNuevoOcupacion.value.trim();
+        if (!nombre) {
+            errorNuevoOcupacion.textContent = 'Ingrese un nombre válido.';
+            return;
+        }
+        fetch('/api/ocupaciones', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({nombre})
+        })
+        .then(res => res.json())
+        .then(resp => {
+            if (resp.success) {
+                modalOcupacion.style.display = 'none';
+                cargarOcupaciones();
+            } else {
+                errorNuevoOcupacion.textContent = resp.error || 'Error al agregar.';
+            }
+        });
+    };
+
+    // Modal Profesión
+    setTimeout(function() {
+        const modalOcupacion = document.getElementById('modal-ocupacion');
+        const btnAddOcupacion = document.getElementById('add-ocupacion');
+        const inputNuevoOcupacion = document.getElementById('nuevo_ocupacion');
+        const errorNuevoOcupacion = document.getElementById('error-nuevo-ocupacion');
+        const btnGuardarOcupacion = document.getElementById('guardar-ocupacion');
+        const btnCancelarOcupacion = document.getElementById('cancelar-ocupacion');
+        if (btnAddOcupacion) {
+            btnAddOcupacion.onclick = function() {
+                inputNuevoOcupacion.value = '';
+                errorNuevoOcupacion.textContent = '';
+                modalOcupacion.style.display = 'flex';
+            };
+        }
+        if (btnCancelarOcupacion) btnCancelarOcupacion.onclick = function() {
+            modalOcupacion.style.display = 'none';
+        };
+        if (btnGuardarOcupacion) btnGuardarOcupacion.onclick = function() {
+            const nombre = inputNuevoOcupacion.value.trim();
+            if (!nombre) {
+                errorNuevoOcupacion.textContent = 'Ingrese un nombre válido.';
+                return;
+            }
+            fetch('/api/ocupaciones', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({nombre})
+            })
+            .then(res => res.json())
+            .then(resp => {
+                if (resp.success) {
+                    modalOcupacion.style.display = 'none';
+                    cargarOcupaciones();
+                } else {
+                    errorNuevoOcupacion.textContent = resp.error || 'Error al agregar.';
+                }
+            });
+        };
+        // Profesión
+        const modalProfesion = document.getElementById('modal-profesion');
+        const btnAddProfesion = document.getElementById('add-profesion');
+        const inputNuevoProfesion = document.getElementById('nuevo_profesion');
+        const errorNuevoProfesion = document.getElementById('error-nuevo-profesion');
+        const btnGuardarProfesion = document.getElementById('guardar-profesion');
+        const btnCancelarProfesion = document.getElementById('cancelar-profesion');
+        if (btnAddProfesion) {
+            btnAddProfesion.onclick = function() {
+                inputNuevoProfesion.value = '';
+                errorNuevoProfesion.textContent = '';
+                modalProfesion.style.display = 'flex';
+            };
+        }
+        if (btnCancelarProfesion) btnCancelarProfesion.onclick = function() {
+            modalProfesion.style.display = 'none';
+        };
+        if (btnGuardarProfesion) btnGuardarProfesion.onclick = function() {
+            const nombre = inputNuevoProfesion.value.trim();
+            if (!nombre) {
+                errorNuevoProfesion.textContent = 'Ingrese un nombre válido.';
+                return;
+            }
+            fetch('/api/profesiones', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({nombre})
+            })
+            .then(res => res.json())
+            .then(resp => {
+                if (resp.success) {
+                    modalProfesion.style.display = 'none';
+                    cargarProfesiones();
+                } else {
+                    errorNuevoProfesion.textContent = resp.error || 'Error al agregar.';
+                }
+            });
+        };
+    }, 0);
+});
+</script>
+<div id="modal-parentesco" class="modal-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:1000;align-items:center;justify-content:center;">
+    <div id="modal-parentesco-box" style="background:#fff;padding:24px 18px;border-radius:8px;min-width:260px;box-shadow:0 2px 16px #0002;display:flex;flex-direction:column;gap:12px;align-items:stretch;">
+        <input type="text" id="nuevo_parentesco" class="form-control" maxlength="30" autocomplete="off" placeholder="Ej: Tutor legal">
+        <div id="error-nuevo-parentesco" class="error-text"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button type="button" id="guardar-parentesco" class="btn btn-success">Guardar</button>
+            <button type="button" id="cancelar-parentesco" class="btn btn-danger">Cancelar</button>
+        </div>
+    </div>
+</div>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='home_panel/registro_persona.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='home_panel/flatpickr.min.css') }}">
     <script src="{{ url_for('static', filename='home_panel/flatpickr.min.js') }}"></script>
     <script src="{{ url_for('static', filename='home_panel/form_validators.js') }}"></script>
+                        <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const btnAddParentesco = document.getElementById('btn-add-parentesco');
+                            const modalParentesco = document.getElementById('modal-parentesco');
+                            const modalBox = document.getElementById('modal-parentesco-box');
+                            const inputNuevoParentesco = document.getElementById('nuevo_parentesco');
+                            const errorNuevoParentesco = document.getElementById('error-nuevo-parentesco');
+                            const btnGuardarParentesco = document.getElementById('guardar-parentesco');
+                            const btnCancelarParentesco = document.getElementById('cancelar-parentesco');
+                            const selectParentesco = document.getElementById('parentesco');
+
+                            if (btnAddParentesco && modalParentesco) {
+                                btnAddParentesco.onclick = function() {
+                                    inputNuevoParentesco.value = '';
+                                    errorNuevoParentesco.textContent = '';
+                                    modalParentesco.style.display = 'flex';
+                                    modalParentesco.style.setProperty('display', 'flex', 'important');
+                                    inputNuevoParentesco.focus();
+                                };
+                                btnCancelarParentesco.onclick = function() {
+                                    modalParentesco.style.display = 'none';
+                                };
+                                btnGuardarParentesco.onclick = function() {
+                                    const val = inputNuevoParentesco.value.trim();
+                                    if (!val) {
+                                        errorNuevoParentesco.textContent = 'Debe ingresar un nombre válido';
+                                        return;
+                                    }
+                                    // Por ahora, lo agregamos localmente con un id temporal negativo
+                                    const option = document.createElement('option');
+                                    option.value = 'nuevo_' + Date.now();
+                                    option.textContent = val;
+                                    option.selected = true;
+                                    selectParentesco.appendChild(option);
+                                    modalParentesco.style.display = 'none';
+                                };
+                                // Cerrar modal con ESC
+                                document.addEventListener('keydown', function(e) {
+                                    if (modalParentesco.style.display !== 'none' && e.key === 'Escape') {
+                                        modalParentesco.style.display = 'none';
+                                    }
+                                });
+                                // Cerrar modal al hacer clic fuera del cuadro
+                                modalParentesco.addEventListener('mousedown', function(e) {
+                                    if (e.target === modalParentesco) {
+                                        modalParentesco.style.display = 'none';
+                                    }
+                                });
+                            }
+                        });
+                        </script>
+                        <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const btnAddParentesco = document.getElementById('btn-add-parentesco');
+                            const modalParentesco = document.getElementById('modal-parentesco');
+                            const inputNuevoParentesco = document.getElementById('nuevo_parentesco');
+                            const errorNuevoParentesco = document.getElementById('error-nuevo-parentesco');
+                            const btnGuardarParentesco = document.getElementById('guardar-parentesco');
+                            const btnCancelarParentesco = document.getElementById('cancelar-parentesco');
+                            const selectParentesco = document.getElementById('parentesco');
+
+                            if (btnAddParentesco && modalParentesco) {
+                                btnAddParentesco.onclick = function() {
+                                    inputNuevoParentesco.value = '';
+                                    errorNuevoParentesco.textContent = '';
+                                    modalParentesco.style.display = 'flex';
+                                    modalParentesco.style.setProperty('display', 'flex', 'important');
+                                    inputNuevoParentesco.focus();
+                                };
+                                btnCancelarParentesco.onclick = function() {
+                                    modalParentesco.style.display = 'none';
+                                };
+                                btnGuardarParentesco.onclick = function() {
+                                    const val = inputNuevoParentesco.value.trim();
+                                    if (!val) {
+                                        errorNuevoParentesco.textContent = 'Debe ingresar un nombre válido';
+                                        return;
+                                    }
+                                    // Por ahora, lo agregamos localmente con un id temporal negativo
+                                    const option = document.createElement('option');
+                                    option.value = 'nuevo_' + Date.now();
+                                    option.textContent = val;
+                                    option.selected = true;
+                                    selectParentesco.appendChild(option);
+                                    modalParentesco.style.display = 'none';
+                                };
+                                // Cerrar modal con ESC
+                                modalParentesco.addEventListener('keydown', function(e) {
+                                    if (e.key === 'Escape') modalParentesco.style.display = 'none';
+                                });
+                            }
+                        });
+                        </script>
+                    <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        var tipoPersona = document.getElementById('tipo_persona');
+                        var numHijos = document.getElementById('num_hijos');
+                        var errorNumHijos = document.getElementById('error-num_hijos');
+                        function validarNumHijos() {
+                            if (!tipoPersona || !numHijos || !errorNumHijos) return;
+                            if (tipoPersona.value.toLowerCase() === 'representante') {
+                                if (parseInt(numHijos.value) > 6) {
+                                    numHijos.classList.add('error-border');
+                                    errorNumHijos.textContent = 'Un Representante no puede "Representar" a más de 6 hijos';
+                                    numHijos.value = 6;
+                                    return false;
+                                }
+                            }
+                            numHijos.classList.remove('error-border');
+                            errorNumHijos.textContent = '';
+                            return true;
+                        }
+                        if (numHijos && tipoPersona) {
+                            numHijos.addEventListener('input', validarNumHijos);
+                            tipoPersona.addEventListener('change', validarNumHijos);
+                        }
+                    });
+                    </script>
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // 1. Lógica de edad y tipo_documento
+                function calcularEdad(fechaNacimiento) {
+                    if (!fechaNacimiento) return 0;
+                    const hoy = new Date();
+                    const partes = fechaNacimiento.split('-');
+                    if (partes.length !== 3) return 0;
+                    const nacimiento = new Date(partes[0], partes[1] - 1, partes[2]);
+                    let edad = hoy.getFullYear() - nacimiento.getFullYear();
+                    const m = hoy.getMonth() - nacimiento.getMonth();
+                    if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) {
+                        edad--;
+                    }
+                    return edad;
+                }
+
+                function actualizarTipoDocumento() {
+                    const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
+                    const tipoDocumentoInput = document.getElementById('tipo_documento');
+                    if (!fechaNacimientoInput || !tipoDocumentoInput) return;
+                    const edad = calcularEdad(fechaNacimientoInput.value);
+                    tipoDocumentoInput.value = (edad >= 9) ? 'Cédula Nacional' : 'Cédula Escolar';
+                }
+
+                // Escucha cambios en fecha_nacimiento (debe tener ese ID en el paso anterior)
+                const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
+                if (fechaNacimientoInput) {
+                    fechaNacimientoInput.addEventListener('change', actualizarTipoDocumento);
+                    // Inicializa al cargar
+                    actualizarTipoDocumento();
+                }
+
+                // Ya no hay familiares dinámicos, ni botones + o eliminar. El select de parentesco es único.
+            });
+            </script>
     <script>
         // Stepper y lógica de pasos
         (function(){
@@ -375,7 +798,9 @@
         };
         // Mensaje de servidor
         {% if message %}
+        <script type="text/javascript">
             showStatusModal('Aviso', {{ message|tojson }});
+        </script>
         {% endif %}
     </script>
 </div>

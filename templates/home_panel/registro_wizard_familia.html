@@ -10,19 +10,80 @@
     </div>
     <form method="post">
         <h2>Cédula y familia</h2>
+        document.addEventListener('DOMContentLoaded', function() {
+            const select = document.getElementById('relacion');
+            select.innerHTML = '';
+            fetch('/api/parentescos')
+                .then(resp => resp.json())
+                .then(data => {
+                    // Primer option
+                    const opt = document.createElement('option');
         <div class="form-group">
             <label for="cedula">Cédula:</label>
             <input type="text" name="cedula" id="cedula" required>
         </div>
         <div class="form-group">
             <label for="num_hijos">Número de hijos a inscribir:</label>
-            <input type="number" name="num_hijos" id="num_hijos" min="0" required>
+            <input type="number" name="num_hijos" id="num_hijos" min="1" required>
         </div>
         <div class="form-group">
-            <label for="relacion">Relación representante-hijos:</label>
-            <input type="text" name="relacion" id="relacion" required>
+            <label for="relacion_familiar">Relación representante-hijos:</label>
+            {% if error_msg %}
+                <div class="alert alert-danger">{{ error_msg }}</div>
+            {% endif %}
+            <select name="relacion" id="relacion_familiar" required>
+                <option value="" disabled selected>Seleccione...</option>
+                {% for r in relaciones %}
+                    <option value="{{ r['id_parentesco'] }}">{{ r['nombre_parentesco'] }}</option>
+                {% endfor %}
+            </select>
         </div>
-        <button type="submit" class="btn btn-success">Finalizar registro</button>
+        <button type="submit" id="btn_siguiente" class="btn btn-success" disabled>Siguiente</button>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cedula = document.getElementById('cedula');
+    const numHijos = document.getElementById('num_hijos');
+    const relacion = document.getElementById('relacion_familiar');
+    const btn = document.getElementById('btn_siguiente');
+
+    function validarCedula(valor) {
+        // Ejemplo: cédula venezolana (7-8 dígitos)
+        return /^\d{7,8}$/.test(valor);
+    }
+
+    function validar() {
+        const cedulaValida = validarCedula(cedula.value);
+        const hijosValidos = parseInt(numHijos.value, 10) >= 1;
+        const relacionValida = relacion.value !== "";
+        if (cedulaValida && hijosValidos && relacionValida) {
+            btn.disabled = false;
+            btn.classList.add('btn-activo');
+        } else {
+            btn.disabled = true;
+            btn.classList.remove('btn-activo');
+        }
+    }
+
+    cedula.addEventListener('input', validar);
+    numHijos.addEventListener('input', validar);
+    relacion.addEventListener('change', validar);
+});
+</script>
+<style>
+.btn-activo {
+    background-color: #28a745 !important;
+    border-color: #28a745 !important;
+    color: #fff;
+    cursor: pointer;
+    opacity: 1;
+    transition: background 0.2s;
+}
+#btn_siguiente:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+</style>
 {% endblock %}

@@ -46,8 +46,8 @@ def login():
 
 
 def boleta():
-    return 'Boleta - en desarrollo'
-
+    return '<h2>La seccion Boletas esta en las ultimas etapas de desarrollo</h2>' \
+           '<h2> En muy poco tiempo estara operativo... </h2>'
 
 def constancia():
     # Mantener compatibilidad: redirigir a la nueva vista de consultas
@@ -125,19 +125,43 @@ def consultas_personas_list():
     title = ''
     try:
         if role == 'estudiante':
-            rows = db.session.execute(text('SELECT p.* FROM estudiantes e JOIN personas p ON e.id_persona = p.id_persona')).fetchall()
+            rows = db.session.execute(text('''
+                SELECT p.*, e.fecha_inscripcion, na.nombre_nivel_academico
+                FROM estudiantes e
+                JOIN personas p ON e.id_persona = p.id_persona
+                LEFT JOIN niveles_academicos na ON na.id_nivel_academico = (
+                    SELECT id_nivel_academico FROM representantes r WHERE r.id_persona = p.id_persona LIMIT 1
+                )
+            ''')).fetchall()
             role_display = 'Estudiante'
             title = 'Listado de Estudiantes'
         elif role == 'profesor' or role == 'profesores':
-            rows = db.session.execute(text('SELECT p.* FROM profesores pr JOIN personas p ON pr.id_persona = p.id_persona')).fetchall()
+            rows = db.session.execute(text('''
+                SELECT p.*, pr.id_profesor, es.nombre_especialidad
+                FROM profesores pr
+                JOIN personas p ON pr.id_persona = p.id_persona
+                LEFT JOIN especialidades es ON pr.id_especialidad = es.id_especialidad
+            ''')).fetchall()
             role_display = 'Profesor'
             title = 'Listado de Profesores'
         elif role == 'representante' or role == 'representantes':
-            rows = db.session.execute(text('SELECT p.* FROM representantes r JOIN personas p ON r.id_persona = p.id_persona')).fetchall()
+            rows = db.session.execute(text('''
+                SELECT p.*, r.id_representante, prf.nombre AS profesion, oc.nombre AS ocupacion, na.nombre_nivel_academico
+                FROM representantes r
+                JOIN personas p ON r.id_persona = p.id_persona
+                LEFT JOIN profesiones prf ON r.id_profesion = prf.id
+                LEFT JOIN ocupaciones oc ON r.id_ocupacion = oc.id
+                LEFT JOIN niveles_academicos na ON r.id_nivel_academico = na.id_nivel_academico
+            ''')).fetchall()
             role_display = 'Representante'
             title = 'Listado de Representantes'
         elif role == 'empleado' or role == 'empleados':
-            rows = db.session.execute(text('SELECT p.* FROM empleados em JOIN personas p ON em.id_persona = p.id_persona')).fetchall()
+            rows = db.session.execute(text('''
+                SELECT p.*, em.id_empleado, c.nombre_cargo, em.fecha_contratacion, em.salario
+                FROM empleados em
+                JOIN personas p ON em.id_persona = p.id_persona
+                LEFT JOIN cargos c ON em.id_cargo = c.id_cargo
+            ''')).fetchall()
             role_display = 'Empleado'
             title = 'Listado de Empleados'
         elif role == 'sinrol':
@@ -386,7 +410,37 @@ def consultas_materias():
     except Exception:
         materias = []
     roles_count, users_by_role = compute_role_counts(ctx)
-    return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/consultas_personas_list.html', rows=materias, role_display='Materia', title='Listado de Materias')
+    return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/consultas_materias.html', rows=materias, title='Listado de Materias')
+def consultas_planteles():
+    ctx = get_user_context(session)
+    try:
+        planteles = db.session.execute(text('SELECT id_plantel, nombre_plantel_nomina, codigo_pa FROM planteles')).fetchall()
+    except Exception:
+        planteles = []
+    roles_count, users_by_role = compute_role_counts(ctx)
+    # Refuerzo: asegurar que siempre se use la plantilla correcta y evitar duplicados
+    return render_template(
+        'home_panel/struct.html',
+        usuario=ctx['user'],
+        developer_priv=ctx['developer_priv'],
+        role_name=ctx.get('role_name'),
+        role_desc=ctx.get('role_desc'),
+        status=ctx.get('status'),
+        roles_count=roles_count,
+        users_by_role=users_by_role,
+        content_template='home_panel/consultas_planteles.html',
+        rows=planteles,
+        title='Listado de Planteles'
+    )
+
+def consultas_secciones():
+    ctx = get_user_context(session)
+    try:
+        secciones = db.session.execute(text('SELECT id_seccion, id_grado, id_letra_seccion FROM secciones')).fetchall()
+    except Exception:
+        secciones = []
+    roles_count, users_by_role = compute_role_counts(ctx)
+    return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/consultas_secciones.html', rows=secciones, title='Listado de Secciones')
 
 
 def consultas_materias_editar():
@@ -456,14 +510,7 @@ def consultas_secciones():
     return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/developer_secciones_existentes.html', secciones=secciones)
 
 
-def consultas_planteles():
-    ctx = get_user_context(session)
-    try:
-        planteles = db.session.execute(text('SELECT id_plantel, nombre_plantel_nomina, codigo_pa FROM planteles')).fetchall()
-    except Exception:
-        planteles = []
-    roles_count, users_by_role = compute_role_counts(ctx)
-    return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/consultas_personas_list.html', rows=planteles, role_display='Plantel', title='Listado de Planteles')
+
 
 
 def consultas_planteles_editar():
