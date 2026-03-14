@@ -198,6 +198,10 @@
 .generated-note .bolt{font-size:1rem}
 input.generated, input[readonly].generated{background:#f3f7f5;border-color:#d6eee6;color:#0b4d3f}
 
+/* --- ESTILOS DE ERROR --- */
+.error-border { border-color: red !important; }
+.error-text { color: red; font-size: 0.8em; margin-top: 2px; }
+
 /* Buttons */
 .panel-btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent-dark));color:#fff;padding:12px 18px;border-radius:12px;border:none;font-weight:800;box-shadow:0 12px 40px rgba(6,167,125,0.08)}
 .panel-btn.outline{background:transparent;border:1px solid rgba(6,167,125,0.08);padding:10px 14px;border-radius:10px}

@@ -3,11 +3,8 @@ from database.models import db
 from sqlalchemy import text
 from datetime import date
 
-
 def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
-    """Manejador de registros movido a utils para mantener view_handlers más limpio.
-    Recibe `ctx`, `roles_count` y `users_by_role` calculados por el wrapper.
-    """
+    """Manejador de registros unificado."""
     allowed = [
         'plantel', 'personas', 'materias', 'secciones',
         'letra_seccion', 'grados', 'niveles', 'matriculas', 'personal_admin'
@@ -17,7 +14,6 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
 
     message = None
 
-    # Personas (crear persona y redirigir a extensión según tipo)
     def _cap_first(s):
         s = (s or '').strip()
         if not s:
@@ -27,141 +23,91 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
     if tipo == 'personas':
         if request.method == 'POST':
             f = request.form
-            # normalizar entradas (primera letra mayúscula, resto minúscula)
-            primer = _cap_first(f.get('primer_nombre'))
-            segundo = _cap_first(f.get('segundo_nombre'))
-            pap = _cap_first(f.get('primer_apellido'))
-            sap = _cap_first(f.get('segundo_apellido'))
-            fecha_nac = (f.get('fecha_nacimiento') or '').strip()
-            id_tipo_persona = int(f.get('id_tipo_persona') or 0)
-            id_sexo = f.get('id_sexo') or None
-            id_tipo_doc = f.get('id_tipo_documento') or None
-            numero_cedula = (f.get('numero_cedula') or '').strip()
-            id_ocupacion = int(f.get('id_ocupacion') or 0) if f.get('id_ocupacion') else None
-            id_profesion = int(f.get('id_profesion') or 0) if f.get('id_profesion') else None
-            num_hijos = int(f.get('num_hijos') or 0) if f.get('num_hijos') else None
-            id_relacion_familiar = int(f.get('id_relacion_familiar') or 0) if f.get('id_relacion_familiar') else None
+            try:
+                # 1. Extracción y Normalización
+                primer = _cap_first(f.get('primer_nombre'))
+                segundo = _cap_first(f.get('segundo_nombre'))
+                pap = _cap_first(f.get('primer_apellido'))
+                sap = _cap_first(f.get('segundo_apellido'))
+                fecha_nac = (f.get('fecha_nacimiento') or '').strip()
+                numero_cedula = (f.get('numero_cedula') or '').strip()
+                
+                # 2. Manejo de IDs y Roles
+                id_tipo_persona = int(f.get('id_tipo_persona') or 0)
+                roles_map = {1: 'estudiante', 2: 'profesor', 3: 'representante', 4: 'empleado'}
+                tipo_persona = roles_map.get(id_tipo_persona, '')
 
-            # validaciones iniciales
-            # básicos de cédula y tipo
-            if not numero_cedula or not primer or not pap or not fecha_nac or not tipo_persona:
-                message = 'Campos requeridos faltantes. Asegúrese de ingresar cédula, nombres, apellidos, fecha de nacimiento y tipo de persona.'
-            elif not numero_cedula.isdigit():
-                message = 'La cédula debe contener solo dígitos.'
-            elif len(numero_cedula) < 7 or len(numero_cedula) > 9:
-                message = 'La cédula debe tener entre 7 y 9 dígitos.'
-            elif tipo_persona not in ['estudiante','profesor','representante','empleado']:
-                message = 'Tipo de persona inválido.'
-            # reglas de nombres
-            elif any(char.isdigit() for char in primer+segundo+pap+sap):
-                message = 'Los nombres y apellidos no pueden contener números.'
-            elif len(primer) < 5 or len(primer) > 10 or (segundo and (len(segundo) < 5 or len(segundo) > 10)) or len(pap) < 5 or len(pap) > 10 or (sap and (len(sap) < 5 or len(sap) > 10)):
-                message = 'Los nombres y apellidos deben tener entre 5 y 10 caracteres.'
-            elif primer == pap or primer == sap or segundo == pap or segundo == sap:
-                message = 'El nombre y los apellidos deben ser distintos entre sí.'
-            elif segundo and segundo == primer:
-                message = 'Primer nombre y segundo nombre no pueden ser iguales.'
-            else:
-                # Validaciones adicionales: fecha nacimiento no puede ser hoy ni en el futuro
-                try:
-                    y, m, d = map(int, fecha_nac.split('-'))
-                    dob = date(y, m, d)
-                    today = date.today()
-                    if dob >= today:
-                        message = 'Fecha de nacimiento inválida: no puede ser hoy ni en el futuro.'
-                except Exception:
-                    message = 'Formato de fecha inválido.'
+                # 3. Conversión de Género
+                raw_sexo = f.get('id_sexo')
+                id_sexo = int(raw_sexo) if raw_sexo and raw_sexo.isdigit() else None
+                
+                # 4. Datos adicionales
+                id_tipo_doc = int(f.get('id_tipo_documento') or 1)
+                num_hijos = int(f.get('num_hijos') or 0)
+                
+                def get_int_or_none(key):
+                    val = f.get(key)
+                    return int(val) if val and val.isdigit() else None
 
-                # Validaciones adicionales de edad según rol
-                if not message:
-                    try:
-                        y, m, d = map(int, fecha_nac.split('-'))
-                        dob = date(y, m, d)
-                        today = date.today()
-                        age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-                        if tipo_persona == 'representante' or tipo_persona == 'profesor':
-                            if age < 18:
-                                message = 'La persona debe ser mayor de 18 años para el rol seleccionado.'
-                        elif tipo_persona == 'estudiante':
-                            if age < 3 or age > 18:
-                                message = 'Estudiante debe tener entre 3 y 18 años de edad.'
-                    except Exception:
-                        if not message:
-                            message = 'Error al calcular la edad.'
+                id_ocupacion = get_int_or_none('id_ocupacion')
+                id_profesion = get_int_or_none('id_profesion')
+                id_relacion = get_int_or_none('id_relacion_familiar')
 
-            # si hay error, mostramos sin tocar BD
-            if message:
-                pass
-            else:
-                # comprobar duplicados no solo en personas sino también en persona_cedula
-                try:
-                    existing = None
-                    if numero_cedula:
-                        existing = db.session.execute(text(
-                            'SELECT id_persona FROM personas WHERE numero_cedula = :num'
-                        ), {'num': numero_cedula}).fetchone()
-                        if not existing:
-                            existing = db.session.execute(text(
-                                'SELECT pc.id_persona FROM persona_cedula pc WHERE pc.numero_cedula = :num'
-                            ), {'num': numero_cedula}).fetchone()
-                except Exception:
-                    existing = None
-
-                if existing:
-                    message = 'Persona ya registrada. No puedes volver a registrarla.'
+                # 5. Validaciones de Negocio
+                if not numero_cedula or not primer or not pap or not fecha_nac or not tipo_persona:
+                    message = 'Faltan campos obligatorios. Revise Cédula, Nombre, Apellido y Fecha.'
                 else:
-                    try:
-                        insert_person = text(
-                            'INSERT INTO personas '
-                            '(primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, fecha_nacimiento, id_sexo, id_tipo_persona, id_tipo_documento, numero_cedula, id_ocupacion, id_profesion, num_hijos, id_relacion_familiar) '
-                            'VALUES (:primer, :segundo, :pap, :sap, :fecha, :id_sexo, :id_tipo_persona, :id_tipo_doc, :num_ced, :id_ocupacion, :id_profesion, :num_hijos, :id_relacion_familiar)'
-                        )
-                        db.session.execute(insert_person, {
-                            'primer': primer,
-                            'segundo': segundo or None,
-                            'pap': pap,
-                            'sap': sap or None,
-                            'fecha': fecha_nac or None,
-                            'id_sexo': id_sexo,
-                            'id_tipo_persona': id_tipo_persona,
-                            'id_tipo_doc': int(id_tipo_doc) if id_tipo_doc and str(id_tipo_doc).isdigit() else None,
-                            'num_ced': numero_cedula or None,
-                            'id_ocupacion': id_ocupacion,
-                            'id_profesion': id_profesion,
-                            'num_hijos': num_hijos,
-                            'id_relacion_familiar': id_relacion_familiar
+                    # Validación de Edad
+                    birth_date = date.fromisoformat(fecha_nac)
+                    today = date.today()
+                    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+                    
+                    if tipo_persona == 'estudiante' and age > 18:
+                        message = 'El estudiante no puede ser mayor de 18 años.'
+                    elif tipo_persona in ['profesor', 'empleado', 'representante'] and age < 18:
+                        message = 'El personal o representante debe ser mayor de edad.'
+                    else:
+                        # 6. Inserción SQL
+                        query = text('''
+                            INSERT INTO personas (
+                                primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,
+                                numero_cedula, fecha_nacimiento, id_tipo_persona, id_sexo,
+                                id_tipo_documento, num_hijos, id_ocupacion, id_profesion, id_relacion_familiar
+                            ) VALUES (
+                                :primer, :segundo, :pap, :sap, :cedula, :fecha, :tipo, :sexo, 
+                                :doc, :hijos, :ocup, :prof, :rel
+                            )
+                        ''')
+                        
+                        result = db.session.execute(query, {
+                            'primer': primer, 'segundo': segundo, 'pap': pap, 'sap': sap,
+                            'cedula': numero_cedula, 'fecha': fecha_nac, 'tipo': id_tipo_persona,
+                            'sexo': id_sexo, 'doc': id_tipo_doc, 'hijos': num_hijos,
+                            'ocup': id_ocupacion, 'prof': id_profesion, 'rel': id_relacion
                         })
+                        
+                        new_id = result.lastrowid
                         db.session.commit()
+                        
+                        return redirect(url_for('registro_persona_ext', pid=new_id, tipo=tipo_persona))
 
-                        if db.engine.name == 'sqlite':
-                            new_id = int(db.session.execute(text('SELECT last_insert_rowid()')).scalar() or 0)
-                        else:
-                            r = db.session.execute(text('SELECT LAST_INSERT_ID() as id')).fetchone()
-                            new_id = int(r[0]) if r else 0
-
-                        return redirect(url_for('registro_persona_ext', pid=new_id, tipo=id_tipo_persona))
-                    except Exception as e:
-                        db.session.rollback()
-                        message = f'Error al registrar persona: {e}'
-
-        # GET: carga selects necesarios
-        try:
-            sexos = db.session.execute(text('SELECT id_sexo, letra_sexo FROM sexo')).fetchall()
-        except Exception:
-            sexos = []
-        try:
-            tipo_documentos = db.session.execute(text('SELECT id_tipo_documento, nombre_tipo_documento FROM tipo_documento')).fetchall()
-        except Exception:
-            tipo_documentos = []
+            except Exception as e:
+                db.session.rollback()
+                print(f"DEBUG ERROR: {e}")
+                message = f'Error en el sistema: {str(e)}'
 
         return render_template(
-            'home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'],
-            role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'),
-            roles_count=roles_count, users_by_role=users_by_role,
+            'home_panel/struct.html',
+            usuario=ctx['user'],
+            developer_priv=ctx['developer_priv'],
+            role_name=ctx.get('role_name'),
+            role_desc=ctx.get('role_desc'),
+            status=ctx.get('status'),
+            roles_count=roles_count,
+            users_by_role=users_by_role,
             content_template='home_panel/registro_persona_v2.html',
-            sexos=sexos, tipo_documentos=tipo_documentos, message=message
+            message=message
         )
-
     # Plantel
     if tipo == 'plantel':
         if request.method == 'POST':

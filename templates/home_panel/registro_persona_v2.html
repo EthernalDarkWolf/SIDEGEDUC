@@ -1,7 +1,3 @@
-<style>
-    .error-border { border-color: red !important; }
-    .error-text { color: red; font-size: 0.8em; margin-top: 2px; }
-</style>
 <div class="registro-persona">
     <h3>Registro de Persona</h3>
    
@@ -42,13 +38,9 @@
         <div class="step-content" data-step="1">
             <div class="group">
                 <label for="tipo_persona">Tipo de Persona</label>
-                <select name="tipo_persona" id="tipo_persona" required>
-                    <option value="">Seleccione</option>
-                    <option value="Estudiante">Estudiante</option>
-                    <option value="Empleado">Empleado</option>
-                    <option value="Representante">Representante</option>
-                    <option value="Profesor">Profesor</option>
-                </select>
+                <select name="id_tipo_persona" id="tipo_persona" required>
+    <option value="">Seleccione</option>
+    <option value="1">Estudiante</option>   <option value="2">Profesor</option>     <option value="3">Representante</option> <option value="4">Empleado</option></select>
             </div>
             <div class="group">
                 <label>Género</label>
@@ -76,7 +68,7 @@
                         Femenino
                     </button>
                 </div>
-                <input type="hidden" name="genero" id="genero" required>
+                <input type="hidden" name="id_sexo" id="genero" required>
             </div>
             <div class="step-actions">
                 <button type="button" class="next-btn" id="next-1" disabled>Siguiente</button>
@@ -119,11 +111,11 @@
         <div class="step-content" data-step="3" style="display:none">
             <div class="group">
                 <label for="tipo_documento">Tipo de Documento</label>
-                <input type="text" id="tipo_documento" name="tipo_documento" class="form-control" readonly required>
+                <input type="text" id="tipo_documento" name="id_tipo_documento" value="1" class="form-control" readonly required>
             </div>
             <div class="group">
                                 <label for="cedula" id="label-cedula">Número de Cédula</label>
-                                <input type="text" name="cedula" id="cedula" required data-rule="numbers" maxlength="10" placeholder="Cédula del representante o persona principal">
+                                <input type="text" name="numero_cedula" id="cedula" required data-rule="numbers" maxlength="10" placeholder="Cédula del representante o persona principal">
                                                                 <div class="error-text" id="error-cedula"></div>
                                 <script>
                                 document.addEventListener('DOMContentLoaded', function() {
@@ -192,7 +184,7 @@
             <div class="group" style="margin-bottom:0;">
                 <label style="margin-bottom:4px;display:block;">Relación familiar con el/los hijo(s)</label>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <select name="relacion_familiar" id="relacion_familiar" class="form-control" required style="flex:1;">
+                    <select name="id_relacion_familiar" id="relacion_familiar" class="form-control" required style="flex:1;">
                         <option value="">Seleccione...</option>
                     </select>
                 </div>
@@ -216,7 +208,7 @@
             <div class="group">
                 <label for="ocupacion">Ocupación</label>
                 <div style="display:flex;align-items:center;gap:8px;">
-                    <select name="ocupacion" id="ocupacion" required style="flex:1;">
+                    <select name="id_ocupacion" id="ocupacion" required style="flex:1;">
                         <option value="">Seleccione...</option>
                     </select>
                 </div>
@@ -224,7 +216,7 @@
             <div class="group">
                 <label for="profesion">Nivel de Instrucción</label>
                 <div style="display:flex;align-items:center;gap:8px;">
-                    <select name="profesion" id="profesion" required style="flex:1;">
+                    <select name="id_profesion" id="profesion" required style="flex:1;">
                         <option value="">Seleccione...</option>
                     </select>
                 </div>
@@ -604,6 +596,7 @@ window.addEventListener('DOMContentLoaded', function() {
             const stepContents = document.querySelectorAll('.step-content');
             const stepperSteps = document.querySelectorAll('.stepper-step');
             const form = document.getElementById('personaForm');
+            const tipoPersonaSelect = document.getElementById('tipo_persona');
             const nextBtns = form.querySelectorAll('.next-btn');
             const prevBtns = form.querySelectorAll('.prev-btn');
             const submitBtn = document.getElementById('submit-btn');
@@ -686,10 +679,11 @@ window.addEventListener('DOMContentLoaded', function() {
                     setError(form.fecha_nacimiento,'La fecha es obligatoria');
                     return false;
                 }
-                if (form.tipo_persona.value.toLowerCase() === 'representante') {
+                // Validar representantes (id=3) dentro del rango 18-65
+                if (tipoPersonaSelect && tipoPersonaSelect.value === '3') {
                     const edad = calcularEdad(form.fecha_nacimiento.value);
                     if (edad < 18 || edad > 65) {
-                        setError(form.fecha_nacimiento,'Error: Un representante no debe ser menor de 18 años, Y no puede ser mayor de 65 años');
+                        setError(form.fecha_nacimiento,'Error: Un representante no debe ser menor de 18 años, ni mayor de 65 años');
                         return false;
                     }
                 }
@@ -705,9 +699,9 @@ window.addEventListener('DOMContentLoaded', function() {
                         let maxDate = new Date().toISOString().split('T')[0];
                         // Si es representante, limitar rango a 18-65 años
                         function getMinMax() {
-                            const tipo = form.tipo_persona.value.toLowerCase();
+                            const tipo = tipoPersonaSelect ? tipoPersonaSelect.value : '';
                             const today = new Date();
-                            if (tipo === 'representante') {
+                            if (tipo === '3') {
                                 let max = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
                                 let min = new Date(today.getFullYear() - 65, today.getMonth(), today.getDate());
                                 return {
@@ -723,17 +717,19 @@ window.addEventListener('DOMContentLoaded', function() {
                             locale: 'es',
                             disableMobile: true
                         }, getMinMax()));
-                        form.tipo_persona.addEventListener('change', function() {
-                            let opts = getMinMax();
-                            fp.set('minDate', opts.minDate);
-                            fp.set('maxDate', opts.maxDate);
-                        });
+                        if (tipoPersonaSelect) {
+                            tipoPersonaSelect.addEventListener('change', function() {
+                                let opts = getMinMax();
+                                fp.set('minDate', opts.minDate);
+                                fp.set('maxDate', opts.maxDate);
+                            });
+                        }
                     }
                 }
             });
 
             function validateStep1(){
-                const tipo = form.tipo_persona.value;
+                const tipo = tipoPersonaSelect ? tipoPersonaSelect.value : '';
                 const genero = generoInput.value;
                 return tipo && genero;
             }
@@ -749,7 +745,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 return valid;
             }
             function validateStep3(){
-                return form.cedula.value.trim() && form.num_hijos.value !== '' && form.relacion_familiar.value.trim();
+                return form.numero_cedula.value.trim() &&
+                    form.num_hijos.value !== '' &&
+                    form.id_relacion_familiar.value.trim();
             }
             function validateStep4(){
                 return form.ocupacion.value.trim() && form.profesion.value.trim();
@@ -760,14 +758,18 @@ window.addEventListener('DOMContentLoaded', function() {
                 nextBtns[2].disabled = !validateStep3();
                 submitBtn.disabled = !validateStep4();
             }
-            // Género premium
             genderCards.forEach(btn => {
                 btn.addEventListener('click', function(){
                     genderCards.forEach(b => b.classList.remove('selected'));
                     btn.classList.add('selected');
-                    generoInput.value = btn.dataset.value;
+                    
+                    const valorLetra = btn.getAttribute('data-value');
+                    // Convertir "M" a 1 y "F" a 2 para la base de datos
+                    generoInput.value = (valorLetra === 'M') ? '1' : '2'; 
+                    
                     updateNextBtns();
                 });
+            });
             });
             // Navegación
             nextBtns[0].addEventListener('click', function(){ if(validateStep1()){ currentStep=2; showStep(currentStep); } });
