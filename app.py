@@ -126,6 +126,27 @@ with app.app_context():
                     print("tabla 'planteles' creada manualmente")
                 except Exception as ex:
                     print(f"Error creando tabla planteles: {ex}")
+
+            # Algunos esquemas antiguos referencian una tabla niveles_academicos_escolares
+            # (usada como FK desde la tabla representantes). Si el DB no la tiene, crearla
+            # como alias de niveles_academicos para evitar errores de integridad.
+            existing_niv = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='niveles_academicos_escolares';")).fetchone()
+            if not existing_niv:
+                try:
+                    conn.execute(text(
+                        "CREATE TABLE niveles_academicos_escolares ("
+                        "id_nivel_academico INTEGER PRIMARY KEY,"
+                        "nombre_nivel_academico VARCHAR(100) NOT NULL UNIQUE"
+                        ")"
+                    ))
+                    conn.execute(text(
+                        "INSERT OR IGNORE INTO niveles_academicos_escolares (id_nivel_academico, nombre_nivel_academico) "
+                        "SELECT id_nivel_academico, nombre_nivel_academico FROM niveles_academicos"
+                    ))
+                    print("tabla 'niveles_academicos_escolares' creada y poblada (compatibilidad)")
+                except Exception as ex:
+                    print(f"Error creando tabla niveles_academicos_escolares: {ex}")
+
             conn.close()
         print("--- Tablas verificadas/creadas correctamente ---")
     except Exception as e:
