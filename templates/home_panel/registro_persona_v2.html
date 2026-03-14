@@ -39,9 +39,33 @@
             <div class="group">
                 <label for="tipo_persona">Tipo de Persona</label>
                 <select name="id_tipo_persona" id="tipo_persona" required>
-    <option value="">Seleccione</option>
-    <option value="1">Estudiante</option>   <option value="2">Profesor</option>     <option value="3">Representante</option> <option value="4">Empleado</option></select>
+                <option value="">Seleccione</option>
+                <option value="1">Estudiante</option>
+                <option value="2">Profesor</option>
+                <option value="3">Representante</option>
+                <option value="4">Empleado</option></select>
             </div>
+            <div class="group" data-show-only="4" style="display: none;">
+                <label>Datos empleado</label>
+                <br />
+                <label for="salario">Salario</label>
+                <input type="number" value="0" class="no-validation" min="0" id="salario" name="salario" maxlength="11" step="0.01">
+                <br />
+                <label for="fecha_contratacion">Fecha contratacion</label>
+                <input type="date" class="no-validation" min="0" id="fecha_contratacion" name="fecha_contratacion">
+                <br />
+                <label for="cargo" >Cargo</label>
+                <select name="id_cargo" id="id_cargo">
+                    {% for c in cargos %}
+                        <option value="{{ c.id_cargo }}">{{ c.nombre_cargo }}</option>
+                    {% endfor %}
+                    <option value="otro">Otro</option>
+                </select>
+                <br class="show-otro-cargo" />
+                <label for="otro_cargo" class="show-otro-cargo">Cargo</label>
+                <input type="text" class="no-validation show-otro-cargo" id="otro_cargo" name="otro_cargo">
+            </div>
+            <br />
             <div class="group">
                 <label>Género</label>
                 <div class="gender-cards">
@@ -734,7 +758,34 @@ window.addEventListener('DOMContentLoaded', function() {
 
             function validateStep1(){
 
+                document.querySelectorAll('*[data-show-only], .show-otro-cargo').forEach(i => { console.log(i); i.style.display = 'none' })
+                
+
+                let p = tipoPersonaSelect?.value
+                let dataShow = document.querySelector(`*[data-show-only="${p}"]`)
+
+                if (dataShow) {
+                    dataShow.style.display = 'flex'
+
+
+                    if (p == '4' && document.querySelector('#id_cargo').value == 'otro') {
+                        console.log('display')
+                        document.querySelectorAll('.show-otro-cargo').forEach(e => e.style.display = 'block')
+                    }
+                }
+
                 const tipo = tipoPersonaSelect ? tipoPersonaSelect.value : '';
+
+                if (tipo == '4') {
+                    let cargoSelect = document.querySelector('#id_cargo').value
+                    let otroCargo = document.querySelector('#otro_cargo').value
+                    let fechaInput = document.querySelector('#fecha_contratacion').value
+
+                    if (isNaN((new Date(fechaInput).getTime()))) return false
+
+                    if (cargoSelect == 'otro' && !otroCargo) return false
+                }
+
                 const genero = generoInput.value;
                 return tipo && genero;
             }
@@ -804,9 +855,7 @@ window.addEventListener('DOMContentLoaded', function() {
         };
         // Mensaje de servidor
         {% if message %}
-        <script type="text/javascript">
             showStatusModal('Aviso', {{ message|tojson }});
-        </script>
         {% endif %}
     </script>
 </div>

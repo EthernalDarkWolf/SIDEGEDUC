@@ -1,0 +1,47 @@
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f8;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+    .card {
+        background: #fff;
+        padding: 2rem 2.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        text-align: center;
+    }
+    .checkmark {
+        font-size: 3rem;
+        color: #4caf50;
+        margin-bottom: 1rem;
+    }
+    .btn {
+        display: inline-block;
+        margin-top: 1.5rem;
+        padding: 0.7rem 1.5rem;
+        background: #1976d2;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 1rem;
+        transition: background 0.2s;
+    }
+    .btn:hover {
+        background: #1565c0;
+    }
+</style>
+<body>
+    <div class="card">
+        <div class="checkmark">&#10003;</div>
+        <h2>Registro Completado</h2>
+        <p>¡Tu registro se ha realizado con éxito!</p>
+        <a href="{{ url_for('dashboard') }}" class="btn">Ir al Dashboard</a>
+    </div>
+</body>
+</html>

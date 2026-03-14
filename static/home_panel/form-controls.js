@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function(){
         const nameBasedLetters = /nombre|apellido|razon|direccion|lugar|ciudad|estado|municipio|titulo/i;
         const nameBasedNumbers = /cedula|numero|tel|edad|hijos|matricula|codigo|cantidad|anio|ano|id_/i;
 
-        document.querySelectorAll('input').forEach(function(input){
+        document.querySelectorAll('input:not(.no-validation)').forEach(function(input){
             let isLetters = false;
             let isNumbers = false;
 

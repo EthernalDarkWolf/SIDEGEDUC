@@ -188,7 +188,13 @@
                                         </div>
 
                                         <div class="row">
-                                            <div class="col-12">
+                                            <div class="col-12 mt-3" id="message" style="display:  none;">
+                                                <div class="alert alert-success">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    <span></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-12  mt-3">
                                                 <div class="alert alert-info">
                                                     <i class="fas fa-info-circle me-2"></i>
                                                     <strong>Información:</strong> Accede a las funciones del sistema desde la barra lateral.
@@ -292,6 +298,15 @@
             document.querySelectorAll('input[data-rule]').forEach(el =>
                 el.addEventListener('input', realTimeValidator)
             );
+
+            let u = new URLSearchParams(location.search)
+
+            if (u.get('message')) {
+                console.log('asfasdf')
+                document.querySelector('#message').style.display = 'block'
+                document.querySelector('#message span').innerText = u.get('message')
+                setTimeout(() => document.querySelector('#message').style.display = 'none', 2000)
+            }
         });
     </script>
 </body>

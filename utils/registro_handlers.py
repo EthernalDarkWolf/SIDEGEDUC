@@ -85,11 +85,42 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                             'sexo': id_sexo, 'doc': id_tipo_doc, 'hijos': num_hijos,
                             'ocup': id_ocupacion, 'prof': id_profesion, 'rel': id_relacion
                         })
-                        
                         new_id = result.lastrowid
+
+                        if tipo_persona == 'estudiante':
+                            try:
+                                db.session.execute(text('INSERT INTO estudiantes (id_persona, fecha_inscripcion) VALUES (:id, DATETIME("NOW"))'), { 'id': new_id })
+                            except Exception as e:
+                                print(f"DEBUG ERROR: {e}")
+
+                        elif tipo_persona == 'representante':
+                            db.session.execute(text('INSERT INTO representantes (id_persona, id_profesion, id_ocupacion) VALUES (:id, :id_profesion, :id_ocupacion)'), {
+                                'id': new_id,
+                                'id_profesion': id_profesion,
+                                'id_ocupacion': id_ocupacion
+                            })
+                        elif tipo_persona == 'profesor':
+                            db.session.execute(text('INSERT INTO profesores (id_persona) VALUES (:id)'), { 'id': new_id })
+                        elif tipo_persona == 'empleado':
+                            otro_cargo = f.get('otro_cargo')
+                            id_cargo = f.get('id_cargo')
+                            salario = float(f.get('salario'))
+                            fecha_contratacion = f.get('fecha_contratacion')
+                            id_final_cargo = id_cargo
+
+                            if id_cargo == 'otro':
+                                id_final_cargo = db.session.execute(text('INSERT INTO cargos (nombre_cargo) VALUES (:nombre_cargo)'), { 'nombre_cargo': otro_cargo}).lastrowid
+
+                            db.session.execute(text('INSERT INTO empleados (id_persona, id_cargo, fecha_contratacion, salario) VALUES (:id_persona, :id_cargo, :fecha_contratacion, :salario)'), {
+                                'id_persona': new_id,
+                                'id_cargo': id_final_cargo,
+                                'fecha_contratacion': fecha_contratacion,
+                                'salario': salario,
+                            })
+
                         db.session.commit()
                         
-                        return redirect(url_for('registro_persona_ext', pid=new_id, tipo=tipo_persona))
+                        return redirect(url_for('dashboard', message=f"Registro del usuario \"{primer} {pap}\" completado"))
 
             except Exception as e:
                 db.session.rollback()
@@ -97,6 +128,8 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                 message = f'Error en el sistema: {str(e)}'
 
         tipo_documentos = db.session.execute(text('SELECT id_tipo_documento, nombre_tipo_documento FROM tipo_documento')).fetchall()
+        ocupaciones = db.session.execute(text('SELECT * FROM ocupaciones')).fetchall()
+        cargos = db.session.execute(text('SELECT * FROM cargos')).fetchall()
 
         return render_template(
             'home_panel/struct.html',
@@ -109,7 +142,9 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
             users_by_role=users_by_role,
             content_template='home_panel/registro_persona_v2.html',
             tipo_documentos=tipo_documentos,
-            message=message
+            message=message,
+            ocupaciones=ocupaciones,
+            cargos=cargos,
         )
     # Plantel
     if tipo == 'plantel':
