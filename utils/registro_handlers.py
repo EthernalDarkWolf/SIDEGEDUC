@@ -96,6 +96,8 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                 print(f"DEBUG ERROR: {e}")
                 message = f'Error en el sistema: {str(e)}'
 
+        tipo_documentos = db.session.execute(text('SELECT id_tipo_documento, nombre_tipo_documento FROM tipo_documento')).fetchall()
+
         return render_template(
             'home_panel/struct.html',
             usuario=ctx['user'],
@@ -106,6 +108,7 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
             roles_count=roles_count,
             users_by_role=users_by_role,
             content_template='home_panel/registro_persona_v2.html',
+            tipo_documentos=tipo_documentos,
             message=message
         )
     # Plantel

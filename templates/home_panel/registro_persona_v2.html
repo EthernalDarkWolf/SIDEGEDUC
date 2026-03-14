@@ -111,7 +111,11 @@
         <div class="step-content" data-step="3" style="display:none">
             <div class="group">
                 <label for="tipo_documento">Tipo de Documento</label>
-                <input type="text" id="tipo_documento" name="id_tipo_documento" value="1" class="form-control" readonly required>
+                <select type="text" id="tipo_documento" name="id_tipo_documento" class="form-control" required>
+                    {% for td in tipo_documentos %}
+                        <option value="{{ td.id_tipo_documento }}">{{ td.nombre_tipo_documento }}</option>
+                    {% endfor %}
+                </select>
             </div>
             <div class="group">
                                 <label for="cedula" id="label-cedula">Número de Cédula</label>
@@ -729,6 +733,7 @@ window.addEventListener('DOMContentLoaded', function() {
             });
 
             function validateStep1(){
+
                 const tipo = tipoPersonaSelect ? tipoPersonaSelect.value : '';
                 const genero = generoInput.value;
                 return tipo && genero;
@@ -769,7 +774,6 @@ window.addEventListener('DOMContentLoaded', function() {
                     
                     updateNextBtns();
                 });
-            });
             });
             // Navegación
             nextBtns[0].addEventListener('click', function(){ if(validateStep1()){ currentStep=2; showStep(currentStep); } });
