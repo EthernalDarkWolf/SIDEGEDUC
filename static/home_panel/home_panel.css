@@ -211,6 +211,11 @@ body{margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180de
 .card{box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important; border: 1px solid rgba(0, 0, 0, 0.125);} 
 .card-header{background: linear-gradient(90deg, var(--accent), var(--accent2)) !important; color: white !important;}
 
+/* Action cards (registro de secciones) */
+.action-card{cursor: pointer; transition: transform 0.14s ease, box-shadow 0.14s ease;}
+.action-card:hover{transform: translateY(-5px);box-shadow:0 12px 28px rgba(11,18,32,0.07);}
+.action-card:active{transform: translateY(-2px);}
+
 /* Responsive */
 @media(max-width:768px){
 	.sidebar{width: 280px;z-index: 1050}
