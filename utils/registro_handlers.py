@@ -88,10 +88,8 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                         new_id = result.lastrowid
 
                         if tipo_persona == 'estudiante':
-                            try:
-                                db.session.execute(text('INSERT INTO estudiantes (id_persona, fecha_inscripcion) VALUES (:id, DATETIME("NOW"))'), { 'id': new_id })
-                            except Exception as e:
-                                print(f"DEBUG ERROR: {e}")
+                            fecha_inscripcion = f.get('fecha_inscripcion')
+                            db.session.execute(text('INSERT INTO estudiantes (id_persona, fecha_inscripcion) VALUES (:id, :fecins)'), { 'id': new_id, 'fecins': fecha_inscripcion  })
 
                         elif tipo_persona == 'representante':
                             db.session.execute(text('INSERT INTO representantes (id_persona, id_profesion, id_ocupacion) VALUES (:id, :id_profesion, :id_ocupacion)'), {

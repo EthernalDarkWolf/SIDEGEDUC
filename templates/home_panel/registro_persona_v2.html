@@ -35,6 +35,13 @@
 
     <!-- Formulario único con pasos -->
     <form id="personaForm" method="POST" autocomplete="off">
+        {% if message %}
+        <div class="message-hide" style="display: flex; flex-direction: row; justify-content: center;">
+            <div class="alert alert-danger group">
+                <strong><i class="fas fa-info-circle me-2"></i> Información:</strong> {{ message }}
+            </div>
+        </div>
+        {% endif %}
         <div class="step-content" data-step="1">
             <div class="group">
                 <label for="tipo_persona">Tipo de Persona</label>
@@ -64,6 +71,12 @@
                 <br class="show-otro-cargo" />
                 <label for="otro_cargo" class="show-otro-cargo">Cargo</label>
                 <input type="text" class="no-validation show-otro-cargo" id="otro_cargo" name="otro_cargo">
+            </div>
+            <div class="group" data-show-only="1" style="display: none;">
+                <label>Datos Estudiantes</label>
+                <br />
+                <label for="fecha_inscripcion">Fecha inscripción</label>
+                <input type="date" class="no-validation" id="fecha_inscripcion" name="fecha_inscripcion">
             </div>
             <br />
             <div class="group">
@@ -766,15 +779,18 @@ window.addEventListener('DOMContentLoaded', function() {
 
                 if (dataShow) {
                     dataShow.style.display = 'flex'
-
-
                     if (p == '4' && document.querySelector('#id_cargo').value == 'otro') {
-                        console.log('display')
                         document.querySelectorAll('.show-otro-cargo').forEach(e => e.style.display = 'block')
                     }
                 }
 
                 const tipo = tipoPersonaSelect ? tipoPersonaSelect.value : '';
+
+                if (tipo == '1') {
+                    let fechaIns = document.querySelector('#fecha_inscripcion').value
+
+                    if (isNaN((new Date(fechaIns).getTime()))) return false
+                }
 
                 if (tipo == '4') {
                     let cargoSelect = document.querySelector('#id_cargo').value
@@ -853,9 +869,5 @@ window.addEventListener('DOMContentLoaded', function() {
             overlay.setAttribute('aria-hidden','false');
             overlay.classList.add('visible');
         };
-        // Mensaje de servidor
-        {% if message %}
-            showStatusModal('Aviso', {{ message|tojson }});
-        {% endif %}
     </script>
 </div>
