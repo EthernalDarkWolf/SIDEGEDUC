@@ -1,163 +1,81 @@
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Secciones</h3>
+<div class="container-fluid mt-4">
+    <div class="mb-3">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-sm btn-light">← Volver</a>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-3">
+            <div class="card h-100 border-primary shadow-sm action-card" role="button" data-action="Crear sección">
+                <div class="card-body text-center">
+                    <i class="fas fa-folder-plus fa-2x text-primary mb-2"></i>
+                    <h6 class="card-title">Crear sección</h6>
+                    <p class="text-muted small mb-0">Añadir una nueva sección al sistema.</p>
                 </div>
-                <div class="card-body">
-                    <ul class="nav nav-tabs" id="seccionesTab" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="create-tab" data-bs-toggle="tab" data-bs-target="#create" type="button" role="tab">Crear Sección</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="assign-materia-tab" data-bs-toggle="tab" data-bs-target="#assign-materia" type="button" role="tab">Asignar Materia</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="add-student-tab" data-bs-toggle="tab" data-bs-target="#add-student" type="button" role="tab">Asignar Estudiante</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="assign-professor-tab" data-bs-toggle="tab" data-bs-target="#assign-professor" type="button" role="tab">Asignar Profesor</button>
-                        </li>
-                    </ul>
-                    <div class="tab-content mt-3" id="seccionesTabContent">
-                        {% if message %}
-                            <div class="alert alert-success">{{ message }}</div>
-                        {% endif %}
-                        <div class="tab-pane fade show active" id="create" role="tabpanel">
-                            <h4>Crear Sección</h4>
-                            <form method="post">
-                                <input type="hidden" name="action" value="create">
-                                <div class="mb-3">
-                                    <label for="id_letra_seccion" class="form-label">Letra de sección:</label>
-                                    <select id="id_letra_seccion" name="id_letra_seccion" class="form-select">
-                                        <option value="">-- seleccionar --</option>
-                                        {% for l in letras %}
-                                            <option value="{{ l.id_letra_seccion }}">{{ l.letra }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="id_grado" class="form-label">Grado (si aplica):</label>
-                                    <select id="id_grado" name="id_grado" class="form-select">
-                                        <option value="">-- ninguno --</option>
-                                        {% for g in grados %}
-                                            <option value="{{ g.id_grado }}">{{ g.numero_grado }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="id_nivel" class="form-label">Nivel educativo:</label>
-                                    <select id="id_nivel" name="id_nivel" class="form-select">
-                                        <option value="">-- seleccionar --</option>
-                                        {% for n in niveles %}
-                                            <option value="{{ n.id_nivel }}">{{ n.nombre_nivel }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <button type="submit" class="btn btn-primary">Crear Sección</button>
-                            </form>
-                        </div>
-                        <div class="tab-pane fade" id="assign-materia" role="tabpanel">
-                            <h4>Asignar Materia a Sección</h4>
-                            <form method="get" class="mb-3">
-                                <input type="hidden" name="action" value="assign_materia">
-                                <div class="mb-3">
-                                    <label for="seccion_id" class="form-label">Seleccionar sección para ver/ver materias:</label>
-                                    <select id="seccion_id" name="seccion_id" class="form-select" onchange="this.form.submit()">
-                                        <option value="">-- seleccionar --</option>
-                                        {% for s in secciones %}
-                                            <option value="{{ s.id_seccion }}" {% if selected_seccion and selected_seccion == s.id_seccion %}selected{% endif %}>Grado {{ s.id_grado }} - Sección {{ s.id_letra_seccion }} (id {{ s.id_seccion }})</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </form>
-                            <div class="mb-3">
-                                <strong>Materias asignadas a la sección:</strong>
-                                <ul class="list-group">
-                                    {% for m in materias_asignadas %}
-                                        <li class="list-group-item">{{ m.nombre_materia }} (id {{ m.id_materia }})</li>
-                                    {% else %}
-                                        <li class="list-group-item text-muted">No hay materias asignadas</li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                            <form method="post">
-                                <input type="hidden" name="action" value="assign_materia">
-                                <div class="mb-3">
-                                    <label for="id_materia" class="form-label">Materia:</label>
-                                    <select id="id_materia" name="id_materia" class="form-select" required>
-                                        <option value="">-- seleccionar --</option>
-                                        {% for m in materias %}
-                                            <option value="{{ m.id_materia }}">{{ m.nombre_materia }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="id_seccion" class="form-label">Sección:</label>
-                                    <select id="id_seccion" name="id_seccion" class="form-select" required>
-                                        <option value="">-- seleccionar --</option>
-                                        {% for s in secciones %}
-                                            <option value="{{ s.id_seccion }}">Grado {{ s.id_grado }} - Sección {{ s.id_letra_seccion }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <button type="submit" class="btn btn-primary">Asignar Materia</button>
-                            </form>
-                        </div>
-                        <div class="tab-pane fade" id="add-student" role="tabpanel">
-                            <h4>Asignar Estudiante a Sección</h4>
-                            <form method="post">
-                                <input type="hidden" name="action" value="add_student">
-                                <div class="mb-3">
-                                    <label for="id_estudiante" class="form-label">Estudiante:</label>
-                                    <select id="id_estudiante" name="id_estudiante" class="form-select" required>
-                                        <option value="">-- seleccionar --</option>
-                                        {% for e in estudiantes %}
-                                            <option value="{{ e.id_estudiante }}">{{ e.primer_nombre }} {{ e.primer_apellido }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="id_seccion" class="form-label">Sección:</label>
-                                    <select id="id_seccion" name="id_seccion" class="form-select" required>
-                                        <option value="">-- seleccionar --</option>
-                                        {% for s in secciones %}
-                                            <option value="{{ s.id_seccion }}">Grado {{ s.id_grado }} - Sección {{ s.id_letra_seccion }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <button type="submit" class="btn btn-primary">Asignar Estudiante</button>
-                            </form>
-                        </div>
-                        <div class="tab-pane fade" id="assign-professor" role="tabpanel">
-                            <h4>Asignar Profesor a Sección</h4>
-                            <form method="post">
-                                <input type="hidden" name="action" value="assign_professor">
-                                <div class="mb-3">
-                                    <label for="id_profesor" class="form-label">Profesor:</label>
-                                    <select id="id_profesor" name="id_profesor" class="form-select" required>
-                                        <option value="">-- seleccionar --</option>
-                                        {% for p in profesores %}
-                                            <option value="{{ p.id_profesor }}">{{ p.primer_nombre }} {{ p.primer_apellido }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="id_seccion" class="form-label">Sección:</label>
-                                    <select id="id_seccion" name="id_seccion" class="form-select" required>
-                                        <option value="">-- seleccionar --</option>
-                                        {% for s in secciones %}
-                                            <option value="{{ s.id_seccion }}">Grado {{ s.id_grado }} - Sección {{ s.id_letra_seccion }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <button type="submit" class="btn btn-primary">Asignar Profesor</button>
-                            </form>
-                        </div>
-                    </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100 border-success shadow-sm action-card" role="button" data-action="Agregar estudiantes">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-graduate fa-2x text-success mb-2"></i>
+                    <h6 class="card-title">Agregar estudiantes</h6>
+                    <p class="text-muted small mb-0">Asignar estudiantes a una sección existente.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100 border-warning shadow-sm action-card" role="button" data-action="Asignar profesor">
+                <div class="card-body text-center">
+                    <i class="fas fa-chalkboard-teacher fa-2x text-warning mb-2"></i>
+                    <h6 class="card-title">Asignar profesor</h6>
+                    <p class="text-muted small mb-0">Vincular un profesor a una sección.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100 border-secondary shadow-sm action-card" role="button" data-action="Agregar materias">
+                <div class="card-body text-center">
+                    <i class="fas fa-book fa-2x text-secondary mb-2"></i>
+                    <h6 class="card-title">Agregar materias</h6>
+                    <p class="text-muted small mb-0">Relacionar materias con la sección.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para acciones en desarrollo -->
+    <div class="modal fade" id="devModal" tabindex="-1" aria-labelledby="devModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="devModalLabel">En desarrollo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body" id="devModalBody">
+                    Esta funcionalidad está en desarrollo. Vuelve más tarde.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const modalEl = document.getElementById('devModal');
+        const modalBody = document.getElementById('devModalBody');
+        const modal = new bootstrap.Modal(modalEl);
+
+        document.querySelectorAll('.action-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const action = card.getAttribute('data-action') || 'Esta acción';
+                modalBody.textContent = `${action} está en desarrollo.`;
+                modal.show();
+            });
+        });
+    });
+</script>
