@@ -10,17 +10,10 @@
     </div>
     <form method="post">
         <h2>Cédula y familia</h2>
-        document.addEventListener('DOMContentLoaded', function() {
-            const select = document.getElementById('relacion');
-            select.innerHTML = '';
-            fetch('/api/parentescos')
-                .then(resp => resp.json())
-                .then(data => {
-                    // Primer option
-                    const opt = document.createElement('option');
         <div class="form-group">
             <label for="cedula">Cédula:</label>
             <input type="text" name="cedula" id="cedula" required>
+            <div class="error-text" id="error-cedula"></div>
         </div>
         <div class="form-group">
             <label for="num_hijos">Número de hijos a inscribir:</label>
@@ -48,28 +41,77 @@ document.addEventListener('DOMContentLoaded', function() {
     const numHijos = document.getElementById('num_hijos');
     const relacion = document.getElementById('relacion_familiar');
     const btn = document.getElementById('btn_siguiente');
+    const errorCedula = document.getElementById('error-cedula');
+
+    let cedulaDuplicada = false;
 
     function validarCedula(valor) {
         // Ejemplo: cédula venezolana (7-8 dígitos)
         return /^\d{7,8}$/.test(valor);
     }
 
-    function validar() {
+    function setCedulaError(message) {
+        cedula.classList.add('error-border');
+        if (errorCedula) errorCedula.textContent = message;
+        cedulaDuplicada = true;
+        actualizarBoton();
+    }
+
+    function clearCedulaError() {
+        cedula.classList.remove('error-border');
+        if (errorCedula) errorCedula.textContent = '';
+        cedulaDuplicada = false;
+        actualizarBoton();
+    }
+
+    function actualizarBoton() {
         const cedulaValida = validarCedula(cedula.value);
         const hijosValidos = parseInt(numHijos.value, 10) >= 1;
         const relacionValida = relacion.value !== "";
-        if (cedulaValida && hijosValidos && relacionValida) {
-            btn.disabled = false;
+        const habilitado = cedulaValida && hijosValidos && relacionValida && !cedulaDuplicada;
+        btn.disabled = !habilitado;
+        if (habilitado) {
             btn.classList.add('btn-activo');
         } else {
-            btn.disabled = true;
             btn.classList.remove('btn-activo');
         }
     }
 
-    cedula.addEventListener('input', validar);
-    numHijos.addEventListener('input', validar);
-    relacion.addEventListener('change', validar);
+    function validarCedulaEnServidor() {
+        const val = cedula.value.trim();
+        if (!val || !validarCedula(val)) {
+            clearCedulaError();
+            return;
+        }
+        fetch('/api/persona/lookup?numero=' + encodeURIComponent(val))
+            .then(function(resp) { return resp.json ? resp.json() : resp.text().then(JSON.parse); })
+            .then(function(data) {
+                if (data && data.found) {
+                    setCedulaError('Error: Se a detectado que esta cedula ya la posee otra persona');
+                } else {
+                    clearCedulaError();
+                }
+            })
+            .catch(function() {
+                // En caso de error de red, no bloquear el avance.
+                clearCedulaError();
+            });
+    }
+
+    cedula.addEventListener('blur', validarCedulaEnServidor);
+    cedula.addEventListener('input', function() {
+        clearCedulaError();
+        actualizarBoton();
+    });
+    numHijos.addEventListener('input', actualizarBoton);
+    relacion.addEventListener('change', actualizarBoton);
+
+    // Si server devolvió error, mostrarlo
+    {% if error_msg %}
+        setCedulaError('{{ error_msg }}');
+    {% endif %}
+
+    actualizarBoton();
 });
 </script>
 <style>

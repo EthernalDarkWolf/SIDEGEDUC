@@ -158,49 +158,61 @@
             <div class="group">
                                 <label for="cedula" id="label-cedula">Número de Cédula</label>
                                 <input type="text" name="numero_cedula" id="cedula" required data-rule="numbers" maxlength="10" placeholder="Cédula del representante o persona principal">
-                                                                <div class="error-text" id="error-cedula"></div>
+                                {% if edit %}
+                                    <input type="hidden" id="current_person_id" value="{{ person.id_persona }}">
+                                {% endif %}
+                                <div class="error-text" id="error-cedula"></div>
                                 <script>
                                 document.addEventListener('DOMContentLoaded', function() {
                                     // Validación de cédula ya registrada y bloqueo de siguiente
                                     var errorCedula = document.getElementById('error-cedula');
                                     var nextBtn3 = document.getElementById('next-3');
+                                    var submitBtn = document.getElementById('submit-btn');
+                                    var currentPersonId = document.getElementById('current_person_id') ? parseInt(document.getElementById('current_person_id').value, 10) : null;
+                                    var cedulaInput = document.getElementById('cedula');
+
+                                    function setCedulaError(message) {
+                                        cedulaInput.classList.add('error-border');
+                                        if (errorCedula) errorCedula.textContent = message;
+                                        if (nextBtn3) nextBtn3.disabled = true;
+                                        if (submitBtn) submitBtn.disabled = true;
+                                    }
+
+                                    function clearCedulaError() {
+                                        cedulaInput.classList.remove('error-border');
+                                        if (errorCedula) errorCedula.textContent = '';
+                                        if (nextBtn3) nextBtn3.disabled = false;
+                                        if (submitBtn) submitBtn.disabled = false;
+                                    }
+
                                     function validarCedulaRegistrada() {
                                         var cedula = cedulaInput.value.trim();
                                         if (!cedula) {
-                                            cedulaInput.classList.remove('error-border');
-                                            if (errorCedula) errorCedula.textContent = '';
-                                            if (nextBtn3) nextBtn3.disabled = false;
+                                            clearCedulaError();
                                             return;
                                         }
                                         fetch('/api/persona/lookup?numero=' + encodeURIComponent(cedula))
                                             .then(function(resp) { return resp.json ? resp.json() : resp.text().then(JSON.parse); })
                                             .then(function(data) {
-                                                if (data && data.found) {
-                                                    cedulaInput.classList.add('error-border');
-                                                    if (errorCedula) errorCedula.textContent = 'Esta cedula ya esta registrada con otra persona';
-                                                    if (nextBtn3) nextBtn3.disabled = true;
+                                                if (data && data.found && (!currentPersonId || Number(data.id) !== currentPersonId)) {
+                                                    setCedulaError('Error: Se a detectado que esta cedula ya la posee otra persona');
                                                 } else {
-                                                    cedulaInput.classList.remove('error-border');
-                                                    if (errorCedula) errorCedula.textContent = '';
-                                                    if (nextBtn3) nextBtn3.disabled = false;
+                                                    clearCedulaError();
                                                 }
                                             })
                                             .catch(function() {
-                                                cedulaInput.classList.remove('error-border');
-                                                if (errorCedula) errorCedula.textContent = '';
-                                                if (nextBtn3) nextBtn3.disabled = false;
+                                                clearCedulaError();
                                             });
                                     }
+
                                     cedulaInput.addEventListener('blur', validarCedulaRegistrada);
                                     cedulaInput.addEventListener('input', function() {
                                         // Si el usuario borra o cambia, limpiar error y desbloquear hasta que se valide de nuevo
-                                        cedulaInput.classList.remove('error-border');
-                                        if (errorCedula) errorCedula.textContent = '';
-                                        if (nextBtn3) nextBtn3.disabled = false;
+                                        clearCedulaError();
                                     });
+
                                     var tipoPersona = document.getElementById('tipo_persona');
                                     var labelCedula = document.getElementById('label-cedula');
-                                    var cedulaInput = document.getElementById('cedula');
                                     if (tipoPersona && labelCedula && cedulaInput) {
                                         function actualizarLabelYPlaceholderCedula() {
                                             let tipo = tipoPersona.options[tipoPersona.selectedIndex].text;

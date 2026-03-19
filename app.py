@@ -148,6 +148,35 @@ with app.app_context():
                     print(f"Error creando tabla niveles_academicos_escolares: {ex}")
 
             conn.close()
+
+            # Si la base de datos está vacía en los catálogos básicos, sembramos valores iniciales
+            try:
+                conn = db.engine.connect()
+                # Niveles
+                count = conn.execute(text('SELECT COUNT(1) FROM niveles')).scalar() or 0
+                if count == 0:
+                    for idx, nombre in enumerate(['Preescolar', 'Primaria', 'Secundaria'], start=1):
+                        conn.execute(text('INSERT OR IGNORE INTO niveles (id_nivel, nombre_nivel) VALUES (:id, :nombre)'), {'id': idx, 'nombre': nombre})
+                    print('Semilla: niveles insertados')
+
+                # Grados
+                count = conn.execute(text('SELECT COUNT(1) FROM grados')).scalar() or 0
+                if count == 0:
+                    for num in range(1, 7):
+                        conn.execute(text('INSERT OR IGNORE INTO grados (id_grado, numero_grado) VALUES (:id, :numero)'), {'id': num, 'numero': num})
+                    print('Semilla: grados insertados')
+
+                # Letras de sección
+                count = conn.execute(text('SELECT COUNT(1) FROM letra_seccion')).scalar() or 0
+                if count == 0:
+                    for idx, letra in enumerate(['A', 'B', 'C', 'D'], start=1):
+                        conn.execute(text('INSERT OR IGNORE INTO letra_seccion (id_letra_seccion, letra) VALUES (:id, :letra)'), {'id': idx, 'letra': letra})
+                    print('Semilla: letras de sección insertadas')
+
+                conn.close()
+            except Exception as ex:
+                print(f'No se pudieron sembrar datos iniciales de secciones: {ex}')
+
         print("--- Tablas verificadas/creadas correctamente ---")
     except Exception as e:
         print(f"Aviso: No se pudieron crear tablas automáticamente: {e}")
@@ -276,24 +305,40 @@ def registro_wizard_datos():
 
 @app.route('/registro_wizard/familia', methods=['GET', 'POST'])
 def registro_wizard_familia():
+    error_msg = None
+    # Cargar relaciones familiares (para el select)
+    try:
+        import sqlite3
+        conn = sqlite3.connect(sqlite_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT id_parentesco, nombre_parentesco FROM parentescos")
+        relaciones = cursor.fetchall()
+        conn.close()
+    except Exception as e:
+        print(f"Error consultando parentescos: {e}")
+        relaciones = []
+
     if request.method == 'POST':
-        session['wizard_cedula'] = request.form.get('cedula')
-        session['wizard_num_hijos'] = request.form.get('num_hijos')
-        session['wizard_relacion'] = request.form.get('relacion')
-        flash('Registro completado exitosamente')
-        return redirect(url_for('dashboard'))
-        try:
-            import sqlite3
-            conn = sqlite3.connect(sqlite_path)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute("SELECT id_parentesco, nombre_parentesco FROM parentescos")
-            relaciones = cursor.fetchall()
-            conn.close()
-        except Exception as e:
-            print(f"Error consultando parentescos: {e}")
-            relaciones = []
-        return render_template('home_panel/registro_wizard_familia.html', relaciones=relaciones)
+        cedula = (request.form.get('cedula') or '').strip()
+        # Validar duplicado de cédula en la base de datos
+        if cedula:
+            try:
+                exists = db.session.execute(text('SELECT 1 FROM personas WHERE numero_cedula = :cedula'), {'cedula': cedula}).fetchone()
+                if exists:
+                    error_msg = 'Error: Se a detectado que esta cedula ya la posee otra persona'
+                else:
+                    session['wizard_cedula'] = cedula
+                    session['wizard_num_hijos'] = request.form.get('num_hijos')
+                    session['wizard_relacion'] = request.form.get('relacion')
+                    flash('Registro completado exitosamente')
+                    return redirect(url_for('dashboard'))
+            except Exception as e:
+                print(f"Error validando cédula existente: {e}")
+        else:
+            error_msg = 'Debe ingresar una cédula válida.'
+
+    return render_template('home_panel/registro_wizard_familia.html', relaciones=relaciones, error_msg=error_msg)
 
 # API para obtener parentescos en formato JSON
 @app.route('/api/parentescos', methods=['GET'])

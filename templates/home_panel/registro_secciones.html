@@ -1,11 +1,26 @@
 <div class="container-fluid mt-4">
-    <div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">Gestión de Secciones</h3>
         <a href="{{ url_for('dashboard') }}" class="btn btn-sm btn-light">← Volver</a>
     </div>
 
+    {% if message %}
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <i class="fas fa-info-circle me-2"></i>{{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+    {% endif %}
+
+    {% if not niveles or not grados or not letras %}
+    <div class="alert alert-warning" role="alert">
+        <strong>Atención:</strong> No hay datos base para los selectores (niveles / grados / letras).
+        Ejecuta <code>python database/rebuild_secciones.py --seed</code> o reinicia la aplicación para cargar valores iniciales.
+    </div>
+    {% endif %}
+
     <div class="row g-3">
         <div class="col-md-3">
-            <div class="card h-100 border-primary shadow-sm action-card" role="button" data-action="Crear sección">
+            <div class="card h-100 border-primary shadow-sm action-card" role="button" data-action="create_section">
                 <div class="card-body text-center">
                     <i class="fas fa-folder-plus fa-2x text-primary mb-2"></i>
                     <h6 class="card-title">Crear sección</h6>
@@ -45,37 +60,117 @@
         </div>
     </div>
 
-    <!-- Modal para acciones en desarrollo -->
-    <div class="modal fade" id="devModal" tabindex="-1" aria-labelledby="devModalLabel" aria-hidden="true">
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Secciones registradas</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nivel</th>
+                                    <th>Grado</th>
+                                    <th>Sección</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sectionsTableBody">
+                                {% if secciones %}
+                                    {% for s in secciones %}
+                                        <tr>
+                                            <td>{{ s.nombre_nivel or ('ID ' + (s.id_nivel|string)) }}</td>
+                                            <td>{{ s.numero_grado or ('ID ' + (s.id_grado|string)) }}</td>
+                                            <td>{{ s.letra or ('ID ' + (s.id_letra_seccion|string)) }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted py-4">No hay secciones registradas aún.</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para crear sección -->
+    <div class="modal fade" id="createSectionModal" tabindex="-1" aria-labelledby="createSectionModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="devModalLabel">En desarrollo</h5>
+                    <h5 class="modal-title" id="createSectionModalLabel">Crear nueva sección</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
-                <div class="modal-body" id="devModalBody">
-                    Esta funcionalidad está en desarrollo. Vuelve más tarde.
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <div class="modal-body">
+                    <div id="sectionFormAlert" class="alert d-none" role="alert"></div>
+                    <form id="createSectionForm" novalidate>
+                        <div class="mb-3">
+                            <label for="id_nivel" class="form-label">Nivel educativo</label>
+                            <select class="form-select" id="id_nivel" name="id_nivel" required>
+                                <option value="">Seleccione</option>
+                                {% for n in niveles %}
+                                    <option value="{{ n.id_nivel }}">{{ n.nombre_nivel }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Por favor, selecciona un nivel educativo.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_grado" class="form-label">Grado</label>
+                            <select class="form-select" id="id_grado" name="id_grado" required>
+                                <option value="">Seleccione</option>
+                                {% for g in grados %}
+                                    <option value="{{ g.id_grado }}">{{ g.numero_grado }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Por favor, selecciona un grado.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_letra_seccion" class="form-label">Letra de la sección</label>
+                            <select class="form-select" id="id_letra_seccion" name="id_letra_seccion" required>
+                                <option value="">Seleccione</option>
+                                {% for l in letras %}
+                                    <option value="{{ l.id_letra_seccion }}">{{ l.letra }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Por favor, selecciona una letra.</div>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" id="btnCreateSection">
+                                <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                                Guardar sección
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const modalEl = document.getElementById('devModal');
-        const modalBody = document.getElementById('devModalBody');
-        const modal = new bootstrap.Modal(modalEl);
+<!-- Modal informativo (funcionalidades en desarrollo) -->
+<div class="modal fade" id="devModal" tabindex="-1" aria-labelledby="devModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="devModalLabel">Funcionalidad en desarrollo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="devModalBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-        document.querySelectorAll('.action-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const action = card.getAttribute('data-action') || 'Esta acción';
-                modalBody.textContent = `${action} está en desarrollo.`;
-                modal.show();
-            });
-        });
-    });
+<script>
+    // Exponer los datos iniciales para validación y actualización en cliente
+    window.SECCIONES_INITIAL = {{ secciones|tojson }};
 </script>
+<script src="{{ url_for('static', filename='js/registro_secciones.js') }}"></script>

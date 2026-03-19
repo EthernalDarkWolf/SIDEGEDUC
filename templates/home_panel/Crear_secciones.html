@@ -1,0 +1,134 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crear Sección - SIDEGEDUC</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow-sm">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <h4 class="mb-0">Crear sección</h4>
+                        <a href="/registros/secciones" class="btn btn-sm btn-outline-secondary">← Volver a Secciones</a>
+                    </div>
+                    <div class="card-body">
+                        <div id="alert" class="alert d-none" role="alert"></div>
+                        <form id="sectionForm" class="row g-3 needs-validation" novalidate>
+                            <div class="col-md-4">
+                                <label for="grado" class="form-label">Grado</label>
+                                <select id="grado" name="id_grado" class="form-select" required>
+                                    <option value="">Seleccione</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="7">N/A</option>
+                                </select>
+                                <div class="invalid-feedback">Selecciona un grado.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="nivel_educativo" class="form-label">Nivel educativo</label>
+                                <select id="nivel_educativo" name="id_nivel" class="form-select" required>
+                                    <option value="">Seleccione</option>
+                                    <option value="preescolar">Preescolar</option>
+                                    <option value="primaria">Primaria</option>
+                                    <option value="maternal">Maternal</option>
+                                </select>
+                                <div class="invalid-feedback">Selecciona un nivel educativo.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="letra_seccion" class="form-label">Letra</label>
+                                <select id="letra_seccion" name="id_letra_seccion" class="form-select" required>
+                                    <option value="">Seleccione</option>
+                                    <option value="A">A</option>
+                                    <option value="B">B</option>
+                                    <option value="C">C</option>
+                                    <option value="D">D</option>
+                                </select>
+                                <div class="invalid-feedback">Selecciona una letra.</div>
+                            </div>
+
+                            <div class="col-12 text-end">
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                                    Guardar sección
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('sectionForm');
+        const alertBox = document.getElementById('alert');
+        const submitBtn = document.getElementById('submitBtn');
+        const spinner = submitBtn.querySelector('.spinner-border');
+
+        function showAlert(type, message) {
+            alertBox.className = `alert alert-${type} alert-dismissible fade show`;
+            alertBox.textContent = message;
+            const closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.className = 'btn-close';
+            closeBtn.setAttribute('data-bs-dismiss', 'alert');
+            closeBtn.setAttribute('aria-label', 'Cerrar');
+            alertBox.appendChild(closeBtn);
+            alertBox.classList.remove('d-none');
+        }
+
+        function hideAlert() {
+            alertBox.classList.add('d-none');
+            alertBox.textContent = '';
+        }
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            hideAlert();
+
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+
+            const payload = {
+                id_grado: form.grado.value,
+                id_nivel: form.nivel_educativo.value,
+                id_letra_seccion: form.letra_seccion.value
+            };
+
+            submitBtn.disabled = true;
+            spinner.classList.remove('d-none');
+
+            try {
+                const response = await fetch('/registros/secciones', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json().catch(() => null);
+                if (data?.success) {
+                    showAlert('success', data.message || 'Sección creada correctamente.');
+                    form.reset();
+                } else {
+                    showAlert('danger', data?.message || 'No se pudo crear la sección.');
+                }
+            } catch (err) {
+                showAlert('danger', 'Error de red. Intenta nuevamente.');
+            } finally {
+                submitBtn.disabled = false;
+                spinner.classList.add('d-none');
+            }
+        });
+    </script>
+</body>
+</html>

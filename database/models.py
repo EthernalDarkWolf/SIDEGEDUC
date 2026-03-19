@@ -12,6 +12,12 @@ class RelacionFamiliar(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nombre = db.Column(db.String(50), unique=True, nullable=False)
 
+# Modelo para parentescos (usado en el wizard de registro)
+class Parentesco(db.Model):
+    __tablename__ = 'parentescos'
+    id_parentesco = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nombre_parentesco = db.Column(db.String(50), unique=True, nullable=False)
+
 # Modelo para tipos de persona (wizard)
 class TipoPersona(db.Model):
     __tablename__ = 'tipo_persona'

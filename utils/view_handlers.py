@@ -245,7 +245,8 @@ def editar_persona():
                 fecha = f.get('fecha_nacimiento') or None
                 db.session.execute(text('''
                     UPDATE personas SET primer_nombre=:primer, segundo_nombre=:segundo, primer_apellido=:pap, segundo_apellido=:sap,
-                    fecha_nacimiento=:fecha, id_sexo=:id_sexo, tipo_persona=:tipo_persona, id_tipo_documento=:id_tipo_doc, numero_cedula=:num_ced
+                    fecha_nacimiento=:fecha, id_sexo=:id_sexo, tipo_persona=:tipo_persona, id_tipo_documento=:id_tipo_doc, numero_cedula=:num_ced,
+                    num_hijos=:num_hijos, id_relacion_familiar=:id_rel
                     WHERE id_persona = :idp
                 '''), {
                     'primer': primer,
@@ -257,6 +258,8 @@ def editar_persona():
                     'tipo_persona': f.get('tipo_persona'),
                     'id_tipo_doc': int(f.get('id_tipo_documento')) if f.get('id_tipo_documento') and str(f.get('id_tipo_documento')).isdigit() else None,
                     'num_ced': f.get('numero_cedula') or None,
+                    'num_hijos': int(f.get('num_hijos')) if f.get('num_hijos') and str(f.get('num_hijos')).isdigit() else None,
+                    'id_rel': int(f.get('id_relacion_familiar')) if f.get('id_relacion_familiar') and str(f.get('id_relacion_familiar')).isdigit() else None,
                     'idp': pid_int
                 })
                 db.session.commit()
@@ -312,7 +315,7 @@ def editar_persona():
 
     # GET: cargar persona y selects
     try:
-        p = db.session.execute(text('SELECT id_persona, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, fecha_nacimiento, id_sexo, id_tipo_documento, numero_cedula, tipo_persona FROM personas WHERE id_persona = :pid'), {'pid': pid_int}).fetchone()
+        p = db.session.execute(text('SELECT id_persona, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, fecha_nacimiento, id_sexo, id_tipo_documento, numero_cedula, num_hijos, id_relacion_familiar, tipo_persona FROM personas WHERE id_persona = :pid'), {'pid': pid_int}).fetchone()
     except Exception:
         p = None
 
@@ -331,12 +334,74 @@ def editar_persona():
 
     # construir diccionario simple para template
     person = {
-        'id_persona': p[0], 'primer_nombre': p[1], 'segundo_nombre': p[2], 'primer_apellido': p[3], 'segundo_apellido': p[4], 'fecha_nacimiento': str(p[5]) if p[5] is not None else None, 'id_sexo': p[6], 'id_tipo_documento': p[7], 'numero_cedula': p[8], 'tipo_persona': p[9]
+        'id_persona': p[0],
+        'primer_nombre': p[1],
+        'segundo_nombre': p[2],
+        'primer_apellido': p[3],
+        'segundo_apellido': p[4],
+        'fecha_nacimiento': str(p[5]) if p[5] is not None else None,
+        'id_sexo': p[6],
+        'id_tipo_documento': p[7],
+        'numero_cedula': p[8],
+        'num_hijos': p[9],
+        'id_relacion_familiar': p[10],
+        'tipo_persona': p[11]
     }
+
+    # Datos adicionales según rol (para prellenar formulario de edición)
+    try:
+        if person['tipo_persona'] == 'representante':
+            rep = db.session.execute(text('SELECT id_profesion, id_ocupacion, id_nivel_academico FROM representantes WHERE id_persona = :pid'), {'pid': pid_int}).fetchone()
+            if rep:
+                person['id_profesion'] = rep[0]
+                person['id_ocupacion'] = rep[1]
+                person['id_nivel_academico'] = rep[2]
+        elif person['tipo_persona'] == 'estudiante':
+            est = db.session.execute(text('SELECT fecha_inscripcion FROM estudiantes WHERE id_persona = :pid'), {'pid': pid_int}).fetchone()
+            if est:
+                person['fecha_inscripcion'] = str(est[0]) if est[0] else None
+        elif person['tipo_persona'] == 'profesor':
+            prof = db.session.execute(text('SELECT id_especialidad FROM profesores WHERE id_persona = :pid'), {'pid': pid_int}).fetchone()
+            if prof:
+                person['id_especialidad'] = prof[0]
+        elif person['tipo_persona'] == 'empleado':
+            emp = db.session.execute(text('SELECT id_cargo, fecha_contratacion, salario FROM empleados WHERE id_persona = :pid'), {'pid': pid_int}).fetchone()
+            if emp:
+                person['id_cargo'] = emp[0]
+                person['fecha_contratacion'] = str(emp[1]) if emp[1] else None
+                person['salario'] = emp[2]
+    except Exception:
+        pass
+
+    # Listas de apoyo para selects
+    try:
+        ocupaciones = db.session.execute(text('SELECT id, nombre FROM ocupaciones')).fetchall()
+    except Exception:
+        ocupaciones = []
+    try:
+        profesiones = db.session.execute(text('SELECT id, nombre FROM profesiones')).fetchall()
+    except Exception:
+        profesiones = []
+    try:
+        niveles_academicos = db.session.execute(text('SELECT id_nivel_academico, nombre_nivel_academico FROM niveles_academicos')).fetchall()
+    except Exception:
+        niveles_academicos = []
+    try:
+        especialidades = db.session.execute(text('SELECT id_especialidad, nombre_especialidad FROM especialidades')).fetchall()
+    except Exception:
+        especialidades = []
+    try:
+        cargos = db.session.execute(text('SELECT id_cargo, nombre_cargo FROM cargos')).fetchall()
+    except Exception:
+        cargos = []
+    try:
+        relaciones_familiares = db.session.execute(text('SELECT id, nombre FROM relaciones_familiares')).fetchall()
+    except Exception:
+        relaciones_familiares = []
 
     roles_count, users_by_role = compute_role_counts(get_user_context(session))
 
-    return render_template('home_panel/struct.html', usuario=get_user_context(session)['user'], developer_priv=get_user_context(session)['developer_priv'], role_name=get_user_context(session).get('role_name'), role_desc=get_user_context(session).get('role_desc'), status=get_user_context(session).get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/registro_persona_v2.html', sexos=sexos, tipo_documentos=tipo_documentos, person=person, edit=True, message=message)
+    return render_template('home_panel/struct.html', usuario=get_user_context(session)['user'], developer_priv=get_user_context(session)['developer_priv'], role_name=get_user_context(session).get('role_name'), role_desc=get_user_context(session).get('role_desc'), status=get_user_context(session).get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/registro_persona_v2.html', sexos=sexos, tipo_documentos=tipo_documentos, person=person, edit=True, message=message, ocupaciones=ocupaciones, profesiones=profesiones, niveles_academicos=niveles_academicos, especialidades=especialidades, cargos=cargos, relaciones_familiares=relaciones_familiares)
 
 
 def borrar_registro_persona():
