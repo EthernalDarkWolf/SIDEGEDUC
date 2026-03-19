@@ -173,6 +173,35 @@ with app.app_context():
                         conn.execute(text('INSERT OR IGNORE INTO letra_seccion (id_letra_seccion, letra) VALUES (:id, :letra)'), {'id': idx, 'letra': letra})
                     print('Semilla: letras de sección insertadas')
 
+                # Asegurar que existan las tablas necesarias para asignar materias a secciones
+                existing_materias = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='materias';")).fetchone()
+                if not existing_materias:
+                    conn.execute(text(
+                        "CREATE TABLE materias ("
+                        "id_materia INTEGER PRIMARY KEY AUTOINCREMENT,"
+                        "nombre_materia TEXT NOT NULL UNIQUE"
+                        ")"
+                    ))
+                    print("tabla 'materias' creada (vacía)")
+
+                # Asegurar que existan algunas materias de referencia
+                for nombre in ['Matemáticas', 'Lengua y Literatura', 'Ciencias Sociales', 'Ciencias Naturales', 'Inglés']:
+                    conn.execute(text('INSERT OR IGNORE INTO materias (nombre_materia) VALUES (:nombre)'), {'nombre': nombre})
+                print('Semilla: materias básicas aseguradas (no se duplican)')
+
+                existing_ms = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='materias_seccion';")).fetchone()
+                if not existing_ms:
+                    conn.execute(text(
+                        "CREATE TABLE materias_seccion ("
+                        "id_materia_nivel INTEGER PRIMARY KEY AUTOINCREMENT,"
+                        "id_materia INTEGER,"
+                        "id_seccion INTEGER,"
+                        "FOREIGN KEY(id_materia) REFERENCES materias(id_materia),"
+                        "FOREIGN KEY(id_seccion) REFERENCES secciones(id_seccion)"
+                        ")"
+                    ))
+                    print("tabla 'materias_seccion' creada (vacía)")
+
                 conn.close()
             except Exception as ex:
                 print(f'No se pudieron sembrar datos iniciales de secciones: {ex}')

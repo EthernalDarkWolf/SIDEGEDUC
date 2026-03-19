@@ -10,6 +10,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const devModalBody = document.getElementById('devModalBody');
     const sectionTableBody = document.getElementById('sectionsTableBody');
 
+    const assignSubjectModalEl = document.getElementById('assignSubjectModal');
+    const assignSubjectForm = document.getElementById('assignSubjectForm');
+    const assignSubjectAlert = document.getElementById('assignSubjectAlert');
+    const btnAssignSubject = document.getElementById('btnAssignSubject');
+    const spinnerAssign = btnAssignSubject ? btnAssignSubject.querySelector('.spinner-border') : null;
+
     const sectionData = Array.isArray(window.SECCIONES_INITIAL) ? window.SECCIONES_INITIAL : [];
 
     function showAlert(type, message) {
@@ -71,6 +77,34 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.show();
     }
 
+    function showAssignSubjectAlert(type, message) {
+        if (!assignSubjectAlert) return;
+        assignSubjectAlert.className = `alert alert-${type} alert-dismissible fade show`;
+        assignSubjectAlert.textContent = message;
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'btn-close';
+        closeBtn.setAttribute('data-bs-dismiss', 'alert');
+        closeBtn.setAttribute('aria-label', 'Cerrar');
+        assignSubjectAlert.appendChild(closeBtn);
+        assignSubjectAlert.classList.remove('d-none');
+    }
+
+    function showAssignSubjectModal() {
+        if (!assignSubjectModalEl || !assignSubjectForm) {
+            showDevModal('No se pudo abrir el modal para asignar materias.');
+            return;
+        }
+        if (assignSubjectAlert) {
+            assignSubjectAlert.classList.add('d-none');
+            assignSubjectAlert.textContent = '';
+        }
+        assignSubjectForm.reset();
+        assignSubjectForm.classList.remove('was-validated');
+        const modal = new bootstrap.Modal(assignSubjectModalEl);
+        modal.show();
+    }
+
     document.querySelectorAll('.action-card').forEach(card => {
         card.addEventListener('click', () => {
             const action = card.getAttribute('data-action') || 'Esta acción';
@@ -80,6 +114,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (form) form.reset();
                 if (form) form.classList.remove('was-validated');
                 modal.show();
+                return;
+            }
+            if (action === 'Agregar materias') {
+                showAssignSubjectModal();
                 return;
             }
             showDevModal(`${action} está en desarrollo.`);
@@ -153,4 +191,54 @@ document.addEventListener('DOMContentLoaded', function () {
             if (spinner) spinner.classList.add('d-none');
         }
     });
+
+    if (assignSubjectForm) {
+        assignSubjectForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            if (!assignSubjectForm.checkValidity()) {
+                assignSubjectForm.classList.add('was-validated');
+                return;
+            }
+
+            if (assignSubjectAlert) {
+                assignSubjectAlert.classList.add('d-none');
+                assignSubjectAlert.textContent = '';
+            }
+
+            const payload = {
+                id_seccion: assignSubjectForm.id_seccion.value,
+                id_materia: assignSubjectForm.id_materia.value
+            };
+
+            if (btnAssignSubject) btnAssignSubject.disabled = true;
+            if (spinnerAssign) spinnerAssign.classList.remove('d-none');
+
+            try {
+                const response = await fetch(`${window.location.pathname}?action=assign_materia`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json().catch(() => null);
+                if (data && data.success) {
+                    if (assignSubjectAlert) showAssignSubjectAlert('success', data.message || 'Materia asignada correctamente.');
+                    const modal = bootstrap.Modal.getInstance(assignSubjectModalEl);
+                    setTimeout(() => modal?.hide(), 800);
+                    assignSubjectForm.reset();
+                } else {
+                    if (assignSubjectAlert) showAssignSubjectAlert('danger', data?.message || 'No se pudo asignar la materia.');
+                }
+            } catch (err) {
+                if (assignSubjectAlert) showAssignSubjectAlert('danger', 'Error de red. Intenta nuevamente.');
+            } finally {
+                if (btnAssignSubject) btnAssignSubject.disabled = false;
+                if (spinnerAssign) spinnerAssign.classList.add('d-none');
+            }
+        });
+    }
 });

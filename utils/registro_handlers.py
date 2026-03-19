@@ -379,9 +379,19 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
             LEFT JOIN niveles n ON n.id_nivel = s.id_nivel
             LEFT JOIN letra_seccion l ON l.id_letra_seccion = s.id_letra_seccion
             ORDER BY n.nombre_nivel, g.numero_grado, l.letra
-        ''')).fetchall()
-        # Convert SQLAlchemy Row objects into plain dicts for safe JSON serialization.
-        secciones = [dict(r) for r in secciones_rows]
+        ''')).mappings().all()  # devuelve lista de RowMapping
+
+        # Convertir a diccionarios simples para que Jinja2 pueda serializar con tojson
+        def _as_plain_dict(row):
+            try:
+                return dict(row)
+            except Exception:
+                try:
+                    return dict(row._mapping)
+                except Exception:
+                    return {k: row[k] for k in row.keys()}
+
+        secciones = [_as_plain_dict(r) for r in secciones_rows]
         profesores = db.session.execute(text('SELECT pr.id_profesor, p.primer_nombre, p.primer_apellido FROM profesores pr JOIN personas p ON pr.id_persona = p.id_persona')).fetchall()
         materias = db.session.execute(text('SELECT id_materia, nombre_materia FROM materias')).fetchall()
         letras = db.session.execute(text('SELECT id_letra_seccion, letra FROM letra_seccion ORDER BY letra')).fetchall()

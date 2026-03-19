@@ -151,6 +151,50 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal para asignar materia a sección -->
+    <div class="modal fade" id="assignSubjectModal" tabindex="-1" aria-labelledby="assignSubjectModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="assignSubjectModalLabel">Asignar materia a sección</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="assignSubjectAlert" class="alert d-none" role="alert"></div>
+                    <form id="assignSubjectForm" novalidate>
+                        <div class="mb-3">
+                            <label for="select_section_for_subject" class="form-label">Sección</label>
+                            <select class="form-select" id="select_section_for_subject" name="id_seccion" required>
+                                <option value="">Seleccione</option>
+                                {% for s in secciones %}
+                                    <option value="{{ s.id_seccion }}">{{ s.nombre_nivel or 'ID ' + (s.id_nivel|string) }} - {{ s.numero_grado or 'ID ' + (s.id_grado|string) }} - {{ s.letra or 'ID ' + (s.id_letra_seccion|string) }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Selecciona una sección.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="select_subject" class="form-label">Materia</label>
+                            <select class="form-select" id="select_subject" name="id_materia" required>
+                                <option value="">Seleccione</option>
+                                {% for m in materias %}
+                                    <option value="{{ m.id_materia }}">{{ m.nombre_materia }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Selecciona una materia.</div>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" id="btnAssignSubject">
+                                <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                                Guardar asignación
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Modal informativo (funcionalidades en desarrollo) -->
