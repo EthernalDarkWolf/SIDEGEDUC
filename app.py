@@ -34,8 +34,16 @@ def get_tipo_persona():
         return jsonify([{'id': t.id_tipo_persona, 'nombre': t.nombre_tipo_persona} for t in tipos])
     except Exception as e:
         return jsonify({'success': False, 'error': f'Error al obtener tipos de persona: {str(e)}'}), 500
+def _require_login_json():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'error': 'No autorizado. Inicie sesión.'}), 401
+    return None
+
 @app.route('/api/ocupaciones', methods=['GET'])
 def get_ocupaciones():
+    err = _require_login_json()
+    if err:
+        return err
     try:
         ocupaciones = Ocupacion.query.all()
         return jsonify([{'id': o.id, 'nombre': o.nombre} for o in ocupaciones])
@@ -44,6 +52,9 @@ def get_ocupaciones():
 
 @app.route('/api/ocupaciones', methods=['POST'])
 def add_ocupacion():
+    err = _require_login_json()
+    if err:
+        return err
     nombre = request.json.get('nombre', '').strip()
     if not nombre:
         return jsonify({'success': False, 'error': 'Nombre requerido.'})
@@ -61,6 +72,9 @@ def add_ocupacion():
 
 @app.route('/api/profesiones', methods=['GET'])
 def get_profesiones():
+    err = _require_login_json()
+    if err:
+        return err
     try:
         profesiones = Profesion.query.all()
         return jsonify([{'id': p.id, 'nombre': p.nombre} for p in profesiones])
@@ -69,6 +83,9 @@ def get_profesiones():
 
 @app.route('/api/profesiones', methods=['POST'])
 def add_profesion():
+    err = _require_login_json()
+    if err:
+        return err
     nombre = request.json.get('nombre', '').strip()
     if not nombre:
         return jsonify({'success': False, 'error': 'Nombre requerido.'})
@@ -252,17 +269,6 @@ def inject_user_context():
         'usuario': ctx.get('user')
     }
 
-    # Endpoint para ocupaciones
-    @app.route('/api/ocupaciones')
-    def get_ocupaciones():
-        ocupaciones = Ocupaciones.query.all()
-        return jsonify([{'id': o.id_ocupacion, 'nombre': o.nombre_ocupacion} for o in ocupaciones])
-
-    # Endpoint para profesiones
-    @app.route('/api/profesiones')
-    def get_profesiones():
-        profesiones = Profesiones.query.all()
-        return jsonify([{'id': p.id_profesion, 'nombre': p.nombre_profesion} for p in profesiones])
 
 # --- IMPORTACIÓN DE MANEJADORES DE VISTA ---
 import utils.view_handlers as manejar_la_vista_de
@@ -272,10 +278,14 @@ import utils.view_handlers as manejar_la_vista_de
 def api_ocupacion():
     return manejar_la_vista_de.api_create_ocupacion()
 
-#api para detectar si una persona ya existe por su cedula
+# API para detectar si una persona ya existe por su cédula
 @app.route('/api/persona/lookup', methods=['GET'])
 def api_persona_lookup():
-    return manejar_la_vista_de.api_lookup_persona_by_cedula()
+    err = _require_login_json()
+    if err:
+        return err
+    result = manejar_la_vista_de.api_lookup_persona_by_cedula()
+    return jsonify(result) if isinstance(result, dict) else result
 
 #api para crear una profesión si no existe, esto es para evitar que el usuario tenga que crear la profesión cada vez que registra a una persona nueva
 @app.route('/api/profesion', methods=['POST'])
@@ -284,6 +294,9 @@ def api_profesion():
 
 @app.route('/api/relaciones_familiares')
 def get_relaciones_familiares():
+    err = _require_login_json()
+    if err:
+        return err
     relaciones = RelacionFamiliar.query.all()
     return jsonify([{'id': r.id, 'nombre': r.nombre} for r in relaciones])
 
@@ -455,6 +468,21 @@ def consultas_planteles_editar():
 @app.route('/consultas/planteles/borrar', methods=['POST'])
 def consultas_planteles_borrar():
     return manejar_la_vista_de.consultas_planteles_borrar()
+
+
+@app.route('/consultas/reporte/pdf/personas')
+def reporte_pdf_personas():
+    return manejar_la_vista_de.reporte_pdf_personas()
+
+
+@app.route('/consultas/reporte/pdf/planteles')
+def reporte_pdf_planteles():
+    return manejar_la_vista_de.reporte_pdf_planteles()
+
+
+@app.route('/consultas/reporte/pdf/secciones')
+def reporte_pdf_secciones():
+    return manejar_la_vista_de.reporte_pdf_secciones()
 
 
 @app.route('/consultas/personas/list/editar')

@@ -1,9 +1,11 @@
 """Script manejador de las vistras del sistema
 con sus respectivas funciones"""
 
-from flask import render_template, redirect, url_for, request, session
+from datetime import datetime
+from flask import render_template, redirect, url_for, request, session, send_file
 from database.models import Usuarios, Roles, StatusUser, db
 from sqlalchemy import func, text
+import io
 from .permissions import get_user_context, user_has_admin_privileges
 from flask import abort
 import os
@@ -183,7 +185,7 @@ def consultas_personas_list():
     # si no se logró identificar un role_display, hacerlo genérico
     if not role_display:
         role_display = role.capitalize() if role else ''
-    return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/consultas_personas_list.html', rows=rows, role_display=role_display, title=title)
+    return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/consultas_personas_list.html', rows=rows, role_display=role_display, title=title, role=role)
 
 
 def editar_registro_persona():
@@ -575,6 +577,72 @@ def consultas_secciones():
     return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/developer_secciones_existentes.html', secciones=secciones)
 
 
+def reporte_pdf_personas():
+    """Genera y descarga PDF del listado de personas según rol."""
+    if 'user_id' not in session:
+        return redirect(url_for('login.login_handler'))
+    role = (request.args.get('role') or '').lower()
+    rows, role_display, title = [], '', 'Listado de Personas'
+    try:
+        if role == 'estudiante':
+            rows = db.session.execute(text('''
+                SELECT p.*, e.fecha_inscripcion, na.nombre_nivel_academico
+                FROM estudiantes e JOIN personas p ON e.id_persona = p.id_persona
+                LEFT JOIN niveles_academicos na ON na.id_nivel_academico = (SELECT id_nivel_academico FROM representantes r WHERE r.id_persona = p.id_persona LIMIT 1)
+            ''')).fetchall()
+            role_display, title = 'Estudiante', 'Listado de Estudiantes'
+        elif role in ('profesor', 'profesores'):
+            rows = db.session.execute(text('SELECT p.*, pr.id_profesor, es.nombre_especialidad FROM profesores pr JOIN personas p ON pr.id_persona = p.id_persona LEFT JOIN especialidades es ON pr.id_especialidad = es.id_especialidad')).fetchall()
+            role_display, title = 'Profesor', 'Listado de Profesores'
+        elif role in ('representante', 'representantes'):
+            rows = db.session.execute(text('SELECT p.*, r.id_representante, prf.nombre AS profesion, oc.nombre AS ocupacion, na.nombre_nivel_academico FROM representantes r JOIN personas p ON r.id_persona = p.id_persona LEFT JOIN profesiones prf ON r.id_profesion = prf.id LEFT JOIN ocupaciones oc ON r.id_ocupacion = oc.id LEFT JOIN niveles_academicos na ON r.id_nivel_academico = na.id_nivel_academico')).fetchall()
+            role_display, title = 'Representante', 'Listado de Representantes'
+        elif role in ('empleado', 'empleados'):
+            rows = db.session.execute(text('SELECT p.*, em.id_empleado, c.nombre_cargo, em.fecha_contratacion, em.salario FROM empleados em JOIN personas p ON em.id_persona = p.id_persona LEFT JOIN cargos c ON em.id_cargo = c.id_cargo')).fetchall()
+            role_display, title = 'Empleado', 'Listado de Empleados'
+        elif role == 'sinrol':
+            rows = db.session.execute(text('SELECT p.* FROM personas p WHERE NOT EXISTS (SELECT 1 FROM estudiantes e WHERE e.id_persona = p.id_persona) AND NOT EXISTS (SELECT 1 FROM profesores pr WHERE pr.id_persona = p.id_persona) AND NOT EXISTS (SELECT 1 FROM representantes r WHERE r.id_persona = p.id_persona) AND NOT EXISTS (SELECT 1 FROM empleados em WHERE em.id_persona = p.id_persona)')).fetchall()
+            role_display, title = 'Sin rol', 'Personas sin rol'
+    except Exception:
+        rows = []
+    from .report_pdf import generar_pdf_personas
+    pdf_bytes, err = generar_pdf_personas(rows, role_display, title)
+    if err:
+        return err, 500
+    filename = f"reporte_personas_{role or 'todos'}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+    return send_file(io.BytesIO(pdf_bytes), mimetype='application/pdf', as_attachment=True, download_name=filename)
+
+
+def reporte_pdf_planteles():
+    """Genera y descarga PDF del listado de planteles."""
+    if 'user_id' not in session:
+        return redirect(url_for('login.login_handler'))
+    try:
+        rows = db.session.execute(text('SELECT id_plantel, nombre_plantel_nomina, codigo_pa FROM planteles')).fetchall()
+    except Exception:
+        rows = []
+    from .report_pdf import generar_pdf_planteles
+    pdf_bytes, err = generar_pdf_planteles(rows)
+    if err:
+        return err, 500
+    filename = f"reporte_planteles_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+    return send_file(io.BytesIO(pdf_bytes), mimetype='application/pdf', as_attachment=True, download_name=filename)
+
+
+def reporte_pdf_secciones():
+    """Genera y descarga PDF del listado de secciones."""
+    if 'user_id' not in session:
+        return redirect(url_for('login.login_handler'))
+    try:
+        rows = db.session.execute(text('SELECT s.id_seccion, g.numero_grado, l.letra, n.nombre_nivel FROM secciones s LEFT JOIN grados g ON s.id_grado = g.id_grado LEFT JOIN letra_seccion l ON s.id_letra_seccion = l.id_letra_seccion LEFT JOIN niveles n ON s.id_nivel = n.id_nivel')).fetchall()
+    except Exception:
+        rows = []
+    from .report_pdf import generar_pdf_secciones
+    pdf_bytes, err = generar_pdf_secciones(rows)
+    if err:
+        return err, 500
+    filename = f"reporte_secciones_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+    return send_file(io.BytesIO(pdf_bytes), mimetype='application/pdf', as_attachment=True, download_name=filename)
 
 
 
@@ -639,7 +707,8 @@ def usuarios_roles_registrados():
 
 
 def tipo_de_registro_persona(tipo):
-    # Wrapper ligero: delega la lógica a utils.registro_handlers
+    if 'user_id' not in session:
+        return redirect(url_for('login.login_handler'))
     from . import registro_handlers as rh
 
     ctx = get_user_context(session)

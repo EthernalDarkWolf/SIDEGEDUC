@@ -1,3 +1,4 @@
+import logging
 from flask import render_template, redirect, url_for, request, session, abort, jsonify
 from database.models import (
     db,
@@ -19,6 +20,8 @@ from database.models import (
 from sqlalchemy import text
 from datetime import date
 import unicodedata
+
+logger = logging.getLogger(__name__)
 
 def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
     """Manejador de registros unificado."""
@@ -69,22 +72,55 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                 fecha_nac = (f.get('fecha_nacimiento') or '').strip()
                 numero_cedula = (f.get('numero_cedula') or '').strip()
                 
+                def safe_int(val, default=0):
+                    if val is None or val == '':
+                        return default
+                    if isinstance(val, int):
+                        return val
+                    if isinstance(val, str):
+                        s = val.strip()
+                        if s.isdigit():
+                            return int(s)
+                        return default
+                    return default
+
                 # 2. Manejo de IDs y Roles
-                id_tipo_persona = int(f.get('id_tipo_persona') or 0)
+                id_tipo_persona = safe_int(f.get('id_tipo_persona'), 0)
                 roles_map = {1: 'estudiante', 2: 'profesor', 3: 'representante', 4: 'empleado'}
                 tipo_persona = roles_map.get(id_tipo_persona, '')
 
                 # 3. Conversión de Género
                 raw_sexo = f.get('id_sexo')
-                id_sexo = int(raw_sexo) if raw_sexo and raw_sexo.isdigit() else None
+                id_sexo = safe_int(raw_sexo, None) if raw_sexo not in (None, '') else None
                 
-                # 4. Datos adicionales
-                id_tipo_doc = int(f.get('id_tipo_documento') or 1)
-                num_hijos = int(f.get('num_hijos') or 0)
+                # 4. Datos adicionales (id_tipo_documento puede venir como texto del frontend)
+                raw_tipo_doc = f.get('id_tipo_documento')
+                if raw_tipo_doc and isinstance(raw_tipo_doc, str) and not str(raw_tipo_doc).strip().isdigit():
+                    tipo_docs = db.session.execute(text('SELECT id_tipo_documento, nombre_tipo_documento FROM tipo_documento')).fetchall()
+                    busca = _normalize(str(raw_tipo_doc))
+                    id_tipo_doc = 1
+                    for td in tipo_docs:
+                        try:
+                            tid = int(td[0]) if td[0] is not None else 1
+                            nom = _normalize(str(td[1] or ''))
+                            if busca and nom and (busca == nom or busca in nom or nom in busca):
+                                id_tipo_doc = tid
+                                break
+                        except (IndexError, TypeError, ValueError):
+                            continue
+                else:
+                    id_tipo_doc = safe_int(raw_tipo_doc, 1)
+                num_hijos = safe_int(f.get('num_hijos'), 0)
                 
                 def get_int_or_none(key):
                     val = f.get(key)
-                    return int(val) if val and val.isdigit() else None
+                    if val is None or val == '':
+                        return None
+                    if isinstance(val, int):
+                        return val
+                    if isinstance(val, str) and val.isdigit():
+                        return int(val)
+                    return None
 
                 id_ocupacion = get_int_or_none('id_ocupacion')
                 id_profesion = get_int_or_none('id_profesion')
@@ -95,15 +131,19 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                     message = 'Faltan campos obligatorios. Revise Cédula, Nombre, Apellido y Fecha.'
                 else:
                     # Validación de Edad
-                    birth_date = date.fromisoformat(fecha_nac)
-                    today = date.today()
-                    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-                    
-                    if tipo_persona == 'estudiante' and age > 18:
-                        message = 'El estudiante no puede ser mayor de 18 años.'
-                    elif tipo_persona in ['profesor', 'empleado', 'representante'] and age < 18:
-                        message = 'El personal o representante debe ser mayor de edad.'
-                    else:
+                    try:
+                        birth_date = date.fromisoformat(fecha_nac)
+                    except (ValueError, TypeError):
+                        message = 'Fecha de nacimiento inválida. Use formato AAAA-MM-DD.'
+                        birth_date = None
+                    if birth_date:
+                        today = date.today()
+                        age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+                        if tipo_persona == 'estudiante' and age > 18:
+                            message = 'El estudiante no puede ser mayor de 18 años.'
+                        elif tipo_persona in ['profesor', 'empleado', 'representante'] and age < 18:
+                            message = 'El personal o representante debe ser mayor de edad.'
+                    if not message:
                         # 6. Validación de duplicados (sin distinguir mayúsculas/acentos)
                         norm_name = _normalize(f"{primer} {pap}")
                         existing_cedula = db.session.execute(
@@ -112,7 +152,7 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                         ).fetchone()
 
                         if existing_cedula:
-                            message = 'Error: Se a detectado que esta cedula ya la posee otra persona'
+                            message = 'Error: Se ha detectado que esta cédula ya la posee otra persona.'
                         else:
                             # Comprobamos coincidencias por nombre+apellido+fecha de nacimiento
                             matches = db.session.execute(
@@ -120,7 +160,11 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                                 {'fecha': fecha_nac}
                             ).fetchall()
                             for r in matches:
-                                if _normalize(f"{r['primer_nombre']} {r['primer_apellido']}") == norm_name:
+                                pn = r[0] if len(r) > 0 else getattr(r, '_mapping', {}).get('primer_nombre', '') or ''
+                                pa = r[1] if len(r) > 1 else getattr(r, '_mapping', {}).get('primer_apellido', '') or ''
+                                if pn is None: pn = ''
+                                if pa is None: pa = ''
+                                if _normalize(f"{pn} {pa}") == norm_name:
                                     message = 'Ya existe una persona con esos datos.'
                                     break
 
@@ -137,17 +181,26 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                                 )
                             ''')
                             
-                            result = db.session.execute(query, {
+                            db.session.execute(query, {
                                 'primer': primer, 'segundo': segundo, 'pap': pap, 'sap': sap,
                                 'cedula': numero_cedula, 'fecha': fecha_nac, 'tipo': id_tipo_persona,
                                 'sexo': id_sexo, 'doc': id_tipo_doc, 'hijos': num_hijos,
                                 'ocup': id_ocupacion, 'prof': id_profesion, 'rel': id_relacion
                             })
-                            new_id = result.lastrowid
+                            row = db.session.execute(text('SELECT last_insert_rowid()')).fetchone()
+                            new_id = int(row[0]) if row and row[0] else None
+                            if not new_id:
+                                raise ValueError('No se pudo obtener el ID de la persona registrada.')
 
                             if tipo_persona == 'estudiante':
-                                fecha_inscripcion = f.get('fecha_inscripcion')
-                                db.session.execute(text('INSERT INTO estudiantes (id_persona, fecha_inscripcion) VALUES (:id, :fecins)'), { 'id': new_id, 'fecins': fecha_inscripcion  })
+                                fecha_inscripcion = (f.get('fecha_inscripcion') or '').strip()
+                                if not fecha_inscripcion:
+                                    fecha_inscripcion = date.today().isoformat()
+                                try:
+                                    date.fromisoformat(fecha_inscripcion)
+                                except (ValueError, TypeError):
+                                    fecha_inscripcion = date.today().isoformat()
+                                db.session.execute(text('INSERT INTO estudiantes (id_persona, fecha_inscripcion) VALUES (:id, :fecins)'), {'id': new_id, 'fecins': fecha_inscripcion})
 
                             elif tipo_persona == 'representante':
                                 db.session.execute(text('INSERT INTO representantes (id_persona, id_profesion, id_ocupacion) VALUES (:id, :id_profesion, :id_ocupacion)'), {
@@ -158,21 +211,30 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                             elif tipo_persona == 'profesor':
                                 db.session.execute(text('INSERT INTO profesores (id_persona) VALUES (:id)'), { 'id': new_id })
                             elif tipo_persona == 'empleado':
-                                otro_cargo = f.get('otro_cargo')
+                                otro_cargo = (f.get('otro_cargo') or '').strip()
                                 id_cargo = f.get('id_cargo')
-                                salario = float(f.get('salario'))
-                                fecha_contratacion = f.get('fecha_contratacion')
-                                id_final_cargo = id_cargo
+                                salario_val = f.get('salario')
+                                try:
+                                    salario = float(salario_val) if salario_val not in (None, '') else 0.0
+                                except (ValueError, TypeError):
+                                    salario = 0.0
+                                fecha_contratacion = (f.get('fecha_contratacion') or '').strip() or None
 
-                                if id_cargo == 'otro':
-                                    id_final_cargo = db.session.execute(text('INSERT INTO cargos (nombre_cargo) VALUES (:nombre_cargo)'), { 'nombre_cargo': otro_cargo}).lastrowid
+                                if id_cargo == 'otro' and otro_cargo:
+                                    res = db.session.execute(text('INSERT INTO cargos (nombre_cargo) VALUES (:nombre_cargo)'), {'nombre_cargo': otro_cargo})
+                                    id_final_cargo = res.lastrowid if hasattr(res, 'lastrowid') and res.lastrowid else db.session.execute(text('SELECT last_insert_rowid()')).scalar()
+                                else:
+                                    id_final_cargo = get_int_or_none('id_cargo') if id_cargo != 'otro' else None
 
-                                db.session.execute(text('INSERT INTO empleados (id_persona, id_cargo, fecha_contratacion, salario) VALUES (:id_persona, :id_cargo, :fecha_contratacion, :salario)'), {
-                                    'id_persona': new_id,
-                                    'id_cargo': id_final_cargo,
-                                    'fecha_contratacion': fecha_contratacion,
-                                    'salario': salario,
-                                })
+                                if id_final_cargo is not None:
+                                    db.session.execute(text('INSERT INTO empleados (id_persona, id_cargo, fecha_contratacion, salario) VALUES (:id_persona, :id_cargo, :fecha_contratacion, :salario)'), {
+                                        'id_persona': new_id,
+                                        'id_cargo': id_final_cargo,
+                                        'fecha_contratacion': fecha_contratacion,
+                                        'salario': salario,
+                                    })
+                                else:
+                                    raise ValueError('Debe seleccionar o especificar un cargo válido.')
 
                             db.session.commit()
 
@@ -183,8 +245,8 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
 
             except Exception as e:
                 db.session.rollback()
-                print(f"DEBUG ERROR: {e}")
-                message = f'Error en el sistema: {str(e)}'
+                logger.exception('Error al registrar persona')
+                message = 'Error en el sistema. Verifique los datos e intente de nuevo.'
 
             # Si la petición viene en JSON, devolvemos respuesta estructurada
             if request.is_json:

@@ -195,7 +195,7 @@
                                             .then(function(resp) { return resp.json ? resp.json() : resp.text().then(JSON.parse); })
                                             .then(function(data) {
                                                 if (data && data.found && (!currentPersonId || Number(data.id) !== currentPersonId)) {
-                                                    setCedulaError('Error: Se a detectado que esta cedula ya la posee otra persona');
+                                                    setCedulaError('Error: Se ha detectado que esta cédula ya la posee otra persona.');
                                                 } else {
                                                     clearCedulaError();
                                                 }
@@ -249,22 +249,13 @@
             </div>
         </div>
         <div class="step-content" data-step="4" style="display:none">
-                <div id="modal-parentesco" class="modal-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:1000;align-items:center;justify-content:center;">
-                    <div style="background:#fff;padding:24px 18px;border-radius:8px;min-width:260px;box-shadow:0 2px 16px #0002;display:flex;flex-direction:column;gap:12px;align-items:stretch;">
-                        <input type="text" id="nuevo_parentesco" class="form-control" maxlength="30" autocomplete="off" placeholder="Ej: Tutor legal">
-                        <div id="error-nuevo-parentesco" class="error-text"></div>
-                        <div style="display:flex;gap:10px;justify-content:flex-end;">
-                            <button type="button" id="guardar-parentesco" class="btn btn-success">Guardar</button>
-                            <button type="button" id="cancelar-parentesco" class="btn btn-danger">Cancelar</button>
-                        </div>
-                    </div>
-                </div>
             <div class="group">
                 <label for="ocupacion">Ocupación</label>
                 <div style="display:flex;align-items:center;gap:8px;">
                     <select name="id_ocupacion" id="ocupacion" required style="flex:1;">
                         <option value="">Seleccione...</option>
                     </select>
+                    <button type="button" id="add-ocupacion" class="btn btn-sm btn-outline-secondary" title="Agregar nueva ocupación">+</button>
                 </div>
             </div>
             <div class="group">
@@ -273,6 +264,7 @@
                     <select name="id_profesion" id="profesion" required style="flex:1;">
                         <option value="">Seleccione...</option>
                     </select>
+                    <button type="button" id="add-profesion" class="btn btn-sm btn-outline-secondary" title="Agregar nuevo nivel de instrucción">+</button>
                 </div>
             </div>
             <div class="step-actions">
@@ -354,233 +346,52 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     cargarProfesiones();
 
-    // Modal Ocupación
+    // Modales Ocupación y Profesión (solo si existen los elementos)
     const modalOcupacion = document.getElementById('modal-ocupacion');
-    const btnAddOcupacion = document.getElementById('add-ocupacion');
-    if (btnAddOcupacion) {
     const inputNuevoOcupacion = document.getElementById('nuevo_ocupacion');
     const errorNuevoOcupacion = document.getElementById('error-nuevo-ocupacion');
     const btnGuardarOcupacion = document.getElementById('guardar-ocupacion');
     const btnCancelarOcupacion = document.getElementById('cancelar-ocupacion');
-        btnAddOcupacion.onclick = function() {
-            inputNuevoOcupacion.value = '';
-            errorNuevoOcupacion.textContent = '';
-            modalOcupacion.style.display = 'flex';
-        };
-    }
-    btnCancelarOcupacion.onclick = function() {
-        modalOcupacion.style.display = 'none';
-    };
-    btnGuardarOcupacion.onclick = function() {
+    if (btnCancelarOcupacion) btnCancelarOcupacion.onclick = function() { if (modalOcupacion) modalOcupacion.style.display = 'none'; };
+    if (btnGuardarOcupacion && inputNuevoOcupacion) btnGuardarOcupacion.onclick = function() {
         const nombre = inputNuevoOcupacion.value.trim();
-        if (!nombre) {
-            errorNuevoOcupacion.textContent = 'Ingrese un nombre válido.';
-            return;
-        }
-        fetch('/api/ocupaciones', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({nombre})
-        })
-        .then(res => res.json())
-        .then(resp => {
-            if (resp.success) {
-                modalOcupacion.style.display = 'none';
-                cargarOcupaciones();
-            } else {
-                errorNuevoOcupacion.textContent = resp.error || 'Error al agregar.';
-            }
-        });
+        if (!nombre) { if (errorNuevoOcupacion) errorNuevoOcupacion.textContent = 'Ingrese un nombre válido.'; return; }
+        fetch('/api/ocupaciones', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({nombre}) })
+            .then(res => res.json())
+            .then(resp => {
+                if (resp.success) { if (modalOcupacion) modalOcupacion.style.display = 'none'; cargarOcupaciones(); }
+                else if (errorNuevoOcupacion) errorNuevoOcupacion.textContent = resp.error || 'Error al agregar.';
+            });
     };
 
-    // Modal Profesión
-    setTimeout(function() {
-        const modalOcupacion = document.getElementById('modal-ocupacion');
-        const btnAddOcupacion = document.getElementById('add-ocupacion');
-        const inputNuevoOcupacion = document.getElementById('nuevo_ocupacion');
-        const errorNuevoOcupacion = document.getElementById('error-nuevo-ocupacion');
-        const btnGuardarOcupacion = document.getElementById('guardar-ocupacion');
-        const btnCancelarOcupacion = document.getElementById('cancelar-ocupacion');
-        if (btnAddOcupacion) {
-            btnAddOcupacion.onclick = function() {
-                inputNuevoOcupacion.value = '';
-                errorNuevoOcupacion.textContent = '';
-                modalOcupacion.style.display = 'flex';
-            };
-        }
-        if (btnCancelarOcupacion) btnCancelarOcupacion.onclick = function() {
-            modalOcupacion.style.display = 'none';
-        };
-        if (btnGuardarOcupacion) btnGuardarOcupacion.onclick = function() {
-            const nombre = inputNuevoOcupacion.value.trim();
-            if (!nombre) {
-                errorNuevoOcupacion.textContent = 'Ingrese un nombre válido.';
-                return;
-            }
-            fetch('/api/ocupaciones', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({nombre})
-            })
+    const modalProfesion = document.getElementById('modal-profesion');
+    const inputNuevoProfesion = document.getElementById('nuevo_profesion');
+    const errorNuevoProfesion = document.getElementById('error-nuevo-profesion');
+    const btnGuardarProfesion = document.getElementById('guardar-profesion');
+    const btnCancelarProfesion = document.getElementById('cancelar-profesion');
+    if (btnCancelarProfesion) btnCancelarProfesion.onclick = function() { if (modalProfesion) modalProfesion.style.display = 'none'; };
+    if (btnGuardarProfesion && inputNuevoProfesion) btnGuardarProfesion.onclick = function() {
+        const nombre = inputNuevoProfesion.value.trim();
+        if (!nombre) { if (errorNuevoProfesion) errorNuevoProfesion.textContent = 'Ingrese un nombre válido.'; return; }
+        fetch('/api/profesiones', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({nombre}) })
             .then(res => res.json())
             .then(resp => {
-                if (resp.success) {
-                    modalOcupacion.style.display = 'none';
-                    cargarOcupaciones();
-                } else {
-                    errorNuevoOcupacion.textContent = resp.error || 'Error al agregar.';
-                }
+                if (resp.success) { if (modalProfesion) modalProfesion.style.display = 'none'; cargarProfesiones(); }
+                else if (errorNuevoProfesion) errorNuevoProfesion.textContent = resp.error || 'Error al agregar.';
             });
-        };
-        // Profesión
-        const modalProfesion = document.getElementById('modal-profesion');
-        const btnAddProfesion = document.getElementById('add-profesion');
-        const inputNuevoProfesion = document.getElementById('nuevo_profesion');
-        const errorNuevoProfesion = document.getElementById('error-nuevo-profesion');
-        const btnGuardarProfesion = document.getElementById('guardar-profesion');
-        const btnCancelarProfesion = document.getElementById('cancelar-profesion');
-        if (btnAddProfesion) {
-            btnAddProfesion.onclick = function() {
-                inputNuevoProfesion.value = '';
-                errorNuevoProfesion.textContent = '';
-                modalProfesion.style.display = 'flex';
-            };
-        }
-        if (btnCancelarProfesion) btnCancelarProfesion.onclick = function() {
-            modalProfesion.style.display = 'none';
-        };
-        if (btnGuardarProfesion) btnGuardarProfesion.onclick = function() {
-            const nombre = inputNuevoProfesion.value.trim();
-            if (!nombre) {
-                errorNuevoProfesion.textContent = 'Ingrese un nombre válido.';
-                return;
-            }
-            fetch('/api/profesiones', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({nombre})
-            })
-            .then(res => res.json())
-            .then(resp => {
-                if (resp.success) {
-                    modalProfesion.style.display = 'none';
-                    cargarProfesiones();
-                } else {
-                    errorNuevoProfesion.textContent = resp.error || 'Error al agregar.';
-                }
-            });
-        };
-    }, 0);
+    };
+
+    var btnAddOcupacion = document.getElementById('add-ocupacion');
+    var btnAddProfesion = document.getElementById('add-profesion');
+    if (btnAddOcupacion && modalOcupacion) btnAddOcupacion.onclick = function() { if (inputNuevoOcupacion) inputNuevoOcupacion.value = ''; if (errorNuevoOcupacion) errorNuevoOcupacion.textContent = ''; modalOcupacion.style.display = 'flex'; };
+    if (btnAddProfesion && modalProfesion) btnAddProfesion.onclick = function() { if (inputNuevoProfesion) inputNuevoProfesion.value = ''; if (errorNuevoProfesion) errorNuevoProfesion.textContent = ''; modalProfesion.style.display = 'flex'; };
 });
 </script>
-<div id="modal-parentesco" class="modal-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:1000;align-items:center;justify-content:center;">
-    <div id="modal-parentesco-box" style="background:#fff;padding:24px 18px;border-radius:8px;min-width:260px;box-shadow:0 2px 16px #0002;display:flex;flex-direction:column;gap:12px;align-items:stretch;">
-        <input type="text" id="nuevo_parentesco" class="form-control" maxlength="30" autocomplete="off" placeholder="Ej: Tutor legal">
-        <div id="error-nuevo-parentesco" class="error-text"></div>
-        <div style="display:flex;gap:10px;justify-content:flex-end;">
-            <button type="button" id="guardar-parentesco" class="btn btn-success">Guardar</button>
-            <button type="button" id="cancelar-parentesco" class="btn btn-danger">Cancelar</button>
-        </div>
-    </div>
-</div>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='home_panel/registro_persona.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='home_panel/flatpickr.min.css') }}">
     <script src="{{ url_for('static', filename='home_panel/flatpickr.min.js') }}"></script>
     <script src="{{ url_for('static', filename='home_panel/form_validators.js') }}"></script>
-                        <script>
-                        document.addEventListener('DOMContentLoaded', function() {
-                            const btnAddParentesco = document.getElementById('btn-add-parentesco');
-                            const modalParentesco = document.getElementById('modal-parentesco');
-                            const modalBox = document.getElementById('modal-parentesco-box');
-                            const inputNuevoParentesco = document.getElementById('nuevo_parentesco');
-                            const errorNuevoParentesco = document.getElementById('error-nuevo-parentesco');
-                            const btnGuardarParentesco = document.getElementById('guardar-parentesco');
-                            const btnCancelarParentesco = document.getElementById('cancelar-parentesco');
-                            const selectParentesco = document.getElementById('parentesco');
-
-                            if (btnAddParentesco && modalParentesco) {
-                                btnAddParentesco.onclick = function() {
-                                    inputNuevoParentesco.value = '';
-                                    errorNuevoParentesco.textContent = '';
-                                    modalParentesco.style.display = 'flex';
-                                    modalParentesco.style.setProperty('display', 'flex', 'important');
-                                    inputNuevoParentesco.focus();
-                                };
-                                btnCancelarParentesco.onclick = function() {
-                                    modalParentesco.style.display = 'none';
-                                };
-                                btnGuardarParentesco.onclick = function() {
-                                    const val = inputNuevoParentesco.value.trim();
-                                    if (!val) {
-                                        errorNuevoParentesco.textContent = 'Debe ingresar un nombre válido';
-                                        return;
-                                    }
-                                    // Por ahora, lo agregamos localmente con un id temporal negativo
-                                    const option = document.createElement('option');
-                                    option.value = 'nuevo_' + Date.now();
-                                    option.textContent = val;
-                                    option.selected = true;
-                                    selectParentesco.appendChild(option);
-                                    modalParentesco.style.display = 'none';
-                                };
-                                // Cerrar modal con ESC
-                                document.addEventListener('keydown', function(e) {
-                                    if (modalParentesco.style.display !== 'none' && e.key === 'Escape') {
-                                        modalParentesco.style.display = 'none';
-                                    }
-                                });
-                                // Cerrar modal al hacer clic fuera del cuadro
-                                modalParentesco.addEventListener('mousedown', function(e) {
-                                    if (e.target === modalParentesco) {
-                                        modalParentesco.style.display = 'none';
-                                    }
-                                });
-                            }
-                        });
-                        </script>
-                        <script>
-                        document.addEventListener('DOMContentLoaded', function() {
-                            const btnAddParentesco = document.getElementById('btn-add-parentesco');
-                            const modalParentesco = document.getElementById('modal-parentesco');
-                            const inputNuevoParentesco = document.getElementById('nuevo_parentesco');
-                            const errorNuevoParentesco = document.getElementById('error-nuevo-parentesco');
-                            const btnGuardarParentesco = document.getElementById('guardar-parentesco');
-                            const btnCancelarParentesco = document.getElementById('cancelar-parentesco');
-                            const selectParentesco = document.getElementById('parentesco');
-
-                            if (btnAddParentesco && modalParentesco) {
-                                btnAddParentesco.onclick = function() {
-                                    inputNuevoParentesco.value = '';
-                                    errorNuevoParentesco.textContent = '';
-                                    modalParentesco.style.display = 'flex';
-                                    modalParentesco.style.setProperty('display', 'flex', 'important');
-                                    inputNuevoParentesco.focus();
-                                };
-                                btnCancelarParentesco.onclick = function() {
-                                    modalParentesco.style.display = 'none';
-                                };
-                                btnGuardarParentesco.onclick = function() {
-                                    const val = inputNuevoParentesco.value.trim();
-                                    if (!val) {
-                                        errorNuevoParentesco.textContent = 'Debe ingresar un nombre válido';
-                                        return;
-                                    }
-                                    // Por ahora, lo agregamos localmente con un id temporal negativo
-                                    const option = document.createElement('option');
-                                    option.value = 'nuevo_' + Date.now();
-                                    option.textContent = val;
-                                    option.selected = true;
-                                    selectParentesco.appendChild(option);
-                                    modalParentesco.style.display = 'none';
-                                };
-                                // Cerrar modal con ESC
-                                modalParentesco.addEventListener('keydown', function(e) {
-                                    if (e.key === 'Escape') modalParentesco.style.display = 'none';
-                                });
-                            }
-                        });
-                        </script>
                     <script>
                     document.addEventListener('DOMContentLoaded', function() {
                         var tipoPersona = document.getElementById('tipo_persona');
@@ -588,7 +399,7 @@ window.addEventListener('DOMContentLoaded', function() {
                         var errorNumHijos = document.getElementById('error-num_hijos');
                         function validarNumHijos() {
                             if (!tipoPersona || !numHijos || !errorNumHijos) return;
-                            if (tipoPersona.value.toLowerCase() === 'representante') {
+                            if (tipoPersona.value === '3') {
                                 if (parseInt(numHijos.value) > 6) {
                                     numHijos.classList.add('error-border');
                                     errorNumHijos.textContent = 'Un Representante no puede "Representar" a más de 6 hijos';
@@ -628,7 +439,13 @@ window.addEventListener('DOMContentLoaded', function() {
                     const tipoDocumentoInput = document.getElementById('tipo_documento');
                     if (!fechaNacimientoInput || !tipoDocumentoInput) return;
                     const edad = calcularEdad(fechaNacimientoInput.value);
-                    tipoDocumentoInput.value = (edad >= 9) ? 'Cédula Nacional' : 'Cédula Escolar';
+                    const nombreBuscado = (edad >= 9) ? 'Cédula Nacional' : 'Cédula Escolar';
+                    for (var i = 0; i < tipoDocumentoInput.options.length; i++) {
+                        if (tipoDocumentoInput.options[i].text === nombreBuscado) {
+                            tipoDocumentoInput.selectedIndex = i;
+                            return;
+                        }
+                    }
                 }
 
                 // Escucha cambios en fecha_nacimiento (debe tener ese ID en el paso anterior)
@@ -783,8 +600,7 @@ window.addEventListener('DOMContentLoaded', function() {
             });
 
             function validateStep1(){
-
-                document.querySelectorAll('*[data-show-only], .show-otro-cargo').forEach(i => { console.log(i); i.style.display = 'none' })
+                document.querySelectorAll('*[data-show-only], .show-otro-cargo').forEach(i => { i.style.display = 'none'; })
                 
 
                 let p = tipoPersonaSelect?.value
@@ -835,7 +651,9 @@ window.addEventListener('DOMContentLoaded', function() {
                     form.id_relacion_familiar.value.trim();
             }
             function validateStep4(){
-                return form.ocupacion.value.trim() && form.profesion.value.trim();
+                var occ = form.id_ocupacion || document.getElementById('ocupacion');
+                var prof = form.id_profesion || document.getElementById('profesion');
+                return (occ && occ.value && occ.value.trim()) && (prof && prof.value && prof.value.trim());
             }
             function updateNextBtns(){
                 nextBtns[0].disabled = !validateStep1();
@@ -870,17 +688,5 @@ window.addEventListener('DOMContentLoaded', function() {
             updateNextBtns();
             updateStepper();
         })();
-        // Modal helpers y validaciones extra (reutiliza lógica anterior)
-        document.getElementById('modal-close').onclick = function(){
-            document.getElementById('status-modal').setAttribute('aria-hidden','true');
-            document.getElementById('status-modal').classList.remove('visible');
-        };
-        window.showStatusModal = function(title, message){
-            var overlay = document.getElementById('status-modal');
-            document.getElementById('modal-title').innerText = title || '';
-            document.getElementById('modal-message').innerText = message || '';
-            overlay.setAttribute('aria-hidden','false');
-            overlay.classList.add('visible');
-        };
     </script>
 </div>

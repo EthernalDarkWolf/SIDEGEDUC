@@ -191,8 +191,8 @@ class Empleados(db.Model):
 
 class Representantes(db.Model):
     __tablename__ = 'representantes'
-    id_representante = db.Column(db.Integer, primary_key=True)
+    id_representante = db.Column(db.Integer, primary_key=True, autoincrement=True)
     id_persona = db.Column(db.Integer, db.ForeignKey('personas.id_persona'))
-    id_profesion = db.Column(db.Integer, db.ForeignKey('profesiones.id_profesion'))
-    id_ocupacion = db.Column(db.Integer, db.ForeignKey('ocupaciones.id_ocupacion'))
-    id_nivel_academico = db.Column(db.Integer, db.ForeignKey('niveles_academicos.id_nivel_academico'))
+    id_profesion = db.Column(db.Integer, db.ForeignKey('profesiones.id'), nullable=True)
+    id_ocupacion = db.Column(db.Integer, db.ForeignKey('ocupaciones.id'), nullable=True)
+    id_nivel_academico = db.Column(db.Integer, db.ForeignKey('niveles_academicos.id_nivel_academico'), nullable=True)

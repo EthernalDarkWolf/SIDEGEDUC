@@ -9,8 +9,11 @@
     <div class="col-auto">
       <h2 class="mb-0" style="font-weight:600; font-size:2rem;">Listado de Personas</h2>
     </div>
-    <div class="col text-end">
-      <div class="input-group" style="max-width:260px; float:right;">
+    <div class="col text-end d-flex align-items-center justify-content-end gap-2">
+      <a href="{{ url_for('reporte_pdf_personas', role=role or '') }}" class="btn btn-danger btn-sm" title="Descargar reporte PDF">
+        <i class="fas fa-file-pdf me-1"></i> Reporte PDF
+      </a>
+      <div class="input-group" style="max-width:260px;">
         <input id="filtro-listado" type="text" class="form-control" placeholder="Filtrar resultados..." autocomplete="off">
         <span class="input-group-text"><i class="fas fa-filter"></i></span>
       </div>
