@@ -15,6 +15,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const assignSubjectAlert = document.getElementById('assignSubjectAlert');
     const btnAssignSubject = document.getElementById('btnAssignSubject');
     const spinnerAssign = btnAssignSubject ? btnAssignSubject.querySelector('.spinner-border') : null;
+    const assignStudentModalEl = document.getElementById('assignStudentModal');
+    const assignStudentForm = document.getElementById('assignStudentForm');
+    const assignStudentAlert = document.getElementById('assignStudentAlert');
+    const btnAssignStudent = document.getElementById('btnAssignStudent');
+    const spinnerAssignStudent = btnAssignStudent ? btnAssignStudent.querySelector('.spinner-border') : null;
+    const assignProfessorModalEl = document.getElementById('assignProfessorModal');
+    const assignProfessorForm = document.getElementById('assignProfessorForm');
+    const assignProfessorAlert = document.getElementById('assignProfessorAlert');
+    const btnAssignProfessor = document.getElementById('btnAssignProfessor');
+    const spinnerAssignProfessor = btnAssignProfessor ? btnAssignProfessor.querySelector('.spinner-border') : null;
 
     const sectionData = Array.isArray(window.SECCIONES_INITIAL) ? window.SECCIONES_INITIAL : [];
 
@@ -105,6 +115,62 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.show();
     }
 
+    function showAssignStudentAlert(type, message) {
+        if (!assignStudentAlert) return;
+        assignStudentAlert.className = `alert alert-${type} alert-dismissible fade show`;
+        assignStudentAlert.textContent = message;
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'btn-close';
+        closeBtn.setAttribute('data-bs-dismiss', 'alert');
+        closeBtn.setAttribute('aria-label', 'Cerrar');
+        assignStudentAlert.appendChild(closeBtn);
+        assignStudentAlert.classList.remove('d-none');
+    }
+
+    function showAssignProfessorAlert(type, message) {
+        if (!assignProfessorAlert) return;
+        assignProfessorAlert.className = `alert alert-${type} alert-dismissible fade show`;
+        assignProfessorAlert.textContent = message;
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'btn-close';
+        closeBtn.setAttribute('data-bs-dismiss', 'alert');
+        closeBtn.setAttribute('aria-label', 'Cerrar');
+        assignProfessorAlert.appendChild(closeBtn);
+        assignProfessorAlert.classList.remove('d-none');
+    }
+
+    function showAssignStudentModal() {
+        if (!assignStudentModalEl || !assignStudentForm) {
+            showDevModal('No se pudo abrir el modal para agregar estudiantes.');
+            return;
+        }
+        if (assignStudentAlert) {
+            assignStudentAlert.classList.add('d-none');
+            assignStudentAlert.textContent = '';
+        }
+        assignStudentForm.reset();
+        assignStudentForm.classList.remove('was-validated');
+        const modal = new bootstrap.Modal(assignStudentModalEl);
+        modal.show();
+    }
+
+    function showAssignProfessorModal() {
+        if (!assignProfessorModalEl || !assignProfessorForm) {
+            showDevModal('No se pudo abrir el modal para asignar profesores.');
+            return;
+        }
+        if (assignProfessorAlert) {
+            assignProfessorAlert.classList.add('d-none');
+            assignProfessorAlert.textContent = '';
+        }
+        assignProfessorForm.reset();
+        assignProfessorForm.classList.remove('was-validated');
+        const modal = new bootstrap.Modal(assignProfessorModalEl);
+        modal.show();
+    }
+
     document.querySelectorAll('.action-card').forEach(card => {
         card.addEventListener('click', () => {
             const action = card.getAttribute('data-action') || 'Esta acción';
@@ -118,6 +184,14 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             if (action === 'Agregar materias') {
                 showAssignSubjectModal();
+                return;
+            }
+            if (action === 'Agregar estudiantes') {
+                showAssignStudentModal();
+                return;
+            }
+            if (action === 'Asignar profesor') {
+                showAssignProfessorModal();
                 return;
             }
             showDevModal(`${action} está en desarrollo.`);
@@ -238,6 +312,102 @@ document.addEventListener('DOMContentLoaded', function () {
             } finally {
                 if (btnAssignSubject) btnAssignSubject.disabled = false;
                 if (spinnerAssign) spinnerAssign.classList.add('d-none');
+            }
+        });
+    }
+
+    if (assignStudentForm) {
+        assignStudentForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            if (!assignStudentForm.checkValidity()) {
+                assignStudentForm.classList.add('was-validated');
+                return;
+            }
+
+            if (assignStudentAlert) {
+                assignStudentAlert.classList.add('d-none');
+                assignStudentAlert.textContent = '';
+            }
+
+            const payload = {
+                id_seccion: assignStudentForm.id_seccion.value,
+                id_estudiante: assignStudentForm.id_estudiante.value
+            };
+
+            if (btnAssignStudent) btnAssignStudent.disabled = true;
+            if (spinnerAssignStudent) spinnerAssignStudent.classList.remove('d-none');
+
+            try {
+                const response = await fetch(`${window.location.pathname}?action=add_student`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json().catch(() => null);
+                if (data && data.success) {
+                    showAssignStudentAlert('success', data.message || 'Estudiante asignado correctamente.');
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    showAssignStudentAlert('danger', data?.message || 'No se pudo asignar el estudiante.');
+                }
+            } catch (err) {
+                showAssignStudentAlert('danger', 'Error de red. Intenta nuevamente.');
+            } finally {
+                if (btnAssignStudent) btnAssignStudent.disabled = false;
+                if (spinnerAssignStudent) spinnerAssignStudent.classList.add('d-none');
+            }
+        });
+    }
+
+    if (assignProfessorForm) {
+        assignProfessorForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            if (!assignProfessorForm.checkValidity()) {
+                assignProfessorForm.classList.add('was-validated');
+                return;
+            }
+
+            if (assignProfessorAlert) {
+                assignProfessorAlert.classList.add('d-none');
+                assignProfessorAlert.textContent = '';
+            }
+
+            const payload = {
+                id_seccion: assignProfessorForm.id_seccion.value,
+                id_profesor: assignProfessorForm.id_profesor.value
+            };
+
+            if (btnAssignProfessor) btnAssignProfessor.disabled = true;
+            if (spinnerAssignProfessor) spinnerAssignProfessor.classList.remove('d-none');
+
+            try {
+                const response = await fetch(`${window.location.pathname}?action=assign_professor`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json().catch(() => null);
+                if (data && data.success) {
+                    showAssignProfessorAlert('success', data.message || 'Profesor asignado correctamente.');
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    showAssignProfessorAlert('danger', data?.message || 'No se pudo asignar el profesor.');
+                }
+            } catch (err) {
+                showAssignProfessorAlert('danger', 'Error de red. Intenta nuevamente.');
+            } finally {
+                if (btnAssignProfessor) btnAssignProfessor.disabled = false;
+                if (spinnerAssignProfessor) spinnerAssignProfessor.classList.add('d-none');
             }
         });
     }

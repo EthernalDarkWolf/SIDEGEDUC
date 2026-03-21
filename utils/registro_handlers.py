@@ -20,6 +20,7 @@ from database.models import (
 from sqlalchemy import text
 from datetime import date
 import unicodedata
+from .change_history import log_change
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,8 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
         return abort(404, 'Tipo de registro no válido')
 
     message = None
+    actor_id = session.get('user_id')
+    actor_name = ctx.get('user') if isinstance(ctx, dict) else None
 
     def _cap_first(s):
         s = (s or '').strip()
@@ -286,11 +289,17 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                 message = 'El código PA no puede exceder 20 caracteres.'
             else:
                 try:
-                    db.session.execute(
+                    res = db.session.execute(
                         text('INSERT INTO planteles (codigo_pa, nombre_plantel_nomina) '
                              'VALUES (:codigo_pa, :nombre)')
                         , {'codigo_pa': codigo_pa, 'nombre': nombre}
                     )
+                    row = db.session.execute(text('SELECT last_insert_rowid()')).fetchone()
+                    new_id = int(row[0]) if row and row[0] else None
+                    log_change(actor_id, actor_name, 'create', 'plantel', new_id,
+                               f'Se agrego plantel: {nombre}',
+                               payload={'id_plantel': new_id, 'nombre': nombre, 'codigo_pa': codigo_pa},
+                               undo_supported=True)
                     db.session.commit()
                     message = 'Plantel registrado correctamente'
                 except Exception as e:
@@ -310,17 +319,22 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
             if not nombre_materia:
                 message = 'Debe indicar un nombre de materia.'
             else:
-                # Validación de duplicados sin distinguir mayúsculas/acentos
-                norm_new = _normalize(nombre_materia)
-                existing = db.session.execute(text('SELECT nombre_materia FROM materias')).fetchall()
-                for r in existing:
-                    if _normalize(r['nombre_materia']) == norm_new:
-                        message = 'Ya existe una materia con ese nombre.'
-                        break
+                # Consulta para validar duplicados sin depender de la colación de la BD.
+                normalized_new = _normalize(nombre_materia)
+                exists = db.session.execute(text('SELECT nombre_materia FROM materias')).fetchall()
+                duplicated = any(_normalize((row[0] or '')) == normalized_new for row in exists if row and row[0] is not None)
+                if duplicated:
+                    message = 'Ya existe una materia con ese nombre. No se permite el registro de materias duplicadas.'
 
                 if not message:
                     try:
                         db.session.execute(text('INSERT INTO materias (nombre_materia) VALUES (:name)'), {'name': nombre_materia})
+                        row = db.session.execute(text('SELECT last_insert_rowid()')).fetchone()
+                        new_id = int(row[0]) if row and row[0] else None
+                        log_change(actor_id, actor_name, 'create', 'materia', new_id,
+                                   f'Se agrego materia: {nombre_materia}',
+                                   payload={'id_materia': new_id, 'nombre_materia': nombre_materia},
+                                   undo_supported=True)
                         db.session.commit()
                         message = 'Materia creada correctamente'
                     except Exception as e:
@@ -333,6 +347,30 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
     # Secciones y acciones relacionadas
     if tipo == 'secciones':
         action = request.args.get('action')
+
+        def _ensure_assignment_tables():
+            """Garantiza tablas puente para asignaciones en SQLite."""
+            try:
+                # Si existe, no hace nada; si no, la crea.
+                db.session.execute(text('''
+                    CREATE TABLE IF NOT EXISTS estudiante_seccion (
+                        id_estudiante_seccion INTEGER PRIMARY KEY AUTOINCREMENT,
+                        id_estudiante INTEGER,
+                        id_seccion INTEGER
+                    )
+                '''))
+                db.session.execute(text('''
+                    CREATE TABLE IF NOT EXISTS profesor_seccion (
+                        id_profesor_seccion INTEGER PRIMARY KEY AUTOINCREMENT,
+                        id_profesor INTEGER,
+                        id_seccion INTEGER
+                    )
+                '''))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+        _ensure_assignment_tables()
         # manejar distintas acciones con bloques cortos
         if request.method == 'POST' and not action:
             data = _get_request_data()
@@ -364,6 +402,12 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                                 text('INSERT INTO secciones (id_letra_seccion, id_grado, id_nivel) VALUES (:id_letra, :id_grado, :id_nivel)'),
                                 {'id_letra': id_letra_i, 'id_grado': id_grado_i, 'id_nivel': id_nivel_i}
                             )
+                            row = db.session.execute(text('SELECT last_insert_rowid()')).fetchone()
+                            new_id = int(row[0]) if row and row[0] else None
+                            log_change(actor_id, actor_name, 'create', 'seccion', new_id,
+                                       'Se creo una nueva seccion',
+                                       payload={'id_seccion': new_id, 'id_letra_seccion': id_letra_i, 'id_grado': id_grado_i, 'id_nivel': id_nivel_i},
+                                       undo_supported=True)
                             db.session.commit()
                             message = 'Sección creada correctamente'
                             if request.is_json:
@@ -382,8 +426,45 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
             if request.method == 'POST':
                 f = _get_request_data()
                 try:
-                    db.session.execute(text('INSERT INTO estudiante_seccion (id_estudiante, id_seccion) VALUES (:est, :sec)'),
-                                       {'est': f.get('id_estudiante'), 'sec': f.get('id_seccion')})
+                    id_est = int(f.get('id_estudiante') or 0)
+                    id_sec = int(f.get('id_seccion') or 0)
+                    if not id_est or not id_sec:
+                        raise ValueError('Debe seleccionar estudiante y sección.')
+
+                    exists_student = db.session.execute(
+                        text('SELECT 1 FROM estudiantes WHERE id_estudiante = :id'),
+                        {'id': id_est}
+                    ).fetchone()
+                    exists_section = db.session.execute(
+                        text('SELECT 1 FROM secciones WHERE id_seccion = :id'),
+                        {'id': id_sec}
+                    ).fetchone()
+                    if not exists_student or not exists_section:
+                        raise ValueError('Estudiante o sección no válida.')
+
+                    already_linked = db.session.execute(
+                        text('SELECT id_seccion FROM estudiante_seccion WHERE id_estudiante = :id'),
+                        {'id': id_est}
+                    ).fetchone()
+                    if already_linked:
+                        raise ValueError('Este estudiante ya está vinculado a una sección.')
+
+                    row_count = db.session.execute(
+                        text('SELECT COUNT(*) FROM estudiante_seccion WHERE id_seccion = :sec'),
+                        {'sec': id_sec}
+                    ).fetchone()
+                    count_val = int(row_count[0]) if row_count and row_count[0] is not None else 0
+                    if count_val >= 30:
+                        raise ValueError('Esta sección ya alcanzó el cupo máximo de 30 estudiantes.')
+
+                    db.session.execute(
+                        text('INSERT INTO estudiante_seccion (id_estudiante, id_seccion) VALUES (:est, :sec)'),
+                        {'est': id_est, 'sec': id_sec}
+                    )
+                    log_change(actor_id, actor_name, 'link', 'estudiante_seccion', None,
+                               'Se asigno estudiante a seccion',
+                               payload={'id_estudiante': id_est, 'id_seccion': id_sec},
+                               undo_supported=True)
                     db.session.commit()
                     message = 'Estudiante asignado a sección correctamente'
                     if request.is_json:
@@ -398,8 +479,44 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
             if request.method == 'POST':
                 f = _get_request_data()
                 try:
-                    db.session.execute(text('INSERT INTO profesor_seccion (id_profesor, id_seccion) VALUES (:prof, :sec)'),
-                                       {'prof': f.get('id_profesor'), 'sec': f.get('id_seccion')})
+                    id_prof = int(f.get('id_profesor') or 0)
+                    id_sec = int(f.get('id_seccion') or 0)
+                    if not id_prof or not id_sec:
+                        raise ValueError('Debe seleccionar profesor y sección.')
+
+                    exists_prof = db.session.execute(
+                        text('SELECT 1 FROM profesores WHERE id_profesor = :id'),
+                        {'id': id_prof}
+                    ).fetchone()
+                    exists_section = db.session.execute(
+                        text('SELECT 1 FROM secciones WHERE id_seccion = :id'),
+                        {'id': id_sec}
+                    ).fetchone()
+                    if not exists_prof or not exists_section:
+                        raise ValueError('Profesor o sección no válida.')
+
+                    sec_has_prof = db.session.execute(
+                        text('SELECT 1 FROM profesor_seccion WHERE id_seccion = :sec LIMIT 1'),
+                        {'sec': id_sec}
+                    ).fetchone()
+                    if sec_has_prof:
+                        raise ValueError('Esta sección ya tiene un profesor asignado.')
+
+                    prof_already = db.session.execute(
+                        text('SELECT 1 FROM profesor_seccion WHERE id_profesor = :prof LIMIT 1'),
+                        {'prof': id_prof}
+                    ).fetchone()
+                    if prof_already:
+                        raise ValueError('Este profesor ya está vinculado a otra sección.')
+
+                    db.session.execute(
+                        text('INSERT INTO profesor_seccion (id_profesor, id_seccion) VALUES (:prof, :sec)'),
+                        {'prof': id_prof, 'sec': id_sec}
+                    )
+                    log_change(actor_id, actor_name, 'link', 'profesor_seccion', None,
+                               'Se asigno profesor a seccion',
+                               payload={'id_profesor': id_prof, 'id_seccion': id_sec},
+                               undo_supported=True)
                     db.session.commit()
                     message = 'Profesor asignado a sección correctamente'
                     if request.is_json:
@@ -416,6 +533,10 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                 try:
                     db.session.execute(text('INSERT INTO materias_seccion (id_materia, id_seccion) VALUES (:mid, :sid)'),
                                        {'mid': f.get('id_materia'), 'sid': f.get('id_seccion')})
+                    log_change(actor_id, actor_name, 'link', 'materia_seccion', None,
+                               'Se asigno materia a seccion',
+                               payload={'id_materia': f.get('id_materia'), 'id_seccion': f.get('id_seccion')},
+                               undo_supported=True)
                     db.session.commit()
                     message = 'Materia asignada a sección correctamente'
                     if request.is_json:
@@ -460,11 +581,46 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
         grados = db.session.execute(text('SELECT id_grado, numero_grado FROM grados ORDER BY numero_grado')).fetchall()
         niveles = db.session.execute(text('SELECT id_nivel, nombre_nivel FROM niveles ORDER BY nombre_nivel')).fetchall()
 
+        # Disponibilidad para UX: estudiantes/profesores no vinculados y secciones con cupo.
+        try:
+            assigned_students_rows = db.session.execute(text('SELECT id_estudiante FROM estudiante_seccion')).fetchall()
+        except Exception:
+            assigned_students_rows = []
+        assigned_students = {int(r[0]) for r in assigned_students_rows if r and r[0] is not None}
+        estudiantes_disponibles = [e for e in estudiantes if int(e[0]) not in assigned_students]
+
+        try:
+            assigned_prof_rows = db.session.execute(text('SELECT id_profesor FROM profesor_seccion')).fetchall()
+        except Exception:
+            assigned_prof_rows = []
+        assigned_profesores = {int(r[0]) for r in assigned_prof_rows if r and r[0] is not None}
+        profesores_disponibles = [p for p in profesores if int(p[0]) not in assigned_profesores]
+
+        try:
+            section_student_count_rows = db.session.execute(
+                text('SELECT id_seccion, COUNT(*) FROM estudiante_seccion GROUP BY id_seccion')
+            ).fetchall()
+        except Exception:
+            section_student_count_rows = []
+        student_count_by_section = {int(r[0]): int(r[1]) for r in section_student_count_rows if r and r[0] is not None}
+
+        try:
+            section_has_prof_rows = db.session.execute(text('SELECT DISTINCT id_seccion FROM profesor_seccion')).fetchall()
+        except Exception:
+            section_has_prof_rows = []
+        section_has_prof = {int(r[0]) for r in section_has_prof_rows if r and r[0] is not None}
+
+        secciones_para_estudiantes = [s for s in secciones if int(s.get('id_seccion') or 0) and student_count_by_section.get(int(s.get('id_seccion')), 0) < 30]
+        secciones_para_profesores = [s for s in secciones if int(s.get('id_seccion') or 0) and int(s.get('id_seccion')) not in section_has_prof]
+
         return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'],
                                role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'),
                                roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/registro_secciones.html',
                                estudiantes=estudiantes, secciones=secciones, profesores=profesores, materias=materias,
-                               letras=letras, grados=grados, niveles=niveles, message=message)
+                               letras=letras, grados=grados, niveles=niveles, message=message,
+                               estudiantes_disponibles=estudiantes_disponibles, profesores_disponibles=profesores_disponibles,
+                               secciones_para_estudiantes=secciones_para_estudiantes, secciones_para_profesores=secciones_para_profesores,
+                               student_count_by_section=student_count_by_section)
 
     # Letras, grados, niveles (pequeños formularios)
     if tipo == 'letra_seccion':

@@ -180,3 +180,50 @@ def generar_pdf_secciones(rows):
     pdf.output(buf)
     buf.seek(0)
     return buf.getvalue(), None
+
+
+def generar_pdf_estudiantes_seccion(seccion_info, estudiantes):
+    """Genera PDF para estudiantes de una sección específica."""
+    if not FPDF_AVAILABLE:
+        return None, "Modulo fpdf2 no instalado. Ejecute: pip install fpdf2"
+
+    pdf = ReportPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.alias_nb_pages()
+    pdf.add_page()
+    pdf.set_font('Helvetica', 'B', 14)
+    pdf.cell(0, 10, "Reporte de Estudiantes por Seccion", ln=True, align='C')
+    pdf.set_font('Helvetica', '', 9)
+    pdf.cell(0, 6, f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align='C')
+    pdf.ln(4)
+
+    sec_line = f"Seccion: {seccion_info.get('nombre_nivel', 'N/A')} - Grado {seccion_info.get('numero_grado', 'N/A')} - {seccion_info.get('letra', 'N/A')}"
+    pdf.set_font('Helvetica', 'B', 10)
+    pdf.cell(0, 8, sec_line, ln=True)
+    pdf.ln(2)
+
+    if not estudiantes:
+        pdf.set_font('Helvetica', '', 10)
+        pdf.cell(0, 8, "No hay estudiantes asignados a esta seccion.", ln=True)
+    else:
+        col_w = [12, 170]
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_fill_color(29, 78, 216)
+        pdf.set_text_color(255, 255, 255)
+        pdf.cell(col_w[0], 8, '#', border=1, fill=True)
+        pdf.cell(col_w[1], 8, 'Nombre del Estudiante', border=1, fill=True, ln=True)
+        pdf.set_font('Helvetica', '', 9)
+        pdf.set_text_color(0, 0, 0)
+        fill = False
+        for i, est in enumerate(estudiantes, 1):
+            nombre = str(est.get('nombre_completo') or '-')[:80]
+            if fill:
+                pdf.set_fill_color(248, 249, 250)
+            pdf.cell(col_w[0], 7, str(i), border=1, fill=fill)
+            pdf.cell(col_w[1], 7, nombre, border=1, fill=fill, ln=True)
+            fill = not fill
+
+    buf = io.BytesIO()
+    pdf.output(buf)
+    buf.seek(0)
+    return buf.getvalue(), None

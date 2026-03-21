@@ -197,6 +197,95 @@
     </div>
 </div>
 
+<!-- Modal para agregar estudiante a sección -->
+<div class="modal fade" id="assignStudentModal" tabindex="-1" aria-labelledby="assignStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignStudentModalLabel">Agregar estudiante a sección</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="assignStudentAlert" class="alert d-none" role="alert"></div>
+                <form id="assignStudentForm" novalidate>
+                    <div class="mb-3">
+                        <label for="select_section_for_student" class="form-label">Sección (cupo disponible)</label>
+                        <select class="form-select" id="select_section_for_student" name="id_seccion" required>
+                            <option value="">Seleccione</option>
+                            {% for s in secciones_para_estudiantes %}
+                                {% set current = student_count_by_section.get(s.id_seccion, 0) %}
+                                <option value="{{ s.id_seccion }}">{{ s.nombre_nivel or 'ID ' + (s.id_nivel|string) }} - {{ s.numero_grado or 'ID ' + (s.id_grado|string) }} - {{ s.letra or 'ID ' + (s.id_letra_seccion|string) }} ({{ current }}/30)</option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">Selecciona una sección.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="select_student" class="form-label">Estudiante disponible</label>
+                        <select class="form-select" id="select_student" name="id_estudiante" required>
+                            <option value="">Seleccione</option>
+                            {% for e in estudiantes_disponibles %}
+                                <option value="{{ e.id_estudiante }}">{{ e.primer_nombre }} {{ e.primer_apellido }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">Selecciona un estudiante.</div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="btnAssignStudent">
+                            <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                            Agregar estudiante
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para asignar profesor a sección -->
+<div class="modal fade" id="assignProfessorModal" tabindex="-1" aria-labelledby="assignProfessorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignProfessorModalLabel">Asignar profesor a sección</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="assignProfessorAlert" class="alert d-none" role="alert"></div>
+                <form id="assignProfessorForm" novalidate>
+                    <div class="mb-3">
+                        <label for="select_section_for_professor" class="form-label">Sección sin profesor</label>
+                        <select class="form-select" id="select_section_for_professor" name="id_seccion" required>
+                            <option value="">Seleccione</option>
+                            {% for s in secciones_para_profesores %}
+                                <option value="{{ s.id_seccion }}">{{ s.nombre_nivel or 'ID ' + (s.id_nivel|string) }} - {{ s.numero_grado or 'ID ' + (s.id_grado|string) }} - {{ s.letra or 'ID ' + (s.id_letra_seccion|string) }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">Selecciona una sección.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="select_professor" class="form-label">Profesor disponible</label>
+                        <select class="form-select" id="select_professor" name="id_profesor" required>
+                            <option value="">Seleccione</option>
+                            {% for p in profesores_disponibles %}
+                                <option value="{{ p.id_profesor }}">{{ p.primer_nombre }} {{ p.primer_apellido }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">Selecciona un profesor.</div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="btnAssignProfessor">
+                            <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                            Guardar asignación
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal informativo (funcionalidades en desarrollo) -->
 <div class="modal fade" id="devModal" tabindex="-1" aria-labelledby="devModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">

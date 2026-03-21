@@ -255,7 +255,7 @@
                     <select name="id_ocupacion" id="ocupacion" required style="flex:1;">
                         <option value="">Seleccione...</option>
                     </select>
-                    <button type="button" id="add-ocupacion" class="btn btn-sm btn-outline-secondary" title="Agregar nueva ocupación">+</button>
+                    <button type="button" id="add-ocupacion" class="btn btn-sm btn-outline-secondary" title="Agregar nueva ocupación" onclick="window.openCatalogModal && window.openCatalogModal('ocupacion')">+</button>
                 </div>
             </div>
             <div class="group">
@@ -264,7 +264,7 @@
                     <select name="id_profesion" id="profesion" required style="flex:1;">
                         <option value="">Seleccione...</option>
                     </select>
-                    <button type="button" id="add-profesion" class="btn btn-sm btn-outline-secondary" title="Agregar nuevo nivel de instrucción">+</button>
+                    <button type="button" id="add-profesion" class="btn btn-sm btn-outline-secondary" title="Agregar nuevo nivel de instrucción" onclick="window.openCatalogModal && window.openCatalogModal('profesion')">+</button>
                 </div>
             </div>
             <div class="step-actions">
@@ -273,10 +273,10 @@
             </div>
         </div>
     </form>
-<div id="modal-ocupacion" class="modal-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:1000;align-items:center;justify-content:center;">
+<div id="modal-ocupacion" class="modal-overlay" style="display:none;position:fixed;inset:0;width:100vw;height:100vh;background:rgba(0,0,0,0.45);z-index:99999;align-items:center;justify-content:center;">
     <div style="background:#fff;padding:24px 18px;border-radius:8px;min-width:260px;box-shadow:0 2px 16px #0002;display:flex;flex-direction:column;gap:12px;align-items:stretch;">
         <label for="nuevo_ocupacion">Nueva ocupación</label>
-        <input type="text" id="nuevo_ocupacion" class="form-control" maxlength="40" autocomplete="off" placeholder="Ej: Freelancer">
+        <input type="text" id="nuevo_ocupacion" class="form-control" maxlength="25" autocomplete="off" placeholder="Ej: Comerciante">
         <div id="error-nuevo-ocupacion" class="error-text"></div>
         <div style="display:flex;gap:10px;justify-content:flex-end;">
             <button type="button" id="guardar-ocupacion" class="btn btn-success">Guardar</button>
@@ -284,10 +284,10 @@
         </div>
     </div>
 </div>
-<div id="modal-profesion" class="modal-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:1000;align-items:center;justify-content:center;">
+<div id="modal-profesion" class="modal-overlay" style="display:none;position:fixed;inset:0;width:100vw;height:100vh;background:rgba(0,0,0,0.45);z-index:99999;align-items:center;justify-content:center;">
     <div style="background:#fff;padding:24px 18px;border-radius:8px;min-width:260px;box-shadow:0 2px 16px #0002;display:flex;flex-direction:column;gap:12px;align-items:stretch;">
-        <label for="nuevo_profesion">Nueva profesión</label>
-        <input type="text" id="nuevo_profesion" class="form-control" maxlength="40" autocomplete="off" placeholder="Ej: Arquitecto">
+        <label for="nuevo_profesion">Nuevo nivel de instrucción</label>
+        <input type="text" id="nuevo_profesion" class="form-control" maxlength="25" autocomplete="off" placeholder="Ej: Bachiller">
         <div id="error-nuevo-profesion" class="error-text"></div>
         <div style="display:flex;gap:10px;justify-content:flex-end;">
             <button type="button" id="guardar-profesion" class="btn btn-success">Guardar</button>
@@ -299,17 +299,63 @@
 <script>
 // Forzar recarga de modales y asegurar que los elementos existen antes de asignar eventos
 window.addEventListener('DOMContentLoaded', function() {
+    const ONLY_LETTERS_REGEX = /^[A-Za-zÁÉÍÓÚáéíóúÑñ ]{5,25}$/;
+    let relacionesBase = [];
+
+    function normalizarTexto(valor) {
+        return (valor || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim()
+            .toLowerCase();
+    }
+
+    function filtrarRelacionesPorGenero() {
+        const select = document.getElementById('relacion_familiar');
+        const genero = document.getElementById('genero');
+        if (!select || !genero) return;
+
+        const mapaMasculino = ['padre', 'hermano', 'tutor legal', 'otro'];
+        const mapaFemenino = ['madre', 'hermana', 'tutor legal', 'otro'];
+        const permitidas = genero.value === '1' ? mapaMasculino : (genero.value === '2' ? mapaFemenino : []);
+        const actual = select.value;
+
+        select.innerHTML = '<option value="">Seleccione...</option>';
+        relacionesBase.forEach(function(rel) {
+            const nombreNorm = normalizarTexto(rel.nombre);
+            if (!nombreNorm || nombreNorm === 'representante') return;
+            if (!permitidas.length || permitidas.includes(nombreNorm)) {
+                const option = document.createElement('option');
+                option.value = rel.id;
+                option.textContent = rel.nombre;
+                select.appendChild(option);
+            }
+        });
+
+        if ([...select.options].some(opt => opt.value === actual)) {
+            select.value = actual;
+        } else {
+            select.value = '';
+        }
+        select.dispatchEvent(new Event('change'));
+    }
+
+    function validarNombreCatalogo(nombre) {
+        if (!ONLY_LETTERS_REGEX.test(nombre)) {
+            return 'Solo letras y espacios, entre 5 y 25 caracteres.';
+        }
+        return '';
+    }
+
     // Relaciones familiares
     fetch('/api/relaciones_familiares')
         .then(res => res.json())
         .then(data => {
             const select = document.getElementById('relacion_familiar');
-            data.forEach(rel => {
-                const option = document.createElement('option');
-                option.value = rel.id;
-                option.textContent = rel.nombre;
-                select.appendChild(option);
-            });
+            relacionesBase = Array.isArray(data) ? data : [];
+            if (select) {
+                filtrarRelacionesPorGenero();
+            }
         });
 
     // Ocupaciones
@@ -352,14 +398,25 @@ window.addEventListener('DOMContentLoaded', function() {
     const errorNuevoOcupacion = document.getElementById('error-nuevo-ocupacion');
     const btnGuardarOcupacion = document.getElementById('guardar-ocupacion');
     const btnCancelarOcupacion = document.getElementById('cancelar-ocupacion');
-    if (btnCancelarOcupacion) btnCancelarOcupacion.onclick = function() { if (modalOcupacion) modalOcupacion.style.display = 'none'; };
+    function closeModalOcupacion() {
+        if (modalOcupacion) modalOcupacion.style.display = 'none';
+    }
+    if (btnCancelarOcupacion) btnCancelarOcupacion.onclick = closeModalOcupacion;
     if (btnGuardarOcupacion && inputNuevoOcupacion) btnGuardarOcupacion.onclick = function() {
         const nombre = inputNuevoOcupacion.value.trim();
-        if (!nombre) { if (errorNuevoOcupacion) errorNuevoOcupacion.textContent = 'Ingrese un nombre válido.'; return; }
+        const errorMsg = validarNombreCatalogo(nombre);
+        if (errorMsg) { if (errorNuevoOcupacion) errorNuevoOcupacion.textContent = errorMsg; return; }
         fetch('/api/ocupaciones', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({nombre}) })
             .then(res => res.json())
             .then(resp => {
-                if (resp.success) { if (modalOcupacion) modalOcupacion.style.display = 'none'; cargarOcupaciones(); }
+                if (resp.success) {
+                    closeModalOcupacion();
+                    cargarOcupaciones();
+                    if (resp.id) {
+                        const selectOcup = document.getElementById('ocupacion');
+                        if (selectOcup) selectOcup.value = String(resp.id);
+                    }
+                }
                 else if (errorNuevoOcupacion) errorNuevoOcupacion.textContent = resp.error || 'Error al agregar.';
             });
     };
@@ -369,22 +426,75 @@ window.addEventListener('DOMContentLoaded', function() {
     const errorNuevoProfesion = document.getElementById('error-nuevo-profesion');
     const btnGuardarProfesion = document.getElementById('guardar-profesion');
     const btnCancelarProfesion = document.getElementById('cancelar-profesion');
-    if (btnCancelarProfesion) btnCancelarProfesion.onclick = function() { if (modalProfesion) modalProfesion.style.display = 'none'; };
+    function closeModalProfesion() {
+        if (modalProfesion) modalProfesion.style.display = 'none';
+    }
+    if (btnCancelarProfesion) btnCancelarProfesion.onclick = closeModalProfesion;
     if (btnGuardarProfesion && inputNuevoProfesion) btnGuardarProfesion.onclick = function() {
         const nombre = inputNuevoProfesion.value.trim();
-        if (!nombre) { if (errorNuevoProfesion) errorNuevoProfesion.textContent = 'Ingrese un nombre válido.'; return; }
+        const errorMsg = validarNombreCatalogo(nombre);
+        if (errorMsg) { if (errorNuevoProfesion) errorNuevoProfesion.textContent = errorMsg; return; }
         fetch('/api/profesiones', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({nombre}) })
             .then(res => res.json())
             .then(resp => {
-                if (resp.success) { if (modalProfesion) modalProfesion.style.display = 'none'; cargarProfesiones(); }
+                if (resp.success) {
+                    closeModalProfesion();
+                    cargarProfesiones();
+                    if (resp.id) {
+                        const selectProf = document.getElementById('profesion');
+                        if (selectProf) selectProf.value = String(resp.id);
+                    }
+                }
                 else if (errorNuevoProfesion) errorNuevoProfesion.textContent = resp.error || 'Error al agregar.';
             });
     };
 
     var btnAddOcupacion = document.getElementById('add-ocupacion');
     var btnAddProfesion = document.getElementById('add-profesion');
-    if (btnAddOcupacion && modalOcupacion) btnAddOcupacion.onclick = function() { if (inputNuevoOcupacion) inputNuevoOcupacion.value = ''; if (errorNuevoOcupacion) errorNuevoOcupacion.textContent = ''; modalOcupacion.style.display = 'flex'; };
-    if (btnAddProfesion && modalProfesion) btnAddProfesion.onclick = function() { if (inputNuevoProfesion) inputNuevoProfesion.value = ''; if (errorNuevoProfesion) errorNuevoProfesion.textContent = ''; modalProfesion.style.display = 'flex'; };
+    function openModalOcupacion() {
+        if (inputNuevoOcupacion) inputNuevoOcupacion.value = '';
+        if (errorNuevoOcupacion) errorNuevoOcupacion.textContent = '';
+        if (modalOcupacion) modalOcupacion.style.display = 'flex';
+        if (inputNuevoOcupacion) setTimeout(function() { inputNuevoOcupacion.focus(); }, 10);
+    }
+    function openModalProfesion() {
+        if (inputNuevoProfesion) inputNuevoProfesion.value = '';
+        if (errorNuevoProfesion) errorNuevoProfesion.textContent = '';
+        if (modalProfesion) modalProfesion.style.display = 'flex';
+        if (inputNuevoProfesion) setTimeout(function() { inputNuevoProfesion.focus(); }, 10);
+    }
+    if (btnAddOcupacion) btnAddOcupacion.addEventListener('click', openModalOcupacion);
+    if (btnAddProfesion) btnAddProfesion.addEventListener('click', openModalProfesion);
+
+    // Exponer funciones globales para que el onclick siempre funcione.
+    window.openCatalogModal = function(tipo) {
+        if (tipo === 'ocupacion') openModalOcupacion();
+        if (tipo === 'profesion') openModalProfesion();
+    };
+
+    // Cerrar al hacer click fuera del modal y con ESC.
+    if (modalOcupacion) {
+        modalOcupacion.addEventListener('click', function(ev) {
+            if (ev.target === modalOcupacion) closeModalOcupacion();
+        });
+    }
+    if (modalProfesion) {
+        modalProfesion.addEventListener('click', function(ev) {
+            if (ev.target === modalProfesion) closeModalProfesion();
+        });
+    }
+    document.addEventListener('keydown', function(ev) {
+        if (ev.key === 'Escape') {
+            closeModalOcupacion();
+            closeModalProfesion();
+        }
+    });
+
+    document.querySelectorAll('.gender-card').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            setTimeout(filtrarRelacionesPorGenero, 0);
+        });
+    });
 });
 </script>
 
@@ -419,7 +529,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     </script>
             <script>
             document.addEventListener('DOMContentLoaded', function() {
-                // 1. Lógica de edad y tipo_documento
+                // 1. Lógica de sugerencia de tipo_documento (permite cambio manual).
                 function calcularEdad(fechaNacimiento) {
                     if (!fechaNacimiento) return 0;
                     const hoy = new Date();
@@ -434,10 +544,12 @@ window.addEventListener('DOMContentLoaded', function() {
                     return edad;
                 }
 
+                var tipoDocumentoModificadoPorUsuario = false;
                 function actualizarTipoDocumento() {
                     const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
                     const tipoDocumentoInput = document.getElementById('tipo_documento');
                     if (!fechaNacimientoInput || !tipoDocumentoInput) return;
+                    if (tipoDocumentoModificadoPorUsuario) return;
                     const edad = calcularEdad(fechaNacimientoInput.value);
                     const nombreBuscado = (edad >= 9) ? 'Cédula Nacional' : 'Cédula Escolar';
                     for (var i = 0; i < tipoDocumentoInput.options.length; i++) {
@@ -448,11 +560,15 @@ window.addEventListener('DOMContentLoaded', function() {
                     }
                 }
 
-                // Escucha cambios en fecha_nacimiento (debe tener ese ID en el paso anterior)
                 const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
+                const tipoDocumentoInput = document.getElementById('tipo_documento');
+                if (tipoDocumentoInput) {
+                    tipoDocumentoInput.addEventListener('change', function() {
+                        tipoDocumentoModificadoPorUsuario = true;
+                    });
+                }
                 if (fechaNacimientoInput) {
                     fechaNacimientoInput.addEventListener('change', actualizarTipoDocumento);
-                    // Inicializa al cargar
                     actualizarTipoDocumento();
                 }
 

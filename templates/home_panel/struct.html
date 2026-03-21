@@ -80,6 +80,10 @@
                                     <i class="fas fa-list me-2"></i>Secciones Existentes</a></li>
                                 <li><a class="nav-link" href="{{ url_for('developer_import_export') }}">
                                     <i class="fas fa-database me-2"></i>Importar/Exportar BD</a></li>
+                                {% if is_creator %}
+                                <li><a class="nav-link" href="{{ url_for('developer_cambios_realizados') }}">
+                                    <i class="fas fa-clock-rotate-left me-2"></i>Ver cambios realizados</a></li>
+                                {% endif %}
                             </ul>
                         </div>
                     </li>

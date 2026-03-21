@@ -6,6 +6,7 @@ import sys
 from sqlalchemy import event, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
+import unicodedata
 
 # Cargar variables de entorno .env
 load_dotenv()
@@ -39,6 +40,18 @@ def _require_login_json():
         return jsonify({'success': False, 'error': 'No autorizado. Inicie sesión.'}), 401
     return None
 
+def _normalize_catalog_name(value):
+    raw = (value or '').strip()
+    nfkd = unicodedata.normalize('NFKD', raw)
+    no_accents = ''.join(ch for ch in nfkd if unicodedata.category(ch) != 'Mn')
+    return no_accents.lower()
+
+def _is_valid_catalog_name(value):
+    clean = (value or '').strip()
+    if len(clean) < 5 or len(clean) > 25:
+        return False
+    return all(ch.isalpha() or ch.isspace() for ch in clean)
+
 @app.route('/api/ocupaciones', methods=['GET'])
 def get_ocupaciones():
     err = _require_login_json()
@@ -58,14 +71,21 @@ def add_ocupacion():
     nombre = request.json.get('nombre', '').strip()
     if not nombre:
         return jsonify({'success': False, 'error': 'Nombre requerido.'})
+    if not _is_valid_catalog_name(nombre):
+        return jsonify({'success': False, 'error': 'Solo letras y espacios, entre 5 y 25 caracteres.'})
     try:
+        normalized = _normalize_catalog_name(nombre)
+        existing = Ocupacion.query.all()
+        for item in existing:
+            if _normalize_catalog_name(getattr(item, 'nombre', '')) == normalized:
+                return jsonify({'success': False, 'error': 'Esta ocupación ya existe.'})
         nueva = Ocupacion(nombre=nombre)
         db.session.add(nueva)
         db.session.commit()
-        return jsonify({'success': True})
+        return jsonify({'success': True, 'id': nueva.id, 'nombre': nueva.nombre})
     except IntegrityError:
         db.session.rollback()
-        return jsonify({'success': False, 'error': 'Ya existe.'})
+        return jsonify({'success': False, 'error': 'Esta ocupación ya existe.'})
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': f'Error inesperado: {str(e)}'})
@@ -89,14 +109,21 @@ def add_profesion():
     nombre = request.json.get('nombre', '').strip()
     if not nombre:
         return jsonify({'success': False, 'error': 'Nombre requerido.'})
+    if not _is_valid_catalog_name(nombre):
+        return jsonify({'success': False, 'error': 'Solo letras y espacios, entre 5 y 25 caracteres.'})
     try:
+        normalized = _normalize_catalog_name(nombre)
+        existing = Profesion.query.all()
+        for item in existing:
+            if _normalize_catalog_name(getattr(item, 'nombre', '')) == normalized:
+                return jsonify({'success': False, 'error': 'Este nivel de instrucción ya existe.'})
         nueva = Profesion(nombre=nombre)
         db.session.add(nueva)
         db.session.commit()
-        return jsonify({'success': True})
+        return jsonify({'success': True, 'id': nueva.id, 'nombre': nueva.nombre})
     except IntegrityError:
         db.session.rollback()
-        return jsonify({'success': False, 'error': 'Ya existe.'})
+        return jsonify({'success': False, 'error': 'Este nivel de instrucción ya existe.'})
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': f'Error inesperado: {str(e)}'})
@@ -218,6 +245,19 @@ with app.app_context():
                         ")"
                     ))
                     print("tabla 'materias_seccion' creada (vacía)")
+
+                existing_es = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='estudiante_seccion';")).fetchone()
+                if not existing_es:
+                    conn.execute(text(
+                        "CREATE TABLE estudiante_seccion ("
+                        "id_estudiante_seccion INTEGER PRIMARY KEY AUTOINCREMENT,"
+                        "id_estudiante INTEGER,"
+                        "id_seccion INTEGER,"
+                        "FOREIGN KEY(id_estudiante) REFERENCES estudiantes(id_estudiante),"
+                        "FOREIGN KEY(id_seccion) REFERENCES secciones(id_seccion)"
+                        ")"
+                    ))
+                    print("tabla 'estudiante_seccion' creada (vacía)")
 
                 conn.close()
             except Exception as ex:
@@ -485,6 +525,18 @@ def reporte_pdf_secciones():
     return manejar_la_vista_de.reporte_pdf_secciones()
 
 
+@app.route('/consultas/reporte/pdf/seccion-estudiantes')
+@app.route('/consultas/reporte/pdf/seccion-estudiantes/')
+@app.route('/consultas/reporte/pdf/estudiantes-seccion')
+def reporte_pdf_estudiantes_seccion():
+    return manejar_la_vista_de.reporte_pdf_estudiantes_seccion()
+
+
+@app.route('/api/secciones/<int:id_seccion>/estudiantes')
+def api_estudiantes_por_seccion(id_seccion):
+    return manejar_la_vista_de.api_estudiantes_por_seccion(id_seccion)
+
+
 @app.route('/consultas/personas/list/editar')
 def editar_registro_persona():
     return manejar_la_vista_de.editar_registro_persona()
@@ -523,6 +575,16 @@ def developer_secciones_existentes():
 @app.route('/developer/import_export', methods=['GET', 'POST'])
 def developer_import_export():
     return manejar_la_vista_de.developer_import_export_vista()
+
+
+@app.route('/developer/cambios-realizados')
+def developer_cambios_realizados():
+    return manejar_la_vista_de.developer_cambios_realizados_vista()
+
+
+@app.route('/developer/cambios-realizados/deshacer', methods=['POST'])
+def developer_cambios_deshacer():
+    return manejar_la_vista_de.developer_cambios_deshacer_vista()
 
 
 @app.route('/user/configuracion', methods=['GET', 'POST'])

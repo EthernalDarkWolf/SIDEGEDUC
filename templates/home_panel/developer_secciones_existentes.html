@@ -1,43 +1,241 @@
-<div class="container mt-4">
-    <div style="margin-bottom:12px" class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <a href="{{ url_for('consultas_secciones') }}" class="btn btn-sm btn-outline-secondary">← Volver</a>
-        <a href="{{ url_for('reporte_pdf_secciones') }}" class="btn btn-danger btn-sm" title="Descargar reporte PDF">
-            <i class="fas fa-file-pdf me-1"></i> Reporte PDF
-        </a>
-    </div>
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Secciones Existentes</h3>
-                </div>
-                <div class="card-body">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Grado</th>
-                                <th>Letra</th>
-                                <th>Nivel</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for s in secciones %}
-                                <tr>
-                                    <td>{{ s.id_seccion }}</td>
-                                    <td>{{ s.numero_grado or 'N/A' }}</td>
-                                    <td>{{ s.letra or 'N/A' }}</td>
-                                    <td>{{ s.nombre_nivel or 'N/A' }}</td>
-                                </tr>
-                            {% else %}
-                                <tr>
-                                    <td colspan="4" class="text-center">No hay secciones existentes</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+<div class="container-fluid secciones-dashboard" style="margin-top:88px;">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <a href="{{ url_for('consultas') }}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left me-1"></i> Volver
+    </a>
+    <a href="{{ url_for('reporte_pdf_secciones') }}" class="btn btn-danger btn-sm" title="Descargar reporte PDF">
+      <i class="fas fa-file-pdf me-1"></i> Reporte PDF
+    </a>
+  </div>
+
+  <h2 class="mb-4" style="font-weight:600; color:#071023;">Secciones</h2>
+
+  <div class="row g-4">
+    <!-- Card 1: Secciones Creadas -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card seccion-card h-100 shadow-sm border-0" id="card-secciones-creadas" style="cursor:pointer; transition: all 0.25s ease; border-radius:14px; overflow:hidden;">
+        <div class="card-body text-center p-4">
+          <div class="icon-box mb-3" style="width:64px; height:64px; margin:0 auto; border-radius:14px; background:linear-gradient(135deg, #06a77d, #0b5f47); display:flex; align-items:center; justify-content:center;">
+            <i class="fas fa-layer-group fa-2x text-white"></i>
+          </div>
+          <h5 class="card-title mb-2" style="font-weight:600; color:#071023;">Secciones Creadas</h5>
+          <p class="card-text text-muted small mb-0">Ver listado de secciones con nivel, grado y letra</p>
+          <div class="mt-3">
+            <span class="badge bg-success">{{ secciones|length }}</span> sección{{ 'es' if secciones|length != 1 else '' }}
+          </div>
         </div>
+      </div>
     </div>
+
+    <!-- Card 2: Ver Estudiantes por Sección -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card seccion-card h-100 shadow-sm border-0" id="card-estudiantes-seccion" style="cursor:pointer; transition: all 0.25s ease; border-radius:14px; overflow:hidden;">
+        <div class="card-body text-center p-4">
+          <div class="icon-box mb-3" style="width:64px; height:64px; margin:0 auto; border-radius:14px; background:linear-gradient(135deg, #3b82f6, #1d4ed8); display:flex; align-items:center; justify-content:center;">
+            <i class="fas fa-user-graduate fa-2x text-white"></i>
+          </div>
+          <h5 class="card-title mb-2" style="font-weight:600; color:#071023;">Ver Estudiantes por Sección</h5>
+          <p class="card-text text-muted small mb-0">Seleccione una sección para ver sus estudiantes</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel desplegable: Listado de Secciones (Card 1) -->
+  <div class="secciones-list-panel mt-4" id="panel-secciones-list" style="display:none;">
+    <div class="card shadow-sm border-0" style="border-radius:14px;">
+      <div class="card-header d-flex justify-content-between align-items-center py-3" style="background:linear-gradient(90deg, #06a77d, #0b5f47); color:white; border-radius:14px 14px 0 0;">
+        <h5 class="mb-0"><i class="fas fa-list me-2"></i>Listado de Secciones Creadas</h5>
+        <button type="button" class="btn btn-sm btn-light" id="btn-cerrar-listado"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="card-body p-0">
+        {% if secciones and secciones|length > 0 %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead style="background:#f8f9fa;">
+              <tr>
+                <th style="width:8%;">#</th>
+                <th style="width:30%;">Nivel</th>
+                <th style="width:25%;">Grado</th>
+                <th style="width:20%;">Letra</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in secciones %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ s.nombre_nivel or 'N/A' }}</td>
+                <td>{{ s.numero_grado or 'N/A' }}</td>
+                <td>{{ s.letra or 'N/A' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="p-4 text-center text-muted">
+          <i class="fas fa-inbox fa-2x mb-2"></i>
+          <p class="mb-0">No hay secciones creadas.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- Modal: Ver Estudiantes por Sección (Card 2) -->
+<div class="modal fade" id="modalEstudiantesSeccion" tabindex="-1" aria-labelledby="modalEstudiantesLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="border-radius:14px; overflow:hidden;">
+      <div class="modal-header" style="background:linear-gradient(90deg, #3b82f6, #1d4ed8); color:white; border:none;">
+        <h5 class="modal-title" id="modalEstudiantesLabel">
+          <i class="fas fa-user-graduate me-2"></i>Estudiantes por Sección
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Seleccione una sección</label>
+          <select class="form-select form-select-lg" id="selectSeccion" style="border-radius:10px;">
+            <option value="">-- Elija una sección --</option>
+            {% for s in secciones %}
+            <option value="{{ s.id_seccion }}" data-nivel="{{ s.nombre_nivel or 'N/A' }}" data-grado="{{ s.numero_grado or 'N/A' }}" data-letra="{{ s.letra or 'N/A' }}">
+              {{ s.nombre_nivel or 'N/A' }} - Grado {{ s.numero_grado or 'N/A' }} - {{ s.letra or 'N/A' }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <button type="button" class="btn btn-primary btn-lg" id="btnVerEstudiantes" disabled style="border-radius:10px;">
+            <i class="fas fa-eye me-2"></i>Ver
+          </button>
+          <button type="button" class="btn btn-danger btn-lg" id="btnReporteSeccion" disabled style="border-radius:10px;">
+            <i class="fas fa-file-pdf me-2"></i>Crear reporte
+          </button>
+        </div>
+
+        <div id="estudiantes-result" class="mt-4" style="display:none;">
+          <hr>
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <span class="badge bg-primary fs-6" id="badge-seccion-info"></span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead style="background:#f8f9fa;">
+                <tr>
+                  <th style="width:10%;">#</th>
+                  <th>Nombre del Estudiante</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-estudiantes">
+              </tbody>
+            </table>
+          </div>
+          <div id="estudiantes-vacio" class="text-center text-muted py-4" style="display:none;">
+            <i class="fas fa-users-slash fa-2x mb-2"></i>
+            <p class="mb-0">No hay estudiantes asignados a esta sección.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.seccion-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(6,167,125,0.15) !important;
+}
+#card-estudiantes-seccion:hover {
+  box-shadow: 0 12px 28px rgba(59,130,246,0.2) !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var reporteSeccionUrl = "{{ url_for('reporte_pdf_estudiantes_seccion') }}";
+  // Card 1: Toggle listado de secciones
+  var cardSecciones = document.getElementById('card-secciones-creadas');
+  var panelList = document.getElementById('panel-secciones-list');
+  var btnCerrar = document.getElementById('btn-cerrar-listado');
+  if (cardSecciones) cardSecciones.addEventListener('click', function() {
+    panelList.style.display = panelList.style.display === 'none' ? 'block' : 'none';
+  });
+  if (btnCerrar) btnCerrar.addEventListener('click', function() {
+    panelList.style.display = 'none';
+  });
+
+  // Card 2: Abrir modal
+  var cardEstudiantes = document.getElementById('card-estudiantes-seccion');
+  var modal = new bootstrap.Modal(document.getElementById('modalEstudiantesSeccion'));
+  if (cardEstudiantes) cardEstudiantes.addEventListener('click', function() {
+    modal.show();
+  });
+
+  // Select sección: habilitar botón Ver
+  var selectSeccion = document.getElementById('selectSeccion');
+  var btnVer = document.getElementById('btnVerEstudiantes');
+  var btnReporte = document.getElementById('btnReporteSeccion');
+  var seccionActualParaReporte = '';
+  if (selectSeccion) selectSeccion.addEventListener('change', function() {
+    btnVer.disabled = !this.value;
+    seccionActualParaReporte = this.value || '';
+    if (btnReporte) btnReporte.disabled = true;
+  });
+
+  // Botón Ver: cargar estudiantes
+  if (btnVer) btnVer.addEventListener('click', function() {
+    var idSeccion = selectSeccion.value;
+    if (!idSeccion) return;
+    btnVer.disabled = true;
+    btnVer.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Cargando...';
+    fetch('/api/secciones/' + idSeccion + '/estudiantes')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        btnVer.disabled = false;
+        btnVer.innerHTML = '<i class="fas fa-eye me-2"></i>Ver';
+        var result = document.getElementById('estudiantes-result');
+        var tbody = document.getElementById('tbody-estudiantes');
+        var vacio = document.getElementById('estudiantes-vacio');
+        var badge = document.getElementById('badge-seccion-info');
+        result.style.display = 'block';
+        var sec = data.seccion || {};
+        badge.textContent = (sec.nombre_nivel || '') + ' - Grado ' + (sec.numero_grado || '') + ' - ' + (sec.letra || '');
+        tbody.innerHTML = '';
+        vacio.style.display = 'none';
+        if (data.estudiantes && data.estudiantes.length > 0) {
+          data.estudiantes.forEach(function(est, i) {
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + (i + 1) + '</td><td>' + (est.nombre_completo || '-') + '</td>';
+            tbody.appendChild(tr);
+          });
+          if (btnReporte) btnReporte.disabled = false;
+        } else {
+          vacio.style.display = 'block';
+          if (btnReporte) btnReporte.disabled = true;
+        }
+      })
+      .catch(function() {
+        btnVer.disabled = false;
+        btnVer.innerHTML = '<i class="fas fa-eye me-2"></i>Ver';
+        if (btnReporte) btnReporte.disabled = true;
+        alert('Error al cargar los estudiantes.');
+      });
+  });
+
+  if (btnReporte) btnReporte.addEventListener('click', function() {
+    if (!seccionActualParaReporte || btnReporte.disabled) return;
+    window.open(reporteSeccionUrl + '?id_seccion=' + encodeURIComponent(seccionActualParaReporte), '_blank');
+  });
+
+  // Al abrir modal: limpiar resultado anterior
+  document.getElementById('modalEstudiantesSeccion').addEventListener('show.bs.modal', function() {
+    document.getElementById('estudiantes-result').style.display = 'none';
+    document.getElementById('tbody-estudiantes').innerHTML = '';
+    document.getElementById('selectSeccion').value = '';
+    document.getElementById('btnVerEstudiantes').disabled = true;
+    document.getElementById('btnReporteSeccion').disabled = true;
+    seccionActualParaReporte = '';
+  });
+});
+</script>

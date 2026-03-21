@@ -15,7 +15,7 @@
                         {% endif %}
                         <div class="mb-3">
                             <label for="nombre_materia" class="form-label">Nombre de la materia:</label>
-                            <input type="text" id="nombre_materia" name="nombre_materia" class="form-control" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ ]+" title="Solo letras y espacios" value="{{ materia.nombre_materia if materia }}">
+                            <input type="text" id="nombre_materia" name="nombre_materia" class="form-control" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ ]+" title="Solo letras y espacios" value="{{ materia.nombre_materia if materia else '' }}">
                         </div>
                         <button type="submit" class="btn btn-primary">{% if edit %}Guardar cambios{% else %}Crear materia{% endif %}</button>
                     </form>

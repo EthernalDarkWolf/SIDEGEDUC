@@ -2,7 +2,7 @@
 con sus respectivas funciones"""
 
 from datetime import datetime
-from flask import render_template, redirect, url_for, request, session, send_file
+from flask import render_template, redirect, url_for, request, session, send_file, jsonify
 from database.models import Usuarios, Roles, StatusUser, db
 from sqlalchemy import func, text
 import io
@@ -10,6 +10,7 @@ from .permissions import get_user_context, user_has_admin_privileges
 from flask import abort
 import os
 from werkzeug.security import check_password_hash, generate_password_hash
+from .change_history import ensure_change_history_table, prune_old_changes, list_changes, undo_change, log_change
 
 
 def compute_role_counts(ctx):
@@ -510,6 +511,15 @@ def consultas_secciones():
     return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=roles_count, users_by_role=users_by_role, content_template='home_panel/consultas_secciones.html', rows=secciones, title='Listado de Secciones')
 
 
+def _normalize_str(value):
+    """Normalizar para comparar sin distinguir mayúsculas/acentos."""
+    import unicodedata
+    if not value:
+        return ''
+    nfkd = unicodedata.normalize('NFKD', str(value))
+    return ''.join(c for c in nfkd if unicodedata.category(c) != 'Mn').strip().lower()
+
+
 def consultas_materias_editar():
     """Editar o crear materia desde la interfaz de consultas.
     GET: mostrar formulario con nombre prellenado si id proporcionado
@@ -520,11 +530,28 @@ def consultas_materias_editar():
     ctx = get_user_context(session)
     if request.method == 'POST':
         mid = request.form.get('id_materia')
-        name = request.form.get('nombre_materia')
+        name = (request.form.get('nombre_materia') or '').strip()
         try:
             if mid:
+                # Editar: validar que no exista otra materia con el mismo nombre
+                norm_new = _normalize_str(name)
+                rows = db.session.execute(text('SELECT id_materia, nombre_materia FROM materias')).fetchall()
+                for r in rows:
+                    exist_id = r[0] if len(r) > 0 else None
+                    exist_name = r[1] if len(r) > 1 else (getattr(r, 'nombre_materia', None) or '')
+                    if exist_id != int(mid) and _normalize_str(exist_name) == norm_new:
+                        return redirect(url_for('consultas_materias', error='Ya existe una materia con ese nombre.'))
                 db.session.execute(text('UPDATE materias SET nombre_materia = :name WHERE id_materia = :id'), {'name': name, 'id': mid})
             else:
+                # Crear: NO permitir si ya existe
+                if not name:
+                    return redirect(url_for('consultas_materias', error='Debe indicar un nombre de materia.'))
+                norm_new = _normalize_str(name)
+                rows = db.session.execute(text('SELECT nombre_materia FROM materias')).fetchall()
+                for r in rows:
+                    val = r[0] if len(r) > 0 else (getattr(r, 'nombre_materia', None) or '')
+                    if _normalize_str(val) == norm_new:
+                        return redirect(url_for('consultas_materias', error='Ya existe una materia con ese nombre. No se permite el registro de materias duplicadas.'))
                 db.session.execute(text('INSERT INTO materias (nombre_materia) VALUES (:name)'), {'name': name})
             db.session.commit()
         except Exception:
@@ -553,7 +580,14 @@ def consultas_materias_borrar():
     if not mid:
         return redirect(url_for('consultas_materias'))
     try:
+        name_row = db.session.execute(text('SELECT nombre_materia FROM materias WHERE id_materia = :id'), {'id': mid}).fetchone()
+        nombre = name_row[0] if name_row and name_row[0] is not None else ''
         db.session.execute(text('DELETE FROM materias WHERE id_materia = :id'), {'id': mid})
+        ctx = get_user_context(session)
+        log_change(session.get('user_id'), ctx.get('user'), 'delete', 'materia', int(mid),
+                   f'Se elimino materia: {nombre or mid}',
+                   payload={'id_materia': int(mid), 'nombre_materia': nombre},
+                   undo_supported=False)
         db.session.commit()
     except Exception:
         db.session.rollback()
@@ -645,6 +679,123 @@ def reporte_pdf_secciones():
     return send_file(io.BytesIO(pdf_bytes), mimetype='application/pdf', as_attachment=True, download_name=filename)
 
 
+def reporte_pdf_estudiantes_seccion():
+    """Genera y descarga PDF de estudiantes de una sección seleccionada."""
+    if 'user_id' not in session:
+        return redirect(url_for('login.login_handler'))
+
+    id_seccion = request.args.get('id_seccion')
+    try:
+        id_seccion_int = int(id_seccion or 0)
+    except Exception:
+        id_seccion_int = 0
+    if not id_seccion_int:
+        return redirect(url_for('consultas_secciones'))
+
+    try:
+        sec = db.session.execute(text('''
+            SELECT s.id_seccion, n.nombre_nivel, g.numero_grado, l.letra
+            FROM secciones s
+            LEFT JOIN niveles n ON s.id_nivel = n.id_nivel
+            LEFT JOIN grados g ON s.id_grado = g.id_grado
+            LEFT JOIN letra_seccion l ON s.id_letra_seccion = l.id_letra_seccion
+            WHERE s.id_seccion = :id
+        '''), {'id': id_seccion_int}).fetchone()
+        if not sec:
+            return redirect(url_for('consultas_secciones'))
+        seccion_info = {
+            'id_seccion': sec[0],
+            'nombre_nivel': sec[1] or 'N/A',
+            'numero_grado': sec[2] or 'N/A',
+            'letra': sec[3] or 'N/A',
+        }
+    except Exception:
+        return redirect(url_for('consultas_secciones'))
+
+    try:
+        rows = db.session.execute(text('''
+            SELECT p.primer_nombre, p.segundo_nombre, p.primer_apellido, p.segundo_apellido
+            FROM estudiante_seccion es
+            JOIN estudiantes e ON es.id_estudiante = e.id_estudiante
+            JOIN personas p ON e.id_persona = p.id_persona
+            WHERE es.id_seccion = :id
+            ORDER BY p.primer_apellido, p.primer_nombre
+        '''), {'id': id_seccion_int}).fetchall()
+    except Exception:
+        rows = []
+
+    estudiantes = []
+    for r in rows:
+        nombre = f"{r[0] or ''} {r[1] or ''} {r[2] or ''} {r[3] or ''}".strip()
+        estudiantes.append({'nombre_completo': nombre})
+
+    # Regla solicitada: solo generar si hay estudiantes.
+    if not estudiantes:
+        return redirect(url_for('consultas_secciones'))
+
+    from .report_pdf import generar_pdf_estudiantes_seccion
+    pdf_bytes, err = generar_pdf_estudiantes_seccion(seccion_info, estudiantes)
+    if err:
+        return err, 500
+    filename = f"reporte_estudiantes_seccion_{id_seccion_int}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+    return send_file(io.BytesIO(pdf_bytes), mimetype='application/pdf', as_attachment=True, download_name=filename)
+
+
+def api_estudiantes_por_seccion(id_seccion):
+    """API JSON: estudiantes asignados a una sección con info de la sección."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'No autorizado'}), 401
+    try:
+        # Si no existe tabla estudiante_seccion, devolver vacío
+        try:
+            db.session.execute(text("SELECT 1 FROM estudiante_seccion LIMIT 1"))
+        except Exception:
+            sec = db.session.execute(text('''
+                SELECT s.id_seccion, n.nombre_nivel, g.numero_grado, l.letra
+                FROM secciones s
+                LEFT JOIN niveles n ON s.id_nivel = n.id_nivel
+                LEFT JOIN grados g ON s.id_grado = g.id_grado
+                LEFT JOIN letra_seccion l ON s.id_letra_seccion = l.id_letra_seccion
+                WHERE s.id_seccion = :id
+            '''), {'id': id_seccion}).fetchone()
+            if not sec:
+                return jsonify({'error': 'Sección no encontrada'}), 404
+            return jsonify({
+                'seccion': {'id_seccion': sec[0], 'nombre_nivel': sec[1] or 'N/A', 'numero_grado': sec[2] or 'N/A', 'letra': sec[3] or 'N/A'},
+                'estudiantes': []
+            })
+        sec = db.session.execute(text('''
+            SELECT s.id_seccion, n.nombre_nivel, g.numero_grado, l.letra
+            FROM secciones s
+            LEFT JOIN niveles n ON s.id_nivel = n.id_nivel
+            LEFT JOIN grados g ON s.id_grado = g.id_grado
+            LEFT JOIN letra_seccion l ON s.id_letra_seccion = l.id_letra_seccion
+            WHERE s.id_seccion = :id
+        '''), {'id': id_seccion}).fetchone()
+        if not sec:
+            return jsonify({'error': 'Sección no encontrada'}), 404
+        seccion_info = {
+            'id_seccion': sec[0],
+            'nombre_nivel': sec[1] or 'N/A',
+            'numero_grado': sec[2] or 'N/A',
+            'letra': sec[3] or 'N/A',
+        }
+        rows = db.session.execute(text('''
+            SELECT p.id_persona, p.primer_nombre, p.segundo_nombre, p.primer_apellido, p.segundo_apellido
+            FROM estudiante_seccion es
+            JOIN estudiantes e ON es.id_estudiante = e.id_estudiante
+            JOIN personas p ON e.id_persona = p.id_persona
+            WHERE es.id_seccion = :id
+            ORDER BY p.primer_apellido, p.primer_nombre
+        '''), {'id': id_seccion}).fetchall()
+        estudiantes = []
+        for r in rows:
+            nombre = f"{r[1] or ''} {r[2] or ''} {r[3] or ''} {r[4] or ''}".strip()
+            estudiantes.append({'id_persona': r[0], 'nombre_completo': nombre})
+        return jsonify({'seccion': seccion_info, 'estudiantes': estudiantes})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 def consultas_planteles_editar():
     if 'user_id' not in session:
@@ -686,7 +837,14 @@ def consultas_planteles_borrar():
     if not pid:
         return redirect(url_for('consultas_planteles'))
     try:
+        row = db.session.execute(text('SELECT nombre_plantel_nomina FROM planteles WHERE id_plantel = :id'), {'id': pid}).fetchone()
+        nombre = row[0] if row and row[0] is not None else ''
         db.session.execute(text('DELETE FROM planteles WHERE id_plantel = :id'), {'id': pid})
+        ctx = get_user_context(session)
+        log_change(session.get('user_id'), ctx.get('user'), 'delete', 'plantel', int(pid),
+                   f'Se elimino plantel: {nombre or pid}',
+                   payload={'id_plantel': int(pid), 'nombre': nombre},
+                   undo_supported=False)
         db.session.commit()
     except Exception:
         db.session.rollback()
@@ -905,6 +1063,41 @@ def developer_secciones_existentes_vista():
         secciones = []
 
     return render_template('home_panel/struct.html', usuario=ctx['user'], developer_priv=ctx['developer_priv'], role_name=ctx.get('role_name'), role_desc=ctx.get('role_desc'), status=ctx.get('status'), roles_count=0, users_by_role=[], content_template='home_panel/developer_secciones_existentes.html', secciones=secciones)
+
+
+def developer_cambios_realizados_vista():
+    """Historial semanal de cambios (solo Creador)."""
+    ctx = get_user_context(session)
+    if not ctx.get('is_creator'):
+        abort(403)
+    try:
+        ensure_change_history_table()
+        prune_old_changes(days=7)
+        cambios = list_changes(limit=500)
+    except Exception:
+        cambios = []
+    return render_template(
+        'home_panel/struct.html',
+        usuario=ctx['user'],
+        developer_priv=ctx['developer_priv'],
+        role_name=ctx.get('role_name'),
+        role_desc=ctx.get('role_desc'),
+        status=ctx.get('status'),
+        roles_count=0,
+        users_by_role=[],
+        content_template='home_panel/developer_cambios_realizados.html',
+        cambios=cambios
+    )
+
+
+def developer_cambios_deshacer_vista():
+    """Deshacer un cambio desde historial (solo Creador)."""
+    ctx = get_user_context(session)
+    if not ctx.get('is_creator'):
+        abort(403)
+    change_id = request.form.get('change_id')
+    ok, msg = undo_change(change_id or 0)
+    return redirect(url_for('developer_cambios_realizados') + (f'?message={msg}' if msg else ''))
 
 
 def api_create_ocupacion():
