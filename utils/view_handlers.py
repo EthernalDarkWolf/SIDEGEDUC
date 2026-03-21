@@ -12,6 +12,24 @@ import os
 from werkzeug.security import check_password_hash, generate_password_hash
 from .change_history import ensure_change_history_table, prune_old_changes, list_changes, undo_change, log_change
 
+def _ensure_estudiante_responsable_table():
+    """Asegura la tabla de vínculo estudiante-responsable en SQLite."""
+    try:
+        db.session.execute(text('''
+            CREATE TABLE IF NOT EXISTS estudiante_responsable (
+                id_estudiante_responsable INTEGER PRIMARY KEY AUTOINCREMENT,
+                id_estudiante INTEGER NOT NULL,
+                id_persona_responsable INTEGER NOT NULL,
+                numero_hijo INTEGER NOT NULL,
+                fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(id_persona_responsable, numero_hijo),
+                UNIQUE(id_estudiante)
+            )
+        '''))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
 
 def compute_role_counts(ctx):
     """Devuelve (roles_count, users_by_role) respetando la visibilidad del rol 'Creador'.
@@ -128,13 +146,23 @@ def consultas_personas_list():
     title = ''
     try:
         if role == 'estudiante':
+            _ensure_estudiante_responsable_table()
             rows = db.session.execute(text('''
-                SELECT p.*, e.fecha_inscripcion, na.nombre_nivel_academico
+                SELECT
+                    p.*,
+                    e.fecha_inscripcion,
+                    td.nombre_tipo_documento AS tipo_documento_nombre,
+                    er.numero_hijo AS numero_hijo_responsable,
+                    rp.primer_nombre AS responsable_primer_nombre,
+                    rp.primer_apellido AS responsable_primer_apellido,
+                    tr.nombre_tipo_persona AS responsable_tipo_persona,
+                    rp.numero_cedula AS responsable_numero_cedula
                 FROM estudiantes e
                 JOIN personas p ON e.id_persona = p.id_persona
-                LEFT JOIN niveles_academicos na ON na.id_nivel_academico = (
-                    SELECT id_nivel_academico FROM representantes r WHERE r.id_persona = p.id_persona LIMIT 1
-                )
+                LEFT JOIN tipo_documento td ON td.id_tipo_documento = p.id_tipo_documento
+                LEFT JOIN estudiante_responsable er ON er.id_estudiante = e.id_estudiante
+                LEFT JOIN personas rp ON rp.id_persona = er.id_persona_responsable
+                LEFT JOIN tipo_persona tr ON tr.id_tipo_persona = rp.id_tipo_persona
             ''')).fetchall()
             role_display = 'Estudiante'
             title = 'Listado de Estudiantes'
@@ -619,10 +647,23 @@ def reporte_pdf_personas():
     rows, role_display, title = [], '', 'Listado de Personas'
     try:
         if role == 'estudiante':
+            _ensure_estudiante_responsable_table()
             rows = db.session.execute(text('''
-                SELECT p.*, e.fecha_inscripcion, na.nombre_nivel_academico
-                FROM estudiantes e JOIN personas p ON e.id_persona = p.id_persona
-                LEFT JOIN niveles_academicos na ON na.id_nivel_academico = (SELECT id_nivel_academico FROM representantes r WHERE r.id_persona = p.id_persona LIMIT 1)
+                SELECT
+                    p.*,
+                    e.fecha_inscripcion,
+                    td.nombre_tipo_documento AS tipo_documento_nombre,
+                    er.numero_hijo AS numero_hijo_responsable,
+                    rp.primer_nombre AS responsable_primer_nombre,
+                    rp.primer_apellido AS responsable_primer_apellido,
+                    tr.nombre_tipo_persona AS responsable_tipo_persona,
+                    rp.numero_cedula AS responsable_numero_cedula
+                FROM estudiantes e
+                JOIN personas p ON e.id_persona = p.id_persona
+                LEFT JOIN tipo_documento td ON td.id_tipo_documento = p.id_tipo_documento
+                LEFT JOIN estudiante_responsable er ON er.id_estudiante = e.id_estudiante
+                LEFT JOIN personas rp ON rp.id_persona = er.id_persona_responsable
+                LEFT JOIN tipo_persona tr ON tr.id_tipo_persona = rp.id_tipo_persona
             ''')).fetchall()
             role_display, title = 'Estudiante', 'Listado de Estudiantes'
         elif role in ('profesor', 'profesores'):

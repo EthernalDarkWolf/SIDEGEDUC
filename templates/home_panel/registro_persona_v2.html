@@ -29,7 +29,7 @@
             <span class="stepper-icon"> <!-- maletín -->
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="18" height="12" rx="3" stroke="currentColor" stroke-width="1.5"/><path d="M8 7V5a4 4 0 0 1 8 0v2" stroke="currentColor" stroke-width="1.5"/></svg>
             </span>
-            <span class="stepper-label">Laboral</span>
+            <span class="stepper-label">Último paso</span>
         </div>
     </div>
 
@@ -75,9 +75,7 @@
             </div>
             <div class="group" data-show-only="1" style="display: none;">
                 <label>Datos Estudiantes</label>
-                <br />
-                <label for="fecha_inscripcion">Fecha inscripción</label>
-                <input type="date" class="no-validation" id="fecha_inscripcion" name="fecha_inscripcion">
+                <small style="display:block;color:#6c757d;">La fecha de inscripción se registra automáticamente con la fecha de hoy.</small>
             </div>
             <br />
             <div class="group">
@@ -230,12 +228,12 @@
                                 });
                                 </script>
             </div>
-            <div class="group">
+            <div class="group familia-general-fields">
                 <label for="num_hijos">Número de Hijos</label>
                 <input type="number" name="num_hijos" id="num_hijos" min="0" required>
                 <div class="error-text" id="error-num_hijos"></div>
             </div>
-            <div class="group" style="margin-bottom:0;">
+            <div class="group familia-general-fields" style="margin-bottom:0;">
                 <label style="margin-bottom:4px;display:block;">Relación familiar con el/los hijo(s)</label>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <select name="id_relacion_familiar" id="relacion_familiar" class="form-control" required style="flex:1;">
@@ -243,13 +241,36 @@
                     </select>
                 </div>
             </div>
+            <div class="group familia-estudiante-fields" style="display:none;">
+                <label for="id_adulto_responsable">Adulto responsable</label>
+                <select name="id_adulto_responsable" id="id_adulto_responsable" class="form-control">
+                    <option value="">Seleccione...</option>
+                    {% for r in responsables_disponibles %}
+                        <option
+                            value="{{ r.id_persona }}"
+                            data-total-hijos="{{ r.total_hijos }}"
+                            data-hijos-vinculados="{{ r.hijos_vinculados }}"
+                            data-cedula="{{ r.numero_cedula }}"
+                        >
+                            {{ r.primer_nombre }} {{ r.primer_apellido }} ({{ r.tipo_persona }})
+                        </option>
+                    {% endfor %}
+                </select>
+                <small style="display:block;color:#6c757d;">Solo aparecen adultos con cupo de hijos disponible.</small>
+            </div>
+            <div class="group familia-estudiante-fields" style="display:none;">
+                <label for="numero_hijo_responsable">Número de hijo de esa persona</label>
+                <select name="numero_hijo_responsable" id="numero_hijo_responsable" class="form-control">
+                    <option value="">Seleccione...</option>
+                </select>
+            </div>
             <div class="step-actions">
                 <button type="button" class="prev-btn">Anterior</button>
                 <button type="button" class="next-btn" id="next-3" disabled>Siguiente</button>
             </div>
         </div>
         <div class="step-content" data-step="4" style="display:none">
-            <div class="group">
+            <div class="group laboral-general-fields">
                 <label for="ocupacion">Ocupación</label>
                 <div style="display:flex;align-items:center;gap:8px;">
                     <select name="id_ocupacion" id="ocupacion" required style="flex:1;">
@@ -258,7 +279,7 @@
                     <button type="button" id="add-ocupacion" class="btn btn-sm btn-outline-secondary" title="Agregar nueva ocupación" onclick="window.openCatalogModal && window.openCatalogModal('ocupacion')">+</button>
                 </div>
             </div>
-            <div class="group">
+            <div class="group laboral-general-fields">
                 <label for="profesion">Nivel de Instrucción</label>
                 <div style="display:flex;align-items:center;gap:8px;">
                     <select name="id_profesion" id="profesion" required style="flex:1;">
@@ -271,6 +292,7 @@
                 <button type="button" class="prev-btn">Anterior</button>
                 <button type="submit" class="submit-btn" id="submit-btn" disabled>Completar Registro</button>
             </div>
+            <small id="estudiante-laboral-info" style="display:none;color:#6c757d;">Para estudiantes no se solicitan datos laborales.</small>
         </div>
     </form>
 <div id="modal-ocupacion" class="modal-overlay" style="display:none;position:fixed;inset:0;width:100vw;height:100vh;background:rgba(0,0,0,0.45);z-index:99999;align-items:center;justify-content:center;">
@@ -548,10 +570,13 @@ window.addEventListener('DOMContentLoaded', function() {
                 function actualizarTipoDocumento() {
                     const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
                     const tipoDocumentoInput = document.getElementById('tipo_documento');
+                    const tipoPersonaInput = document.getElementById('tipo_persona');
                     if (!fechaNacimientoInput || !tipoDocumentoInput) return;
-                    if (tipoDocumentoModificadoPorUsuario) return;
                     const edad = calcularEdad(fechaNacimientoInput.value);
-                    const nombreBuscado = (edad >= 9) ? 'Cédula Nacional' : 'Cédula Escolar';
+                    const esEstudiante = tipoPersonaInput && tipoPersonaInput.value === '1';
+                    const forzarEscolar = esEstudiante && edad < 18;
+                    if (tipoDocumentoModificadoPorUsuario && !forzarEscolar) return;
+                    const nombreBuscado = forzarEscolar ? 'Cédula Escolar' : ((edad >= 9) ? 'Cédula Nacional' : 'Cédula Escolar');
                     for (var i = 0; i < tipoDocumentoInput.options.length; i++) {
                         if (tipoDocumentoInput.options[i].text === nombreBuscado) {
                             tipoDocumentoInput.selectedIndex = i;
@@ -571,6 +596,9 @@ window.addEventListener('DOMContentLoaded', function() {
                     fechaNacimientoInput.addEventListener('change', actualizarTipoDocumento);
                     actualizarTipoDocumento();
                 }
+                if (document.getElementById('tipo_persona')) {
+                    document.getElementById('tipo_persona').addEventListener('change', actualizarTipoDocumento);
+                }
 
                 // Ya no hay familiares dinámicos, ni botones + o eliminar. El select de parentesco es único.
             });
@@ -589,6 +617,14 @@ window.addEventListener('DOMContentLoaded', function() {
             const submitBtn = document.getElementById('submit-btn');
             const generoInput = document.getElementById('genero');
             const genderCards = document.querySelectorAll('.gender-card');
+            const tipoDocumentoSelect = document.getElementById('tipo_documento');
+            const cedulaInput = document.getElementById('cedula');
+            const adultoResponsableSelect = document.getElementById('id_adulto_responsable');
+            const numeroHijoResponsableSelect = document.getElementById('numero_hijo_responsable');
+            const familiaGeneralFields = document.querySelectorAll('.familia-general-fields');
+            const familiaEstudianteFields = document.querySelectorAll('.familia-estudiante-fields');
+            const laboralGeneralFields = document.querySelectorAll('.laboral-general-fields');
+            const estudianteLaboralInfo = document.getElementById('estudiante-laboral-info');
 
             function updateStepper(){
                 stepperSteps.forEach((el, idx) => {
@@ -633,6 +669,10 @@ window.addEventListener('DOMContentLoaded', function() {
                     if (required) { setError(el, 'Este campo es obligatorio'); return false; }
                     return true;
                 }
+                if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/.test(v)) {
+                    setError(el, 'Solo se permiten letras y espacios');
+                    return false;
+                }
                 if (v.length < 3 || v.length > 11) {
                     setError(el, 'Debe tener entre 3 y 11 caracteres');
                     return false;
@@ -674,6 +714,13 @@ window.addEventListener('DOMContentLoaded', function() {
                         return false;
                     }
                 }
+                if (tipoPersonaSelect && tipoPersonaSelect.value === '1') {
+                    const edad = calcularEdad(form.fecha_nacimiento.value);
+                    if (edad < 3 || edad > 13) {
+                        setError(form.fecha_nacimiento, 'Error: Un estudiante debe tener entre 3 y 13 años');
+                        return false;
+                    }
+                }
                 return true;
             }
 
@@ -684,13 +731,21 @@ window.addEventListener('DOMContentLoaded', function() {
                     if (input) {
                         let minDate = '1900-01-01';
                         let maxDate = new Date().toISOString().split('T')[0];
-                        // Si es representante, limitar rango a 18-65 años
+                        // Si es representante o estudiante, limitar rango.
                         function getMinMax() {
                             const tipo = tipoPersonaSelect ? tipoPersonaSelect.value : '';
                             const today = new Date();
                             if (tipo === '3') {
                                 let max = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
                                 let min = new Date(today.getFullYear() - 65, today.getMonth(), today.getDate());
+                                return {
+                                    minDate: min.toISOString().split('T')[0],
+                                    maxDate: max.toISOString().split('T')[0]
+                                };
+                            }
+                            if (tipo === '1') {
+                                let max = new Date(today.getFullYear() - 3, today.getMonth(), today.getDate());
+                                let min = new Date(today.getFullYear() - 13, today.getMonth(), today.getDate());
                                 return {
                                     minDate: min.toISOString().split('T')[0],
                                     maxDate: max.toISOString().split('T')[0]
@@ -731,12 +786,6 @@ window.addEventListener('DOMContentLoaded', function() {
 
                 const tipo = tipoPersonaSelect ? tipoPersonaSelect.value : '';
 
-                if (tipo == '1') {
-                    let fechaIns = document.querySelector('#fecha_inscripcion').value
-
-                    if (isNaN((new Date(fechaIns).getTime()))) return false
-                }
-
                 if (tipo == '4') {
                     let cargoSelect = document.querySelector('#id_cargo').value
                     let otroCargo = document.querySelector('#otro_cargo').value
@@ -750,6 +799,100 @@ window.addEventListener('DOMContentLoaded', function() {
                 const genero = generoInput.value;
                 return tipo && genero;
             }
+            function getEdadActual() {
+                const fecha = form.fecha_nacimiento ? form.fecha_nacimiento.value : '';
+                if (!fecha) return null;
+                return calcularEdad(fecha);
+            }
+            function buscarCedulaEscolarOption() {
+                if (!tipoDocumentoSelect) return null;
+                for (let i = 0; i < tipoDocumentoSelect.options.length; i++) {
+                    const txt = (tipoDocumentoSelect.options[i].text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                    if (txt.includes('cedula escolar')) return tipoDocumentoSelect.options[i].value;
+                }
+                return null;
+            }
+            function rellenarNumeroHijoPorResponsable() {
+                if (!adultoResponsableSelect || !numeroHijoResponsableSelect) return;
+                const selected = adultoResponsableSelect.options[adultoResponsableSelect.selectedIndex];
+                const total = selected ? parseInt(selected.getAttribute('data-total-hijos') || '0', 10) : 0;
+                const vinculados = selected ? parseInt(selected.getAttribute('data-hijos-vinculados') || '0', 10) : 0;
+                const inicio = Number.isFinite(vinculados) ? (vinculados + 1) : 1;
+                const fin = Number.isFinite(total) ? total : 0;
+                numeroHijoResponsableSelect.innerHTML = '<option value="">Seleccione...</option>';
+                for (let i = inicio; i <= fin; i++) {
+                    const opt = document.createElement('option');
+                    opt.value = String(i);
+                    opt.textContent = String(i);
+                    numeroHijoResponsableSelect.appendChild(opt);
+                }
+            }
+            function actualizarCamposPorTipo() {
+                const tipo = tipoPersonaSelect ? tipoPersonaSelect.value : '';
+                const edad = getEdadActual();
+                const esEstudiante = tipo === '1';
+                const esEstudianteMenor = esEstudiante && Number.isFinite(edad) && edad < 18;
+
+                familiaGeneralFields.forEach(function(el) { el.style.display = esEstudiante ? 'none' : ''; });
+                familiaEstudianteFields.forEach(function(el) { el.style.display = esEstudiante ? '' : 'none'; });
+                laboralGeneralFields.forEach(function(el) { el.style.display = esEstudiante ? 'none' : ''; });
+                if (estudianteLaboralInfo) estudianteLaboralInfo.style.display = esEstudiante ? 'block' : 'none';
+
+                if (esEstudiante) {
+                    if (form.num_hijos) form.num_hijos.value = '0';
+                    if (form.relacion_familiar) form.relacion_familiar.value = '';
+                    if (form.num_hijos) form.num_hijos.required = false;
+                    if (form.id_relacion_familiar) form.id_relacion_familiar.required = false;
+                    if (form.id_ocupacion) form.id_ocupacion.required = false;
+                    if (form.id_profesion) form.id_profesion.required = false;
+                    if (form.id_adulto_responsable) form.id_adulto_responsable.required = true;
+                    if (form.numero_hijo_responsable) form.numero_hijo_responsable.required = true;
+                } else {
+                    if (adultoResponsableSelect) adultoResponsableSelect.value = '';
+                    if (numeroHijoResponsableSelect) numeroHijoResponsableSelect.innerHTML = '<option value="">Seleccione...</option>';
+                    if (form.num_hijos) form.num_hijos.required = true;
+                    if (form.id_relacion_familiar) form.id_relacion_familiar.required = true;
+                    if (form.id_ocupacion) form.id_ocupacion.required = true;
+                    if (form.id_profesion) form.id_profesion.required = true;
+                    if (form.id_adulto_responsable) form.id_adulto_responsable.required = false;
+                    if (form.numero_hijo_responsable) form.numero_hijo_responsable.required = false;
+                }
+
+                if (tipoDocumentoSelect) {
+                    if (esEstudianteMenor) {
+                        const idEscolar = buscarCedulaEscolarOption();
+                        if (idEscolar) tipoDocumentoSelect.value = idEscolar;
+                        tipoDocumentoSelect.disabled = true;
+                    } else {
+                        tipoDocumentoSelect.disabled = false;
+                    }
+                }
+                if (cedulaInput && esEstudianteMenor) {
+                    cedulaInput.readOnly = true;
+                    cedulaInput.placeholder = 'Se genera automáticamente';
+                } else if (cedulaInput) {
+                    cedulaInput.readOnly = false;
+                }
+                rellenarNumeroHijoPorResponsable();
+                generarCedulaEscolar();
+            }
+            function generarCedulaEscolar() {
+                const tipo = tipoPersonaSelect ? tipoPersonaSelect.value : '';
+                const edad = getEdadActual();
+                const esEstudianteMenor = tipo === '1' && Number.isFinite(edad) && edad < 18;
+                if (!esEstudianteMenor || !cedulaInput || !adultoResponsableSelect || !numeroHijoResponsableSelect || !form.fecha_nacimiento) return;
+
+                const fechaNac = form.fecha_nacimiento.value || '';
+                const numeroHijo = numeroHijoResponsableSelect.value || '';
+                const selected = adultoResponsableSelect.options[adultoResponsableSelect.selectedIndex];
+                const cedulaAdulto = selected ? (selected.getAttribute('data-cedula') || '') : '';
+
+                if (!fechaNac || !numeroHijo || !cedulaAdulto) return;
+                const fechaCompacta = fechaNac.replace(/-/g, '');
+                const digitosCedula = cedulaAdulto.replace(/\D/g, '');
+                const ultimoDigito = digitosCedula ? digitosCedula.slice(-1) : '0';
+                cedulaInput.value = `${fechaCompacta}${numeroHijo}${ultimoDigito}`;
+            }
             function validateStep2(){
                 // run validations on each field and return overall result
                 let valid = true;
@@ -762,11 +905,19 @@ window.addEventListener('DOMContentLoaded', function() {
                 return valid;
             }
             function validateStep3(){
+                const tipo = tipoPersonaSelect ? tipoPersonaSelect.value : '';
+                if (tipo === '1') {
+                    return form.numero_cedula.value.trim() &&
+                        form.id_adulto_responsable.value.trim() &&
+                        form.numero_hijo_responsable.value.trim();
+                }
                 return form.numero_cedula.value.trim() &&
                     form.num_hijos.value !== '' &&
                     form.id_relacion_familiar.value.trim();
             }
             function validateStep4(){
+                const tipo = tipoPersonaSelect ? tipoPersonaSelect.value : '';
+                if (tipo === '1') return true;
                 var occ = form.id_ocupacion || document.getElementById('ocupacion');
                 var prof = form.id_profesion || document.getElementById('profesion');
                 return (occ && occ.value && occ.value.trim()) && (prof && prof.value && prof.value.trim());
@@ -799,8 +950,20 @@ window.addEventListener('DOMContentLoaded', function() {
             // Validación bloqueante
             form.addEventListener('input', updateNextBtns);
             form.addEventListener('change', updateNextBtns);
+            if (tipoPersonaSelect) tipoPersonaSelect.addEventListener('change', actualizarCamposPorTipo);
+            if (form.fecha_nacimiento) form.fecha_nacimiento.addEventListener('change', actualizarCamposPorTipo);
+            if (adultoResponsableSelect) adultoResponsableSelect.addEventListener('change', function() {
+                rellenarNumeroHijoPorResponsable();
+                generarCedulaEscolar();
+                updateNextBtns();
+            });
+            if (numeroHijoResponsableSelect) numeroHijoResponsableSelect.addEventListener('change', function() {
+                generarCedulaEscolar();
+                updateNextBtns();
+            });
             // Inicial
             showStep(currentStep);
+            actualizarCamposPorTipo();
             updateNextBtns();
             updateStepper();
         })();

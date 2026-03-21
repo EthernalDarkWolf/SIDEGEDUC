@@ -64,6 +64,70 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
         return without_accents.strip().lower()
 
     if tipo == 'personas':
+        def _ensure_estudiante_responsable_table():
+            """Garantiza tabla de vínculo estudiante-responsable en SQLite."""
+            try:
+                db.session.execute(text('''
+                    CREATE TABLE IF NOT EXISTS estudiante_responsable (
+                        id_estudiante_responsable INTEGER PRIMARY KEY AUTOINCREMENT,
+                        id_estudiante INTEGER NOT NULL,
+                        id_persona_responsable INTEGER NOT NULL,
+                        numero_hijo INTEGER NOT NULL,
+                        fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(id_persona_responsable, numero_hijo),
+                        UNIQUE(id_estudiante),
+                        FOREIGN KEY(id_estudiante) REFERENCES estudiantes(id_estudiante),
+                        FOREIGN KEY(id_persona_responsable) REFERENCES personas(id_persona)
+                    )
+                '''))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+        def _adultos_responsables_disponibles():
+            """
+            Devuelve adultos (profesor/representante/empleado) con cupo de hijos disponible.
+            El cupo se calcula por num_hijos - hijos ya vinculados en estudiante_responsable.
+            """
+            _ensure_estudiante_responsable_table()
+            rows = db.session.execute(text('''
+                SELECT
+                    p.id_persona,
+                    p.primer_nombre,
+                    p.primer_apellido,
+                    p.numero_cedula,
+                    tp.nombre_tipo_persona,
+                    COALESCE(p.num_hijos, 0) AS total_hijos,
+                    (
+                        SELECT COUNT(*)
+                        FROM estudiante_responsable er
+                        WHERE er.id_persona_responsable = p.id_persona
+                    ) AS hijos_vinculados
+                FROM personas p
+                JOIN tipo_persona tp ON tp.id_tipo_persona = p.id_tipo_persona
+                WHERE p.id_tipo_persona IN (2, 3, 4)
+                  AND COALESCE(p.num_hijos, 0) > 0
+                ORDER BY p.primer_nombre, p.primer_apellido
+            ''')).mappings().all()
+
+            disponibles = []
+            for r in rows:
+                total_hijos = int(r.get('total_hijos') or 0)
+                hijos_vinculados = int(r.get('hijos_vinculados') or 0)
+                if total_hijos <= hijos_vinculados:
+                    continue
+                disponibles.append({
+                    'id_persona': int(r.get('id_persona')),
+                    'primer_nombre': (r.get('primer_nombre') or '').strip(),
+                    'primer_apellido': (r.get('primer_apellido') or '').strip(),
+                    'tipo_persona': (r.get('nombre_tipo_persona') or '').strip(),
+                    'numero_cedula': (r.get('numero_cedula') or '').strip() if r.get('numero_cedula') is not None else '',
+                    'total_hijos': total_hijos,
+                    'hijos_vinculados': hijos_vinculados,
+                    'hijos_disponibles': max(total_hijos - hijos_vinculados, 0),
+                })
+            return disponibles
+
         if request.method == 'POST':
             f = _get_request_data()
             try:
@@ -128,6 +192,8 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                 id_ocupacion = get_int_or_none('id_ocupacion')
                 id_profesion = get_int_or_none('id_profesion')
                 id_relacion = get_int_or_none('id_relacion_familiar')
+                id_adulto_responsable = get_int_or_none('id_adulto_responsable')
+                numero_hijo_responsable = get_int_or_none('numero_hijo_responsable')
 
                 # 5. Validaciones de Negocio
                 if not numero_cedula or not primer or not pap or not fecha_nac or not tipo_persona:
@@ -142,10 +208,77 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                     if birth_date:
                         today = date.today()
                         age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-                        if tipo_persona == 'estudiante' and age > 18:
-                            message = 'El estudiante no puede ser mayor de 18 años.'
+                        if tipo_persona == 'estudiante' and (age < 3 or age > 13):
+                            message = 'El estudiante debe tener entre 3 y 13 años.'
                         elif tipo_persona in ['profesor', 'empleado', 'representante'] and age < 18:
                             message = 'El personal o representante debe ser mayor de edad.'
+                        if not message and tipo_persona == 'estudiante':
+                            # Reglas especiales de estudiante:
+                            # - no requiere ocupación/profesión/relación familiar
+                            # - fecha de inscripción siempre es hoy
+                            # - si es menor, tipo documento fijo "Cédula Escolar"
+                            id_ocupacion = None
+                            id_profesion = None
+                            id_relacion = None
+                            num_hijos = 0
+
+                            if age < 18:
+                                # Buscar tipo documento "Cédula Escolar" por nombre
+                                tipo_docs = db.session.execute(
+                                    text('SELECT id_tipo_documento, nombre_tipo_documento FROM tipo_documento')
+                                ).fetchall()
+                                id_cedula_escolar = None
+                                for td in tipo_docs:
+                                    try:
+                                        tid = int(td[0]) if td[0] is not None else None
+                                        nom = _normalize(str(td[1] or ''))
+                                        if nom == _normalize('Cédula Escolar') or nom == _normalize('Cedula Escolar'):
+                                            id_cedula_escolar = tid
+                                            break
+                                    except (IndexError, TypeError, ValueError):
+                                        continue
+                                if id_cedula_escolar is not None:
+                                    id_tipo_doc = id_cedula_escolar
+
+                                if not id_adulto_responsable or not numero_hijo_responsable:
+                                    message = 'Para estudiante menor de edad debe seleccionar adulto responsable y número de hijo.'
+                                elif numero_hijo_responsable < 1:
+                                    message = 'El número de hijo debe ser mayor o igual a 1.'
+                                else:
+                                    adulto = db.session.execute(text('''
+                                        SELECT id_persona, numero_cedula, COALESCE(num_hijos, 0) AS num_hijos
+                                        FROM personas
+                                        WHERE id_persona = :id
+                                          AND id_tipo_persona IN (2, 3, 4)
+                                    '''), {'id': id_adulto_responsable}).mappings().first()
+
+                                    if not adulto:
+                                        message = 'El adulto responsable seleccionado no es válido.'
+                                    else:
+                                        total_hijos_adulto = int(adulto.get('num_hijos') or 0)
+                                        if total_hijos_adulto < 1:
+                                            message = 'El adulto responsable no tiene hijos registrados.'
+                                        elif numero_hijo_responsable > total_hijos_adulto:
+                                            message = f'El adulto responsable solo tiene {total_hijos_adulto} hijo(s) registrados.'
+                                        else:
+                                            _ensure_estudiante_responsable_table()
+                                            ocupacion_hijo = db.session.execute(text('''
+                                                SELECT 1
+                                                FROM estudiante_responsable
+                                                WHERE id_persona_responsable = :id_adulto
+                                                  AND numero_hijo = :num_hijo
+                                                LIMIT 1
+                                            '''), {
+                                                'id_adulto': id_adulto_responsable,
+                                                'num_hijo': numero_hijo_responsable
+                                            }).fetchone()
+                                            if ocupacion_hijo:
+                                                message = 'Ese número de hijo ya está vinculado a otro estudiante para el adulto responsable seleccionado.'
+                                            else:
+                                                fecha_base = birth_date.strftime('%Y%m%d')
+                                                ultimo_digito_adulto = ''.join(ch for ch in str(adulto.get('numero_cedula') or '') if ch.isdigit())
+                                                ultimo_digito_adulto = (ultimo_digito_adulto[-1] if ultimo_digito_adulto else '0')
+                                                numero_cedula = f'{fecha_base}{numero_hijo_responsable}{ultimo_digito_adulto}'
                     if not message:
                         # 6. Validación de duplicados (sin distinguir mayúsculas/acentos)
                         norm_name = _normalize(f"{primer} {pap}")
@@ -196,14 +329,25 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                                 raise ValueError('No se pudo obtener el ID de la persona registrada.')
 
                             if tipo_persona == 'estudiante':
-                                fecha_inscripcion = (f.get('fecha_inscripcion') or '').strip()
-                                if not fecha_inscripcion:
-                                    fecha_inscripcion = date.today().isoformat()
-                                try:
-                                    date.fromisoformat(fecha_inscripcion)
-                                except (ValueError, TypeError):
-                                    fecha_inscripcion = date.today().isoformat()
+                                fecha_inscripcion = date.today().isoformat()
                                 db.session.execute(text('INSERT INTO estudiantes (id_persona, fecha_inscripcion) VALUES (:id, :fecins)'), {'id': new_id, 'fecins': fecha_inscripcion})
+                                if id_adulto_responsable and numero_hijo_responsable:
+                                    _ensure_estudiante_responsable_table()
+                                    id_estudiante_row = db.session.execute(
+                                        text('SELECT id_estudiante FROM estudiantes WHERE id_persona = :id_persona LIMIT 1'),
+                                        {'id_persona': new_id}
+                                    ).fetchone()
+                                    id_estudiante = int(id_estudiante_row[0]) if id_estudiante_row and id_estudiante_row[0] else None
+                                    if id_estudiante:
+                                        db.session.execute(text('''
+                                            INSERT INTO estudiante_responsable (
+                                                id_estudiante, id_persona_responsable, numero_hijo
+                                            ) VALUES (:id_estudiante, :id_persona_responsable, :numero_hijo)
+                                        '''), {
+                                            'id_estudiante': id_estudiante,
+                                            'id_persona_responsable': id_adulto_responsable,
+                                            'numero_hijo': numero_hijo_responsable
+                                        })
 
                             elif tipo_persona == 'representante':
                                 db.session.execute(text('INSERT INTO representantes (id_persona, id_profesion, id_ocupacion) VALUES (:id, :id_profesion, :id_ocupacion)'), {
@@ -258,6 +402,7 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
         tipo_documentos = db.session.execute(text('SELECT id_tipo_documento, nombre_tipo_documento FROM tipo_documento')).fetchall()
         ocupaciones = db.session.execute(text('SELECT * FROM ocupaciones')).fetchall()
         cargos = db.session.execute(text('SELECT * FROM cargos')).fetchall()
+        responsables_disponibles = _adultos_responsables_disponibles()
 
         return render_template(
             'home_panel/struct.html',
@@ -273,6 +418,7 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
             message=message,
             ocupaciones=ocupaciones,
             cargos=cargos,
+            responsables_disponibles=responsables_disponibles,
         )
     # Plantel
     if tipo == 'plantel':

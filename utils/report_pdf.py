@@ -40,7 +40,14 @@ def _row_persona(r, role_display):
     a2 = _v(r, 'segundo_apellido', 4)
     nombre = f"{n1} {n2} {a1} {a2}".strip() or '-'
     tipo = _v(r, 'tipo_persona', -1) or _v(r, 'rol', -1) or role_display or '-'
-    return nombre[:50], tipo[:20]
+    tipo_doc = _v(r, 'tipo_documento_nombre')
+    responsable = f"{_v(r, 'responsable_primer_nombre')} {_v(r, 'responsable_primer_apellido')}".strip()
+    responsable_tipo = _v(r, 'responsable_tipo_persona')
+    if responsable:
+        responsable = f"{responsable} ({responsable_tipo or 'N/A'})"
+    else:
+        responsable = 'N/A'
+    return nombre[:50], tipo[:20], (tipo_doc or 'N/A')[:28], responsable[:50]
 
 
 def generar_pdf_personas(rows, role_display, title):
@@ -62,24 +69,48 @@ def generar_pdf_personas(rows, role_display, title):
     if not rows:
         pdf.cell(0, 8, "No hay registros para mostrar.", ln=True)
     else:
-        col_w = [12, 100, 55]
-        pdf.set_font('Helvetica', 'B', 9)
-        pdf.set_fill_color(6, 167, 125)
-        pdf.set_text_color(255, 255, 255)
-        pdf.cell(col_w[0], 8, '#', border=1, fill=True)
-        pdf.cell(col_w[1], 8, 'Nombre', border=1, fill=True)
-        pdf.cell(col_w[2], 8, 'Tipo', border=1, fill=True, ln=True)
-        pdf.set_font('Helvetica', '', 9)
-        pdf.set_text_color(0, 0, 0)
-        fill = False
-        for i, r in enumerate(rows, 1):
-            nombre, tipo = _row_persona(r, role_display)
-            if fill:
-                pdf.set_fill_color(248, 249, 250)
-            pdf.cell(col_w[0], 7, str(i), border=1, fill=fill)
-            pdf.cell(col_w[1], 7, nombre, border=1, fill=fill)
-            pdf.cell(col_w[2], 7, tipo, border=1, fill=fill, ln=True)
-            fill = not fill
+        if (role_display or '').lower() == 'estudiante':
+            col_w = [10, 64, 36, 34, 46]
+            pdf.set_font('Helvetica', 'B', 9)
+            pdf.set_fill_color(6, 167, 125)
+            pdf.set_text_color(255, 255, 255)
+            pdf.cell(col_w[0], 8, '#', border=1, fill=True)
+            pdf.cell(col_w[1], 8, 'Nombre', border=1, fill=True)
+            pdf.cell(col_w[2], 8, 'Tipo', border=1, fill=True)
+            pdf.cell(col_w[3], 8, 'Tipo de cedula', border=1, fill=True)
+            pdf.cell(col_w[4], 8, 'Adulto responsable', border=1, fill=True, ln=True)
+            pdf.set_font('Helvetica', '', 8)
+            pdf.set_text_color(0, 0, 0)
+            fill = False
+            for i, r in enumerate(rows, 1):
+                nombre, tipo, tipo_doc, responsable = _row_persona(r, role_display)
+                if fill:
+                    pdf.set_fill_color(248, 249, 250)
+                pdf.cell(col_w[0], 7, str(i), border=1, fill=fill)
+                pdf.cell(col_w[1], 7, nombre, border=1, fill=fill)
+                pdf.cell(col_w[2], 7, tipo, border=1, fill=fill)
+                pdf.cell(col_w[3], 7, tipo_doc, border=1, fill=fill)
+                pdf.cell(col_w[4], 7, responsable, border=1, fill=fill, ln=True)
+                fill = not fill
+        else:
+            col_w = [12, 100, 55]
+            pdf.set_font('Helvetica', 'B', 9)
+            pdf.set_fill_color(6, 167, 125)
+            pdf.set_text_color(255, 255, 255)
+            pdf.cell(col_w[0], 8, '#', border=1, fill=True)
+            pdf.cell(col_w[1], 8, 'Nombre', border=1, fill=True)
+            pdf.cell(col_w[2], 8, 'Tipo', border=1, fill=True, ln=True)
+            pdf.set_font('Helvetica', '', 9)
+            pdf.set_text_color(0, 0, 0)
+            fill = False
+            for i, r in enumerate(rows, 1):
+                nombre, tipo, _, _ = _row_persona(r, role_display)
+                if fill:
+                    pdf.set_fill_color(248, 249, 250)
+                pdf.cell(col_w[0], 7, str(i), border=1, fill=fill)
+                pdf.cell(col_w[1], 7, nombre, border=1, fill=fill)
+                pdf.cell(col_w[2], 7, tipo, border=1, fill=fill, ln=True)
+                fill = not fill
 
     buf = io.BytesIO()
     pdf.output(buf)
