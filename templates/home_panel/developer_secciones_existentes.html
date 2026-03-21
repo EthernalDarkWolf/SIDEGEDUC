@@ -3,16 +3,16 @@
     <a href="{{ url_for('consultas') }}" class="btn btn-outline-secondary">
       <i class="fas fa-arrow-left me-1"></i> Volver
     </a>
-    <a href="{{ url_for('reporte_pdf_secciones') }}" class="btn btn-danger btn-sm" title="Descargar reporte PDF">
+    <button type="button" id="btn-reporte-completo-top" class="btn btn-danger btn-sm" title="Descargar reporte completo por sección">
       <i class="fas fa-file-pdf me-1"></i> Reporte PDF
-    </a>
+    </button>
   </div>
 
   <h2 class="mb-4" style="font-weight:600; color:#071023;">Secciones</h2>
 
   <div class="row g-4">
     <!-- Card 1: Secciones Creadas -->
-    <div class="col-md-6 col-lg-4">
+    <div class="col-md-6 col-lg-3">
       <div class="card seccion-card h-100 shadow-sm border-0" id="card-secciones-creadas" style="cursor:pointer; transition: all 0.25s ease; border-radius:14px; overflow:hidden;">
         <div class="card-body text-center p-4">
           <div class="icon-box mb-3" style="width:64px; height:64px; margin:0 auto; border-radius:14px; background:linear-gradient(135deg, #06a77d, #0b5f47); display:flex; align-items:center; justify-content:center;">
@@ -28,7 +28,7 @@
     </div>
 
     <!-- Card 2: Ver Estudiantes por Sección -->
-    <div class="col-md-6 col-lg-4">
+    <div class="col-md-6 col-lg-3">
       <div class="card seccion-card h-100 shadow-sm border-0" id="card-estudiantes-seccion" style="cursor:pointer; transition: all 0.25s ease; border-radius:14px; overflow:hidden;">
         <div class="card-body text-center p-4">
           <div class="icon-box mb-3" style="width:64px; height:64px; margin:0 auto; border-radius:14px; background:linear-gradient(135deg, #3b82f6, #1d4ed8); display:flex; align-items:center; justify-content:center;">
@@ -36,6 +36,28 @@
           </div>
           <h5 class="card-title mb-2" style="font-weight:600; color:#071023;">Ver Estudiantes por Sección</h5>
           <p class="card-text text-muted small mb-0">Seleccione una sección para ver sus estudiantes</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <div class="card seccion-card h-100 shadow-sm border-0" id="card-materias-seccion" style="cursor:pointer; transition: all 0.25s ease; border-radius:14px; overflow:hidden;">
+        <div class="card-body text-center p-4">
+          <div class="icon-box mb-3" style="width:64px; height:64px; margin:0 auto; border-radius:14px; background:linear-gradient(135deg, #f59e0b, #d97706); display:flex; align-items:center; justify-content:center;">
+            <i class="fas fa-book fa-2x text-white"></i>
+          </div>
+          <h5 class="card-title mb-2" style="font-weight:600; color:#071023;">Ver Materias de la Sección</h5>
+          <p class="card-text text-muted small mb-0">Seleccione una sección para ver sus materias</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <div class="card seccion-card h-100 shadow-sm border-0" id="card-profesor-seccion" style="cursor:pointer; transition: all 0.25s ease; border-radius:14px; overflow:hidden;">
+        <div class="card-body text-center p-4">
+          <div class="icon-box mb-3" style="width:64px; height:64px; margin:0 auto; border-radius:14px; background:linear-gradient(135deg, #8b5cf6, #6d28d9); display:flex; align-items:center; justify-content:center;">
+            <i class="fas fa-chalkboard-teacher fa-2x text-white"></i>
+          </div>
+          <h5 class="card-title mb-2" style="font-weight:600; color:#071023;">Ver Profesor de la Sección</h5>
+          <p class="card-text text-muted small mb-0">Seleccione una sección para ver su profesor</p>
         </div>
       </div>
     </div>
@@ -141,6 +163,104 @@
   </div>
 </div>
 
+<!-- Modal: Ver Materias por Sección -->
+<div class="modal fade" id="modalMateriasSeccion" tabindex="-1" aria-labelledby="modalMateriasLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="border-radius:14px; overflow:hidden;">
+      <div class="modal-header" style="background:linear-gradient(90deg, #f59e0b, #d97706); color:white; border:none;">
+        <h5 class="modal-title" id="modalMateriasLabel"><i class="fas fa-book me-2"></i>Materias por Sección</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label fw-semibold">Seleccione una sección</label>
+        <select class="form-select form-select-lg" id="selectSeccionMaterias" style="border-radius:10px;">
+          <option value="">-- Elija una sección --</option>
+          {% for s in secciones %}
+          <option value="{{ s.id_seccion }}">{{ s.nombre_nivel or 'N/A' }} - Grado {{ s.numero_grado or 'N/A' }} - {{ s.letra or 'N/A' }}</option>
+          {% endfor %}
+        </select>
+        <button type="button" class="btn btn-warning btn-lg mt-3" id="btnVerMaterias" disabled style="border-radius:10px;">
+          <i class="fas fa-eye me-2"></i>Ver
+        </button>
+        <div id="materias-result" class="mt-4" style="display:none;">
+          <hr>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead style="background:#f8f9fa;">
+                <tr><th style="width:10%;">#</th><th>Materia</th></tr>
+              </thead>
+              <tbody id="tbody-materias"></tbody>
+            </table>
+          </div>
+          <div id="materias-vacio" class="text-center text-muted py-4" style="display:none;">
+            <i class="fas fa-book-dead fa-2x mb-2"></i>
+            <p class="mb-0">No hay materias asignadas a esta sección.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Ver Profesor por Sección -->
+<div class="modal fade" id="modalProfesorSeccion" tabindex="-1" aria-labelledby="modalProfesorLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="border-radius:14px; overflow:hidden;">
+      <div class="modal-header" style="background:linear-gradient(90deg, #8b5cf6, #6d28d9); color:white; border:none;">
+        <h5 class="modal-title" id="modalProfesorLabel"><i class="fas fa-chalkboard-teacher me-2"></i>Profesor por Sección</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label fw-semibold">Seleccione una sección</label>
+        <select class="form-select form-select-lg" id="selectSeccionProfesor" style="border-radius:10px;">
+          <option value="">-- Elija una sección --</option>
+          {% for s in secciones %}
+          <option value="{{ s.id_seccion }}">{{ s.nombre_nivel or 'N/A' }} - Grado {{ s.numero_grado or 'N/A' }} - {{ s.letra or 'N/A' }}</option>
+          {% endfor %}
+        </select>
+        <button type="button" class="btn btn-primary btn-lg mt-3" id="btnVerProfesor" disabled style="border-radius:10px;">
+          <i class="fas fa-eye me-2"></i>Ver
+        </button>
+        <div id="profesor-result" class="mt-4" style="display:none;">
+          <hr>
+          <div class="alert alert-light border" id="profesor-info" style="display:none;"></div>
+          <div id="profesor-vacio" class="text-center text-muted py-4" style="display:none;">
+            <i class="fas fa-user-slash fa-2x mb-2"></i>
+            <p class="mb-0">No hay profesor asignado a esta sección.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Seleccionar sección para reporte completo -->
+<div class="modal fade" id="modalReporteCompletoSeccion" tabindex="-1" aria-labelledby="modalReporteCompletoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:14px; overflow:hidden;">
+      <div class="modal-header" style="background:linear-gradient(90deg, #dc2626, #b91c1c); color:white; border:none;">
+        <h5 class="modal-title" id="modalReporteCompletoLabel"><i class="fas fa-file-pdf me-2"></i>Reporte completo por sección</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label fw-semibold">Seleccione la sección a reportar</label>
+        <select class="form-select form-select-lg" id="selectSeccionReporteCompleto" style="border-radius:10px;">
+          <option value="">-- Elija una sección --</option>
+          {% for s in secciones %}
+          <option value="{{ s.id_seccion }}">{{ s.nombre_nivel or 'N/A' }} - Grado {{ s.numero_grado or 'N/A' }} - {{ s.letra or 'N/A' }}</option>
+          {% endfor %}
+        </select>
+        <div class="d-grid mt-3">
+          <button type="button" class="btn btn-danger btn-lg" id="btnGenerarReporteCompleto" disabled style="border-radius:10px;">
+            <i class="fas fa-download me-2"></i>Generar reporte completo
+          </button>
+        </div>
+        <small class="text-muted d-block mt-2">Incluye profesor asignado, materias y listado de estudiantes de la sección.</small>
+      </div>
+    </div>
+  </div>
+</div>
+
 <style>
 .seccion-card:hover {
   transform: translateY(-6px);
@@ -149,11 +269,18 @@
 #card-estudiantes-seccion:hover {
   box-shadow: 0 12px 28px rgba(59,130,246,0.2) !important;
 }
+#card-materias-seccion:hover {
+  box-shadow: 0 12px 28px rgba(245,158,11,0.25) !important;
+}
+#card-profesor-seccion:hover {
+  box-shadow: 0 12px 28px rgba(139,92,246,0.25) !important;
+}
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   var reporteSeccionUrl = "{{ url_for('reporte_pdf_estudiantes_seccion') }}";
+  var reporteCompletoUrl = "{{ url_for('reporte_pdf_seccion_completo') }}";
   // Card 1: Toggle listado de secciones
   var cardSecciones = document.getElementById('card-secciones-creadas');
   var panelList = document.getElementById('panel-secciones-list');
@@ -170,6 +297,16 @@ document.addEventListener('DOMContentLoaded', function() {
   var modal = new bootstrap.Modal(document.getElementById('modalEstudiantesSeccion'));
   if (cardEstudiantes) cardEstudiantes.addEventListener('click', function() {
     modal.show();
+  });
+  var cardMaterias = document.getElementById('card-materias-seccion');
+  var modalMaterias = new bootstrap.Modal(document.getElementById('modalMateriasSeccion'));
+  if (cardMaterias) cardMaterias.addEventListener('click', function() {
+    modalMaterias.show();
+  });
+  var cardProfesor = document.getElementById('card-profesor-seccion');
+  var modalProfesor = new bootstrap.Modal(document.getElementById('modalProfesorSeccion'));
+  if (cardProfesor) cardProfesor.addEventListener('click', function() {
+    modalProfesor.show();
   });
 
   // Select sección: habilitar botón Ver
@@ -236,6 +373,100 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btnVerEstudiantes').disabled = true;
     document.getElementById('btnReporteSeccion').disabled = true;
     seccionActualParaReporte = '';
+  });
+
+  // Materias por sección
+  var selectMaterias = document.getElementById('selectSeccionMaterias');
+  var btnVerMaterias = document.getElementById('btnVerMaterias');
+  if (selectMaterias) selectMaterias.addEventListener('change', function() {
+    btnVerMaterias.disabled = !this.value;
+  });
+  if (btnVerMaterias) btnVerMaterias.addEventListener('click', function() {
+    var idSeccion = selectMaterias.value;
+    if (!idSeccion) return;
+    fetch('/api/secciones/' + idSeccion + '/materias')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var result = document.getElementById('materias-result');
+        var tbody = document.getElementById('tbody-materias');
+        var vacio = document.getElementById('materias-vacio');
+        result.style.display = 'block';
+        tbody.innerHTML = '';
+        vacio.style.display = 'none';
+        var materias = data.materias || [];
+        if (materias.length > 0) {
+          materias.forEach(function(m, i) {
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + (i + 1) + '</td><td>' + (m.nombre_materia || '-') + '</td>';
+            tbody.appendChild(tr);
+          });
+        } else {
+          vacio.style.display = 'block';
+        }
+      })
+      .catch(function() { alert('Error al cargar las materias.'); });
+  });
+  document.getElementById('modalMateriasSeccion').addEventListener('show.bs.modal', function() {
+    document.getElementById('materias-result').style.display = 'none';
+    document.getElementById('tbody-materias').innerHTML = '';
+    document.getElementById('selectSeccionMaterias').value = '';
+    document.getElementById('btnVerMaterias').disabled = true;
+  });
+
+  // Profesor por sección
+  var selectProfesor = document.getElementById('selectSeccionProfesor');
+  var btnVerProfesor = document.getElementById('btnVerProfesor');
+  if (selectProfesor) selectProfesor.addEventListener('change', function() {
+    btnVerProfesor.disabled = !this.value;
+  });
+  if (btnVerProfesor) btnVerProfesor.addEventListener('click', function() {
+    var idSeccion = selectProfesor.value;
+    if (!idSeccion) return;
+    fetch('/api/secciones/' + idSeccion + '/profesor')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var result = document.getElementById('profesor-result');
+        var info = document.getElementById('profesor-info');
+        var vacio = document.getElementById('profesor-vacio');
+        result.style.display = 'block';
+        info.style.display = 'none';
+        vacio.style.display = 'none';
+        if (data.profesor && data.profesor.nombre_completo) {
+          info.textContent = 'Profesor asignado: ' + data.profesor.nombre_completo;
+          info.style.display = 'block';
+        } else {
+          vacio.style.display = 'block';
+        }
+      })
+      .catch(function() { alert('Error al cargar el profesor.'); });
+  });
+  document.getElementById('modalProfesorSeccion').addEventListener('show.bs.modal', function() {
+    document.getElementById('profesor-result').style.display = 'none';
+    document.getElementById('profesor-info').style.display = 'none';
+    document.getElementById('profesor-vacio').style.display = 'none';
+    document.getElementById('selectSeccionProfesor').value = '';
+    document.getElementById('btnVerProfesor').disabled = true;
+  });
+
+  // Botón superior: reporte completo por sección
+  var btnTopReporte = document.getElementById('btn-reporte-completo-top');
+  var modalReporteCompleto = new bootstrap.Modal(document.getElementById('modalReporteCompletoSeccion'));
+  var selectReporteCompleto = document.getElementById('selectSeccionReporteCompleto');
+  var btnGenerarReporteCompleto = document.getElementById('btnGenerarReporteCompleto');
+
+  if (btnTopReporte) btnTopReporte.addEventListener('click', function() {
+    modalReporteCompleto.show();
+  });
+  if (selectReporteCompleto) selectReporteCompleto.addEventListener('change', function() {
+    btnGenerarReporteCompleto.disabled = !this.value;
+  });
+  if (btnGenerarReporteCompleto) btnGenerarReporteCompleto.addEventListener('click', function() {
+    if (!selectReporteCompleto.value) return;
+    window.open(reporteCompletoUrl + '?id_seccion=' + encodeURIComponent(selectReporteCompleto.value), '_blank');
+  });
+  document.getElementById('modalReporteCompletoSeccion').addEventListener('show.bs.modal', function() {
+    document.getElementById('selectSeccionReporteCompleto').value = '';
+    document.getElementById('btnGenerarReporteCompleto').disabled = true;
   });
 });
 </script>

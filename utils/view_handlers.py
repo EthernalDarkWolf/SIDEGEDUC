@@ -346,7 +346,25 @@ def editar_persona():
 
     # GET: cargar persona y selects
     try:
-        p = db.session.execute(text('SELECT id_persona, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, fecha_nacimiento, id_sexo, id_tipo_documento, numero_cedula, num_hijos, id_relacion_familiar, tipo_persona FROM personas WHERE id_persona = :pid'), {'pid': pid_int}).fetchone()
+        p = db.session.execute(text('''
+            SELECT
+                p.id_persona,
+                p.primer_nombre,
+                p.segundo_nombre,
+                p.primer_apellido,
+                p.segundo_apellido,
+                p.fecha_nacimiento,
+                p.id_sexo,
+                p.id_tipo_documento,
+                p.numero_cedula,
+                p.num_hijos,
+                p.id_relacion_familiar,
+                p.id_tipo_persona,
+                tp.nombre_tipo_persona
+            FROM personas p
+            LEFT JOIN tipo_persona tp ON tp.id_tipo_persona = p.id_tipo_persona
+            WHERE p.id_persona = :pid
+        '''), {'pid': pid_int}).fetchone()
     except Exception:
         p = None
 
@@ -376,7 +394,8 @@ def editar_persona():
         'numero_cedula': p[8],
         'num_hijos': p[9],
         'id_relacion_familiar': p[10],
-        'tipo_persona': p[11]
+        'id_tipo_persona': p[11],
+        'tipo_persona': (p[12] or '').lower() if len(p) > 12 and p[12] is not None else ''
     }
 
     # Datos adicionales según rol (para prellenar formulario de edición)
@@ -781,6 +800,89 @@ def reporte_pdf_estudiantes_seccion():
     filename = f"reporte_estudiantes_seccion_{id_seccion_int}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
     return send_file(io.BytesIO(pdf_bytes), mimetype='application/pdf', as_attachment=True, download_name=filename)
 
+def reporte_pdf_seccion_completo():
+    """Genera reporte PDF completo de una sección (profesor, materias y estudiantes)."""
+    if 'user_id' not in session:
+        return redirect(url_for('login.login_handler'))
+
+    id_seccion = request.args.get('id_seccion')
+    try:
+        id_seccion_int = int(id_seccion or 0)
+    except Exception:
+        id_seccion_int = 0
+    if not id_seccion_int:
+        return redirect(url_for('consultas_secciones'))
+
+    try:
+        sec = db.session.execute(text('''
+            SELECT s.id_seccion, n.nombre_nivel, g.numero_grado, l.letra
+            FROM secciones s
+            LEFT JOIN niveles n ON s.id_nivel = n.id_nivel
+            LEFT JOIN grados g ON s.id_grado = g.id_grado
+            LEFT JOIN letra_seccion l ON s.id_letra_seccion = l.id_letra_seccion
+            WHERE s.id_seccion = :id
+        '''), {'id': id_seccion_int}).fetchone()
+        if not sec:
+            return redirect(url_for('consultas_secciones'))
+        seccion_info = {
+            'id_seccion': sec[0],
+            'nombre_nivel': sec[1] or 'N/A',
+            'numero_grado': sec[2] or 'N/A',
+            'letra': sec[3] or 'N/A',
+        }
+    except Exception:
+        return redirect(url_for('consultas_secciones'))
+
+    try:
+        prof_row = db.session.execute(text('''
+            SELECT pr.id_profesor, p.primer_nombre, p.segundo_nombre, p.primer_apellido, p.segundo_apellido
+            FROM profesor_seccion ps
+            JOIN profesores pr ON pr.id_profesor = ps.id_profesor
+            JOIN personas p ON p.id_persona = pr.id_persona
+            WHERE ps.id_seccion = :id
+            LIMIT 1
+        '''), {'id': id_seccion_int}).fetchone()
+    except Exception:
+        prof_row = None
+    profesor = None
+    if prof_row:
+        profesor = {
+            'id_profesor': prof_row[0],
+            'nombre_completo': f"{prof_row[1] or ''} {prof_row[2] or ''} {prof_row[3] or ''} {prof_row[4] or ''}".strip()
+        }
+
+    try:
+        materias_rows = db.session.execute(text('''
+            SELECT m.id_materia, m.nombre_materia
+            FROM materias_seccion ms
+            JOIN materias m ON m.id_materia = ms.id_materia
+            WHERE ms.id_seccion = :id
+            ORDER BY m.nombre_materia
+        '''), {'id': id_seccion_int}).fetchall()
+    except Exception:
+        materias_rows = []
+    materias = [{'id_materia': r[0], 'nombre_materia': r[1]} for r in materias_rows]
+
+    try:
+        est_rows = db.session.execute(text('''
+            SELECT p.primer_nombre, p.segundo_nombre, p.primer_apellido, p.segundo_apellido
+            FROM estudiante_seccion es
+            JOIN estudiantes e ON es.id_estudiante = e.id_estudiante
+            JOIN personas p ON e.id_persona = p.id_persona
+            WHERE es.id_seccion = :id
+            ORDER BY p.primer_apellido, p.primer_nombre
+        '''), {'id': id_seccion_int}).fetchall()
+    except Exception:
+        est_rows = []
+    estudiantes = [{'nombre_completo': f"{r[0] or ''} {r[1] or ''} {r[2] or ''} {r[3] or ''}".strip()} for r in est_rows]
+
+    from .report_pdf import generar_pdf_seccion_completo
+    pdf_bytes, err = generar_pdf_seccion_completo(seccion_info, profesor, materias, estudiantes)
+    if err:
+        return err, 500
+    filename = f"reporte_seccion_completo_{id_seccion_int}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+    return send_file(io.BytesIO(pdf_bytes), mimetype='application/pdf', as_attachment=True, download_name=filename)
+
 
 def api_estudiantes_por_seccion(id_seccion):
     """API JSON: estudiantes asignados a una sección con info de la sección."""
@@ -834,6 +936,92 @@ def api_estudiantes_por_seccion(id_seccion):
             nombre = f"{r[1] or ''} {r[2] or ''} {r[3] or ''} {r[4] or ''}".strip()
             estudiantes.append({'id_persona': r[0], 'nombre_completo': nombre})
         return jsonify({'seccion': seccion_info, 'estudiantes': estudiantes})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def api_materias_por_seccion(id_seccion):
+    """API JSON: materias asignadas a una sección con info de la sección."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'No autorizado'}), 401
+    try:
+        sec = db.session.execute(text('''
+            SELECT s.id_seccion, n.nombre_nivel, g.numero_grado, l.letra
+            FROM secciones s
+            LEFT JOIN niveles n ON s.id_nivel = n.id_nivel
+            LEFT JOIN grados g ON s.id_grado = g.id_grado
+            LEFT JOIN letra_seccion l ON s.id_letra_seccion = l.id_letra_seccion
+            WHERE s.id_seccion = :id
+        '''), {'id': id_seccion}).fetchone()
+        if not sec:
+            return jsonify({'error': 'Sección no encontrada'}), 404
+
+        seccion_info = {
+            'id_seccion': sec[0],
+            'nombre_nivel': sec[1] or 'N/A',
+            'numero_grado': sec[2] or 'N/A',
+            'letra': sec[3] or 'N/A',
+        }
+
+        try:
+            rows = db.session.execute(text('''
+                SELECT m.id_materia, m.nombre_materia
+                FROM materias_seccion ms
+                JOIN materias m ON m.id_materia = ms.id_materia
+                WHERE ms.id_seccion = :id
+                ORDER BY m.nombre_materia
+            '''), {'id': id_seccion}).fetchall()
+        except Exception:
+            rows = []
+
+        materias = [{'id_materia': r[0], 'nombre_materia': r[1]} for r in rows]
+        return jsonify({'seccion': seccion_info, 'materias': materias})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def api_profesor_por_seccion(id_seccion):
+    """API JSON: profesor asignado a una sección con info de la sección."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'No autorizado'}), 401
+    try:
+        sec = db.session.execute(text('''
+            SELECT s.id_seccion, n.nombre_nivel, g.numero_grado, l.letra
+            FROM secciones s
+            LEFT JOIN niveles n ON s.id_nivel = n.id_nivel
+            LEFT JOIN grados g ON s.id_grado = g.id_grado
+            LEFT JOIN letra_seccion l ON s.id_letra_seccion = l.id_letra_seccion
+            WHERE s.id_seccion = :id
+        '''), {'id': id_seccion}).fetchone()
+        if not sec:
+            return jsonify({'error': 'Sección no encontrada'}), 404
+
+        seccion_info = {
+            'id_seccion': sec[0],
+            'nombre_nivel': sec[1] or 'N/A',
+            'numero_grado': sec[2] or 'N/A',
+            'letra': sec[3] or 'N/A',
+        }
+
+        try:
+            row = db.session.execute(text('''
+                SELECT pr.id_profesor, p.id_persona, p.primer_nombre, p.segundo_nombre, p.primer_apellido, p.segundo_apellido
+                FROM profesor_seccion ps
+                JOIN profesores pr ON pr.id_profesor = ps.id_profesor
+                JOIN personas p ON p.id_persona = pr.id_persona
+                WHERE ps.id_seccion = :id
+                LIMIT 1
+            '''), {'id': id_seccion}).fetchone()
+        except Exception:
+            row = None
+
+        profesor = None
+        if row:
+            nombre = f"{row[2] or ''} {row[3] or ''} {row[4] or ''} {row[5] or ''}".strip()
+            profesor = {
+                'id_profesor': row[0],
+                'id_persona': row[1],
+                'nombre_completo': nombre or 'N/A'
+            }
+        return jsonify({'seccion': seccion_info, 'profesor': profesor})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

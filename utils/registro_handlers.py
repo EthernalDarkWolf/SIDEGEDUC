@@ -280,6 +280,30 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                                                 ultimo_digito_adulto = (ultimo_digito_adulto[-1] if ultimo_digito_adulto else '0')
                                                 numero_cedula = f'{fecha_base}{numero_hijo_responsable}{ultimo_digito_adulto}'
                     if not message:
+                        # Reglas de hijos/relación por tipo de persona:
+                        # - Representante: obligatorio >= 1 hijo y relación familiar.
+                        # - Profesor/Empleado: permite 0 hijos; relación solo si tiene hijos.
+                        if tipo_persona == 'representante':
+                            if num_hijos < 1:
+                                message = 'El representante debe tener al menos 1 hijo.'
+                            elif not id_relacion:
+                                message = 'Debe seleccionar la relación familiar del representante con el/los hijo(s).'
+                        elif tipo_persona in ['profesor', 'empleado']:
+                            if num_hijos <= 0:
+                                num_hijos = 0
+                                id_relacion = None
+                            elif not id_relacion:
+                                message = 'Debe seleccionar la relación familiar cuando tenga hijos registrados.'
+                    if not message and tipo_persona in ['profesor', 'empleado'] and id_ocupacion:
+                        # Regla de negocio: profesor/empleado no puede tener ocupación jubilado/a.
+                        occ = db.session.execute(
+                            text('SELECT nombre FROM ocupaciones WHERE id = :id LIMIT 1'),
+                            {'id': id_ocupacion}
+                        ).fetchone()
+                        occ_nombre = _normalize(str(occ[0] if occ and occ[0] is not None else ''))
+                        if occ_nombre in [_normalize('Jubilado/a'), _normalize('Jubilado'), _normalize('Jubilada')]:
+                            message = 'La ocupación "Jubilado/a" no aplica para profesor o empleado.'
+                    if not message:
                         # 6. Validación de duplicados (sin distinguir mayúsculas/acentos)
                         norm_name = _normalize(f"{primer} {pap}")
                         existing_cedula = db.session.execute(

@@ -258,3 +258,92 @@ def generar_pdf_estudiantes_seccion(seccion_info, estudiantes):
     pdf.output(buf)
     buf.seek(0)
     return buf.getvalue(), None
+
+
+def generar_pdf_seccion_completo(seccion_info, profesor, materias, estudiantes):
+    """Genera PDF completo de una sección: profesor, materias y estudiantes."""
+    if not FPDF_AVAILABLE:
+        return None, "Modulo fpdf2 no instalado. Ejecute: pip install fpdf2"
+
+    pdf = ReportPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.alias_nb_pages()
+    pdf.add_page()
+
+    pdf.set_font('Helvetica', 'B', 14)
+    pdf.cell(0, 10, "Reporte Completo de Seccion", ln=True, align='C')
+    pdf.set_font('Helvetica', '', 9)
+    pdf.cell(0, 6, f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align='C')
+    pdf.ln(4)
+
+    sec_line = f"Seccion: {seccion_info.get('nombre_nivel', 'N/A')} - Grado {seccion_info.get('numero_grado', 'N/A')} - {seccion_info.get('letra', 'N/A')} (ID: {seccion_info.get('id_seccion', 'N/A')})"
+    pdf.set_font('Helvetica', 'B', 10)
+    pdf.set_text_color(0, 0, 0)
+    pdf.multi_cell(0, 7, sec_line)
+    pdf.ln(2)
+
+    # Profesor
+    pdf.set_font('Helvetica', 'B', 11)
+    pdf.set_text_color(29, 78, 216)
+    pdf.cell(0, 8, "Profesor asignado", ln=True)
+    pdf.set_font('Helvetica', '', 10)
+    pdf.set_text_color(0, 0, 0)
+    if profesor and profesor.get('nombre_completo'):
+        pdf.cell(0, 7, profesor.get('nombre_completo'), ln=True)
+    else:
+        pdf.cell(0, 7, "No hay profesor asignado.", ln=True)
+    pdf.ln(2)
+
+    # Materias
+    pdf.set_font('Helvetica', 'B', 11)
+    pdf.set_text_color(217, 119, 6)
+    pdf.cell(0, 8, "Materias asignadas", ln=True)
+    pdf.set_text_color(0, 0, 0)
+    if not materias:
+        pdf.set_font('Helvetica', '', 10)
+        pdf.cell(0, 7, "No hay materias asignadas.", ln=True)
+    else:
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_fill_color(245, 158, 11)
+        pdf.set_text_color(255, 255, 255)
+        pdf.cell(12, 8, '#', border=1, fill=True)
+        pdf.cell(178, 8, 'Materia', border=1, fill=True, ln=True)
+        pdf.set_font('Helvetica', '', 9)
+        pdf.set_text_color(0, 0, 0)
+        fill = False
+        for i, m in enumerate(materias, 1):
+            if fill:
+                pdf.set_fill_color(248, 249, 250)
+            pdf.cell(12, 7, str(i), border=1, fill=fill)
+            pdf.cell(178, 7, str(m.get('nombre_materia') or '-')[:90], border=1, fill=fill, ln=True)
+            fill = not fill
+    pdf.ln(3)
+
+    # Estudiantes
+    pdf.set_font('Helvetica', 'B', 11)
+    pdf.set_text_color(6, 167, 125)
+    pdf.cell(0, 8, "Estudiantes asignados", ln=True)
+    pdf.set_text_color(0, 0, 0)
+    if not estudiantes:
+        pdf.set_font('Helvetica', '', 10)
+        pdf.cell(0, 7, "No hay estudiantes asignados.", ln=True)
+    else:
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_fill_color(6, 167, 125)
+        pdf.set_text_color(255, 255, 255)
+        pdf.cell(12, 8, '#', border=1, fill=True)
+        pdf.cell(178, 8, 'Nombre del Estudiante', border=1, fill=True, ln=True)
+        pdf.set_font('Helvetica', '', 9)
+        pdf.set_text_color(0, 0, 0)
+        fill = False
+        for i, est in enumerate(estudiantes, 1):
+            if fill:
+                pdf.set_fill_color(248, 249, 250)
+            pdf.cell(12, 7, str(i), border=1, fill=fill)
+            pdf.cell(178, 7, str(est.get('nombre_completo') or '-')[:90], border=1, fill=fill, ln=True)
+            fill = not fill
+
+    buf = io.BytesIO()
+    pdf.output(buf)
+    buf.seek(0)
+    return buf.getvalue(), None

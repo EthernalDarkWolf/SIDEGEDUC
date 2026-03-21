@@ -47,31 +47,31 @@
                 <label for="tipo_persona">Tipo de Persona</label>
                 <select name="id_tipo_persona" id="tipo_persona" required>
                 <option value="">Seleccione</option>
-                <option value="1">Estudiante</option>
-                <option value="2">Profesor</option>
-                <option value="3">Representante</option>
-                <option value="4">Empleado</option></select>
+                <option value="1" {% if person and person.id_tipo_persona == 1 %}selected{% endif %}>Estudiante</option>
+                <option value="2" {% if person and person.id_tipo_persona == 2 %}selected{% endif %}>Profesor</option>
+                <option value="3" {% if person and person.id_tipo_persona == 3 %}selected{% endif %}>Representante</option>
+                <option value="4" {% if person and person.id_tipo_persona == 4 %}selected{% endif %}>Empleado</option></select>
             </div>
             <div class="group" data-show-only="4" style="display: none;">
                 <br />
                 <label>Datos empleado</label>
                 <br />
                 <label for="salario">Salario</label>
-                <input type="number" value="0" class="no-validation" min="0" id="salario" name="salario" maxlength="11" step="0.01">
+                <input type="number" value="{{ person.salario if person and person.salario is not none else 0 }}" class="no-validation" min="0" id="salario" name="salario" maxlength="11" step="0.01">
                 <br />
                 <label for="fecha_contratacion">Fecha contratacion</label>
-                <input type="date" class="no-validation" min="0" id="fecha_contratacion" name="fecha_contratacion">
+                <input type="date" class="no-validation" min="0" id="fecha_contratacion" name="fecha_contratacion" value="{{ person.fecha_contratacion if person and person.fecha_contratacion else '' }}">
                 <br />
                 <label for="cargo" >Cargo</label>
                 <select name="id_cargo" id="id_cargo">
                     {% for c in cargos %}
-                        <option value="{{ c.id_cargo }}">{{ c.nombre_cargo }}</option>
+                        <option value="{{ c.id_cargo }}" {% if person and person.id_cargo and person.id_cargo == c.id_cargo %}selected{% endif %}>{{ c.nombre_cargo }}</option>
                     {% endfor %}
                     <option value="otro">Otro</option>
                 </select>
                 <br class="show-otro-cargo" />
                 <label for="otro_cargo" class="show-otro-cargo">Cargo</label>
-                <input type="text" class="no-validation show-otro-cargo" id="otro_cargo" name="otro_cargo">
+                <input type="text" class="no-validation show-otro-cargo" id="otro_cargo" name="otro_cargo" value="{{ person.otro_cargo if person and person.otro_cargo else '' }}">
             </div>
             <div class="group" data-show-only="1" style="display: none;">
                 <label>Datos Estudiantes</label>
@@ -104,7 +104,7 @@
                         Femenino
                     </button>
                 </div>
-                <input type="hidden" name="id_sexo" id="genero" required>
+                <input type="hidden" name="id_sexo" id="genero" value="{{ person.id_sexo if person and person.id_sexo else '' }}" required>
             </div>
             <div class="step-actions">
                 <button type="button" class="next-btn" id="next-1" disabled>Siguiente</button>
@@ -115,28 +115,28 @@
             <div class="group" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
                 <div>
                     <label for="primer_nombre">Primer nombre</label>
-                    <input type="text" name="primer_nombre" id="primer_nombre" required data-rule="letters" maxlength="11">
+                    <input type="text" name="primer_nombre" id="primer_nombre" value="{{ person.primer_nombre if person and person.primer_nombre else '' }}" required data-rule="letters" maxlength="11">
                     <div class="error-text" id="error-primer_nombre"></div>
                 </div>
                 <div>
                     <label for="segundo_nombre">Segundo nombre</label>
-                    <input type="text" name="segundo_nombre" id="segundo_nombre" data-rule="letters" maxlength="11">
+                    <input type="text" name="segundo_nombre" id="segundo_nombre" value="{{ person.segundo_nombre if person and person.segundo_nombre else '' }}" data-rule="letters" maxlength="11">
                     <div class="error-text" id="error-segundo_nombre"></div>
                 </div>
                 <div>
                     <label for="primer_apellido">Primer apellido</label>
-                    <input type="text" name="primer_apellido" id="primer_apellido" required data-rule="letters" maxlength="11">
+                    <input type="text" name="primer_apellido" id="primer_apellido" value="{{ person.primer_apellido if person and person.primer_apellido else '' }}" required data-rule="letters" maxlength="11">
                     <div class="error-text" id="error-primer_apellido"></div>
                 </div>
                 <div>
                     <label for="segundo_apellido">Segundo apellido</label>
-                    <input type="text" name="segundo_apellido" id="segundo_apellido" data-rule="letters" maxlength="11">
+                    <input type="text" name="segundo_apellido" id="segundo_apellido" value="{{ person.segundo_apellido if person and person.segundo_apellido else '' }}" data-rule="letters" maxlength="11">
                     <div class="error-text" id="error-segundo_apellido"></div>
                 </div>
             </div>
             <div class="group">
                 <label for="fecha_nacimiento">Fecha de Nacimiento</label>
-                <input type="date" name="fecha_nacimiento" id="fecha_nacimiento" required style="cursor:pointer;background:#fff;" onfocus="this.showPicker && this.showPicker()" onclick="this.showPicker && this.showPicker()">
+                <input type="date" name="fecha_nacimiento" id="fecha_nacimiento" value="{{ person.fecha_nacimiento if person and person.fecha_nacimiento else '' }}" required style="cursor:pointer;background:#fff;" onfocus="this.showPicker && this.showPicker()" onclick="this.showPicker && this.showPicker()">
                 <div class="error-text" id="error-fecha_nacimiento"></div>
             </div>
             <div class="step-actions">
@@ -149,13 +149,13 @@
                 <label for="tipo_documento">Tipo de Documento</label>
                 <select type="text" id="tipo_documento" name="id_tipo_documento" class="form-control" required>
                     {% for td in tipo_documentos %}
-                        <option value="{{ td.id_tipo_documento }}">{{ td.nombre_tipo_documento }}</option>
+                        <option value="{{ td.id_tipo_documento }}" {% if person and person.id_tipo_documento and person.id_tipo_documento == td.id_tipo_documento %}selected{% endif %}>{{ td.nombre_tipo_documento }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="group">
                                 <label for="cedula" id="label-cedula">Número de Cédula</label>
-                                <input type="text" name="numero_cedula" id="cedula" required data-rule="numbers" maxlength="10" placeholder="Cédula del representante o persona principal">
+                                <input type="text" name="numero_cedula" id="cedula" value="{{ person.numero_cedula if person and person.numero_cedula else '' }}" required data-rule="numbers" maxlength="10" placeholder="Cédula del representante o persona principal">
                                 {% if edit %}
                                     <input type="hidden" id="current_person_id" value="{{ person.id_persona }}">
                                 {% endif %}
@@ -230,13 +230,13 @@
             </div>
             <div class="group familia-general-fields">
                 <label for="num_hijos">Número de Hijos</label>
-                <input type="number" name="num_hijos" id="num_hijos" min="0" required>
+                <input type="number" name="num_hijos" id="num_hijos" value="{{ person.num_hijos if person and person.num_hijos is not none else '' }}" min="0" required>
                 <div class="error-text" id="error-num_hijos"></div>
             </div>
             <div class="group familia-general-fields" style="margin-bottom:0;">
                 <label style="margin-bottom:4px;display:block;">Relación familiar con el/los hijo(s)</label>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <select name="id_relacion_familiar" id="relacion_familiar" class="form-control" required style="flex:1;">
+                    <select name="id_relacion_familiar" id="relacion_familiar" class="form-control" required style="flex:1;" data-selected="{{ person.id_relacion_familiar if person and person.id_relacion_familiar else '' }}">
                         <option value="">Seleccione...</option>
                     </select>
                 </div>
@@ -273,19 +273,19 @@
             <div class="group laboral-general-fields">
                 <label for="ocupacion">Ocupación</label>
                 <div style="display:flex;align-items:center;gap:8px;">
-                    <select name="id_ocupacion" id="ocupacion" required style="flex:1;">
+                    <select name="id_ocupacion" id="ocupacion" data-selected="{{ person.id_ocupacion if person and person.id_ocupacion else '' }}" required style="flex:1;">
                         <option value="">Seleccione...</option>
                     </select>
-                    <button type="button" id="add-ocupacion" class="btn btn-sm btn-outline-secondary" title="Agregar nueva ocupación" onclick="window.openCatalogModal && window.openCatalogModal('ocupacion')">+</button>
+                    <button type="button" id="add-ocupacion" class="btn btn-sm btn-outline-secondary" title="Agregar nueva ocupación" onclick="return window.openCatalogModalSafe('ocupacion')">+</button>
                 </div>
             </div>
             <div class="group laboral-general-fields">
                 <label for="profesion">Nivel de Instrucción</label>
                 <div style="display:flex;align-items:center;gap:8px;">
-                    <select name="id_profesion" id="profesion" required style="flex:1;">
+                    <select name="id_profesion" id="profesion" data-selected="{{ person.id_profesion if person and person.id_profesion else '' }}" required style="flex:1;">
                         <option value="">Seleccione...</option>
                     </select>
-                    <button type="button" id="add-profesion" class="btn btn-sm btn-outline-secondary" title="Agregar nuevo nivel de instrucción" onclick="window.openCatalogModal && window.openCatalogModal('profesion')">+</button>
+                    <button type="button" id="add-profesion" class="btn btn-sm btn-outline-secondary" title="Agregar nuevo nivel de instrucción" onclick="return window.openCatalogModalSafe('profesion')">+</button>
                 </div>
             </div>
             <div class="step-actions">
@@ -317,6 +317,25 @@
         </div>
     </div>
 </div>
+
+<script>
+// Fallback robusto: abre modal aunque falle otro JS.
+window.openCatalogModalSafe = function(tipo) {
+    var modalId = (tipo === 'ocupacion') ? 'modal-ocupacion' : (tipo === 'profesion' ? 'modal-profesion' : '');
+    if (!modalId) return false;
+    var modal = document.getElementById(modalId);
+    if (!modal) return false;
+    modal.style.display = 'flex';
+    var inputId = (tipo === 'ocupacion') ? 'nuevo_ocupacion' : 'nuevo_profesion';
+    var errId = (tipo === 'ocupacion') ? 'error-nuevo-ocupacion' : 'error-nuevo-profesion';
+    var input = document.getElementById(inputId);
+    var err = document.getElementById(errId);
+    if (input) input.value = '';
+    if (err) err.textContent = '';
+    setTimeout(function() { if (input) input.focus(); }, 10);
+    return false;
+};
+</script>
 
 <script>
 // Forzar recarga de modales y asegurar que los elementos existen antes de asignar eventos
@@ -377,25 +396,45 @@ window.addEventListener('DOMContentLoaded', function() {
             relacionesBase = Array.isArray(data) ? data : [];
             if (select) {
                 filtrarRelacionesPorGenero();
+                const selectedValue = String(select.getAttribute('data-selected') || '');
+                if (selectedValue && [...select.options].some(opt => String(opt.value) === selectedValue)) {
+                    select.value = selectedValue;
+                }
             }
         });
 
     // Ocupaciones
+    function esOcupacionNoPermitidaParaTipo(nombre, tipoPersonaId) {
+        const normalizado = normalizarTexto(nombre);
+        const esJubilado = normalizado === 'jubilado/a' || normalizado === 'jubilado' || normalizado === 'jubilada';
+        return (tipoPersonaId === '2' || tipoPersonaId === '4') && esJubilado; // profesor o empleado
+    }
     function cargarOcupaciones() {
         fetch('/api/ocupaciones')
             .then(res => res.json())
             .then(data => {
                 const select = document.getElementById('ocupacion');
+                const tipoPersona = document.getElementById('tipo_persona');
+                const tipoPersonaId = tipoPersona ? String(tipoPersona.value || '') : '';
                 select.innerHTML = '<option value="">Seleccione...</option>';
                 data.forEach(item => {
+                    if (esOcupacionNoPermitidaParaTipo(item.nombre, tipoPersonaId)) return;
                     const option = document.createElement('option');
                     option.value = item.id;
                     option.textContent = item.nombre;
                     select.appendChild(option);
                 });
+                const selectedValue = String(select.getAttribute('data-selected') || '');
+                if (selectedValue && [...select.options].some(opt => String(opt.value) === selectedValue)) {
+                    select.value = selectedValue;
+                }
             });
     }
     cargarOcupaciones();
+    var tipoPersonaParaOcupaciones = document.getElementById('tipo_persona');
+    if (tipoPersonaParaOcupaciones) {
+        tipoPersonaParaOcupaciones.addEventListener('change', cargarOcupaciones);
+    }
 
     // Profesiones
     function cargarProfesiones() {
@@ -410,6 +449,10 @@ window.addEventListener('DOMContentLoaded', function() {
                     option.textContent = item.nombre;
                     select.appendChild(option);
                 });
+                const selectedValue = String(select.getAttribute('data-selected') || '');
+                if (selectedValue && [...select.options].some(opt => String(opt.value) === selectedValue)) {
+                    select.value = selectedValue;
+                }
             });
     }
     cargarProfesiones();
@@ -492,6 +535,11 @@ window.addEventListener('DOMContentLoaded', function() {
     window.openCatalogModal = function(tipo) {
         if (tipo === 'ocupacion') openModalOcupacion();
         if (tipo === 'profesion') openModalProfesion();
+    };
+    // Unificar con fallback inline para mayor compatibilidad.
+    window.openCatalogModalSafe = function(tipo) {
+        window.openCatalogModal(tipo);
+        return false;
     };
 
     // Cerrar al hacer click fuera del modal y con ESC.
@@ -875,6 +923,30 @@ window.addEventListener('DOMContentLoaded', function() {
                 }
                 rellenarNumeroHijoPorResponsable();
                 generarCedulaEscolar();
+                actualizarReglaRelacionPorHijos();
+            }
+            function actualizarReglaRelacionPorHijos() {
+                const tipo = tipoPersonaSelect ? tipoPersonaSelect.value : '';
+                const contRelacion = document.getElementById('relacion_familiar') ? document.getElementById('relacion_familiar').closest('.group') : null;
+                const hijosVal = parseInt((form.num_hijos && form.num_hijos.value) ? form.num_hijos.value : '0', 10);
+                const tieneHijos = Number.isFinite(hijosVal) && hijosVal > 0;
+
+                if (tipo === '3') { // Representante
+                    if (form.num_hijos) form.num_hijos.min = '1';
+                    if (form.id_relacion_familiar) form.id_relacion_familiar.required = true;
+                    if (contRelacion) contRelacion.style.display = '';
+                    return;
+                }
+                if (tipo === '2' || tipo === '4') { // Profesor/Empleado
+                    if (form.num_hijos) form.num_hijos.min = '0';
+                    if (form.id_relacion_familiar) form.id_relacion_familiar.required = tieneHijos;
+                    if (contRelacion) contRelacion.style.display = tieneHijos ? '' : 'none';
+                    if (!tieneHijos && form.id_relacion_familiar) form.id_relacion_familiar.value = '';
+                    return;
+                }
+                // Otros (incluye estudiante, ya tratado por flujo especial)
+                if (form.id_relacion_familiar) form.id_relacion_familiar.required = false;
+                if (contRelacion) contRelacion.style.display = '';
             }
             function generarCedulaEscolar() {
                 const tipo = tipoPersonaSelect ? tipoPersonaSelect.value : '';
@@ -911,6 +983,19 @@ window.addEventListener('DOMContentLoaded', function() {
                         form.id_adulto_responsable.value.trim() &&
                         form.numero_hijo_responsable.value.trim();
                 }
+                if (tipo === '3') {
+                    const hijos = parseInt(form.num_hijos.value || '0', 10);
+                    return form.numero_cedula.value.trim() &&
+                        Number.isFinite(hijos) && hijos >= 1 &&
+                        form.id_relacion_familiar.value.trim();
+                }
+                if (tipo === '2' || tipo === '4') {
+                    const hijos = parseInt(form.num_hijos.value || '0', 10);
+                    if (!form.numero_cedula.value.trim()) return false;
+                    if (!Number.isFinite(hijos) || hijos < 0) return false;
+                    if (hijos === 0) return true;
+                    return form.id_relacion_familiar.value.trim();
+                }
                 return form.numero_cedula.value.trim() &&
                     form.num_hijos.value !== '' &&
                     form.id_relacion_familiar.value.trim();
@@ -940,6 +1025,17 @@ window.addEventListener('DOMContentLoaded', function() {
                     updateNextBtns();
                 });
             });
+            // Preseleccionar género cuando se abre en modo edición.
+            if (generoInput && generoInput.value) {
+                const expected = String(generoInput.value) === '1' ? 'M' : (String(generoInput.value) === '2' ? 'F' : '');
+                if (expected) {
+                    genderCards.forEach(btn => {
+                        if (btn.getAttribute('data-value') === expected) {
+                            btn.classList.add('selected');
+                        }
+                    });
+                }
+            }
             // Navegación
             nextBtns[0].addEventListener('click', function(){ if(validateStep1()){ currentStep=2; showStep(currentStep); } });
             nextBtns[1].addEventListener('click', function(){ if(validateStep2()){ currentStep=3; showStep(currentStep); } });
@@ -952,6 +1048,10 @@ window.addEventListener('DOMContentLoaded', function() {
             form.addEventListener('change', updateNextBtns);
             if (tipoPersonaSelect) tipoPersonaSelect.addEventListener('change', actualizarCamposPorTipo);
             if (form.fecha_nacimiento) form.fecha_nacimiento.addEventListener('change', actualizarCamposPorTipo);
+            if (form.num_hijos) form.num_hijos.addEventListener('input', function() {
+                actualizarReglaRelacionPorHijos();
+                updateNextBtns();
+            });
             if (adultoResponsableSelect) adultoResponsableSelect.addEventListener('change', function() {
                 rellenarNumeroHijoPorResponsable();
                 generarCedulaEscolar();

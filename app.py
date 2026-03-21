@@ -531,10 +531,22 @@ def reporte_pdf_secciones():
 def reporte_pdf_estudiantes_seccion():
     return manejar_la_vista_de.reporte_pdf_estudiantes_seccion()
 
+@app.route('/consultas/reporte/pdf/seccion-completo')
+def reporte_pdf_seccion_completo():
+    return manejar_la_vista_de.reporte_pdf_seccion_completo()
+
 
 @app.route('/api/secciones/<int:id_seccion>/estudiantes')
 def api_estudiantes_por_seccion(id_seccion):
     return manejar_la_vista_de.api_estudiantes_por_seccion(id_seccion)
+
+@app.route('/api/secciones/<int:id_seccion>/materias')
+def api_materias_por_seccion(id_seccion):
+    return manejar_la_vista_de.api_materias_por_seccion(id_seccion)
+
+@app.route('/api/secciones/<int:id_seccion>/profesor')
+def api_profesor_por_seccion(id_seccion):
+    return manejar_la_vista_de.api_profesor_por_seccion(id_seccion)
 
 
 @app.route('/consultas/personas/list/editar')
