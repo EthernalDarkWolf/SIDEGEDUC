@@ -104,7 +104,8 @@ def tipo_de_registro_persona(tipo, ctx, roles_count, users_by_role):
                         WHERE er.id_persona_responsable = p.id_persona
                     ) AS hijos_vinculados
                 FROM personas p
-                JOIN tipo_persona tp ON tp.id_tipo_persona = p.id_tipo_persona
+                -- LEFT JOIN para no ocultar adultos si por algún motivo falta el registro en tipo_persona
+                LEFT JOIN tipo_persona tp ON tp.id_tipo_persona = p.id_tipo_persona
                 WHERE p.id_tipo_persona IN (2, 3, 4)
                   AND COALESCE(p.num_hijos, 0) > 0
                 ORDER BY p.primer_nombre, p.primer_apellido
