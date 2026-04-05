@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-child me-2"></i>Mis Hijos Vinculados
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if hijos %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre completo</th>
+                                        <th>Tipo de documento</th>
+                                        <th>Número de cédula</th>
+                                        <th>Fecha de inscripción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for hijo in hijos %}
+                                        <tr>
+                                            <td>{{ hijo.primer_nombre }} {{ hijo.segundo_nombre }} {{ hijo.primer_apellido }} {{ hijo.segundo_apellido }}</td>
+                                            <td>{{ hijo.tipo_documento or 'No definido' }}</td>
+                                            <td>{{ hijo.numero_cedula or 'No definido' }}</td>
+                                            <td>{{ hijo.fecha_inscripcion }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p>No tienes hijos vinculados registrados en el sistema.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

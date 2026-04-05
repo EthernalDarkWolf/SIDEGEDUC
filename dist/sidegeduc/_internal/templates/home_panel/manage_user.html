@@ -1,0 +1,192 @@
+<div class="card manage-user">
+    <header class="manage-header">
+        <div class="title">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z" fill="#0b5f47"/>
+                <path d="M4 20c0-3.31 4.03-6 8-6s8 2.69 8 6v1H4v-1z" fill="#06a77d"/>
+            </svg>
+            <div>
+                <h3>Gestionar Roles y Estado</h3>
+                <p class="muted">Selecciona un usuario para cambiar su rol o estado</p>
+            </div>
+        </div>
+        {% if message %}
+            <div class="toast {{ 'ok' if 'actualizado' in message|lower or 'exitos' in message|lower else 'err' }}">{{ message }}</div>
+        {% endif %}
+    </header>
+
+    <div class="manage-grid">
+        <aside class="user-list" aria-label="Lista de usuarios">
+            <div class="list-head">
+                <strong>Usuarios</strong>
+                <input class="search" placeholder="Buscar usuario..." aria-label="Buscar usuario" />
+            </div>
+            <ul id="user-items">
+                {% for u in users %}
+                    <li data-id="{{ u.id_user }}" data-initial="{{ u.nombre[:1] }}"
+                        data-role-id="{{ u.id_rol }}"
+                        data-role-name="{{ u.rol_name }}"
+                        data-status-id="{{ u.id_status_user }}"
+                        data-status-name="{{ u.status_name }}">
+                        <span class="avatar" aria-hidden></span>
+                        <span class="name">{{ u.nombre }}</span>
+                    </li>
+                {% else %}
+                    <li class="muted">No hay otros usuarios</li>
+                {% endfor %}
+            </ul>
+        </aside>
+
+        <form class="manage-form" method="post" onsubmit="return confirmUpdate()">
+            <div class="field">
+                <label for="user-select">Usuario</label>
+                <select id="user-select" name="user_id" required>
+                    <option value="">-- seleccionar --</option>
+                    {% for u in users %}
+                        <option value="{{ u.id_user }}"
+                            data-role-id="{{ u.id_rol }}"
+                            data-role-name="{{ u.rol_name }}"
+                            data-status-id="{{ u.id_status_user }}"
+                            data-status-name="{{ u.status_name }}"
+                            data-username="{{ u.nombre }}">
+                            {{ u.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="field current-info">
+                <strong>Datos actuales:</strong>
+                <p class="muted mb-1">Usuario: <span id="current-user-name">Ninguno</span></p>
+                <p class="muted mb-0">Rol: <span id="current-role-name">-</span></p>
+                <p class="muted">Estado: <span id="current-status-name">-</span></p>
+            </div>
+
+            <div class="row">
+                <div class="field">
+                    <label for="role-select">Rol</label>
+                    <select id="role-select" name="role_id">
+                        <option value="">-- mantener --</option>
+                        {% for r in roles %}
+                            {% if r.nombre_rol|lower|replace(' ', '') != 'creador' or is_creator %}
+                                <option value="{{ r.id_rol }}">{{ r.nombre_rol }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="status-select">Estado</label>
+                    <select id="status-select" name="status_id">
+                        <option value="">-- mantener --</option>
+                        {% for s in statuses %}
+                            <option value="{{ s.id_status_user }}">{{ s.estado }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="panel-btn primary" type="submit">Actualizar</button>
+                <button type="button" class="panel-btn outline" onclick="resetForm()">Limpiar</button>
+                <button type="button" class="panel-btn secondary" onclick="resetPassword()">Restaurar Contraseña a Default</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        (function(){
+            const list = document.querySelectorAll('#user-items li[data-id]');
+            const sel = document.getElementById('user-select');
+            const search = document.querySelector('.user-list .search');
+
+            function clearActive(){ document.querySelectorAll('#user-items li').forEach(x=>x.classList.remove('active')); }
+
+            function updateSelection(id){
+                sel.value = id;
+                const option = document.querySelector(`#user-select option[value="${id}"]`);
+                if(option){
+                    document.getElementById('current-user-name').textContent = option.dataset.username || option.textContent;
+                    document.getElementById('current-role-name').textContent = option.dataset.roleName || '-';
+                    document.getElementById('current-status-name').textContent = option.dataset.statusName || '-';
+                    document.getElementById('role-select').value = option.dataset.roleId || '';
+                    document.getElementById('status-select').value = option.dataset.statusId || '';
+                }
+                clearActive();
+                const selectedLi = document.querySelector(`#user-items li[data-id="${id}"]`);
+                if(selectedLi){ selectedLi.classList.add('active'); }
+            }
+
+            list.forEach(li => li.addEventListener('click', function(){
+                updateSelection(this.dataset.id);
+            }));
+
+            sel.addEventListener('change', function(){
+                if(this.value) updateSelection(this.value);
+                else resetForm();
+            });
+
+            search.addEventListener('input', function(){
+                const q = this.value.toLowerCase();
+                document.querySelectorAll('#user-items li').forEach(li => {
+                    const t = li.textContent.toLowerCase();
+                    li.style.display = t.includes(q) ? '' : 'none';
+                });
+            });
+        })();
+
+        function resetForm(){
+            document.getElementById('user-select').value = '';
+            document.getElementById('role-select').value = '';
+            document.getElementById('status-select').value = '';
+            document.getElementById('current-user-name').textContent = 'Ninguno';
+            document.getElementById('current-role-name').textContent = '-';
+            document.getElementById('current-status-name').textContent = '-';
+            document.querySelectorAll('#user-items li').forEach(x=>x.classList.remove('active'));
+        }
+
+        function setCurrentUserData(id){
+            const option = document.querySelector(`#user-select option[value="${id}"]`);
+            if(!option) return;
+            const username = option.dataset.username || option.textContent;
+            const roleName = option.dataset.roleName || '-';
+            const statusName = option.dataset.statusName || '-';
+            const roleId = option.dataset.roleId || '';
+            const statusId = option.dataset.statusId || '';
+            document.getElementById('current-user-name').textContent = username;
+            document.getElementById('current-role-name').textContent = roleName;
+            document.getElementById('current-status-name').textContent = statusName;
+            document.getElementById('role-select').value = roleId;
+            document.getElementById('status-select').value = statusId;
+        }
+
+        function markActiveUser(id){
+            document.querySelectorAll('#user-items li').forEach(li => {
+                li.classList.toggle('active', li.dataset.id === id);
+            });
+        }
+
+        function confirmUpdate(){
+            const sel = document.getElementById('user-select');
+            if(!sel.value){ alert('Selecciona un usuario antes de actualizar.'); return false; }
+            return confirm('¿Confirmas aplicar los cambios al usuario seleccionado?');
+        }
+
+        function resetPassword(){
+            const sel = document.getElementById('user-select');
+            if(!sel.value){ alert('Selecciona un usuario antes de restaurar contraseña.'); return; }
+            if(confirm('¿Restaurar contraseña a "sidegeduc.25"?')){
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = window.location.href;
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'reset_password';
+                input.value = sel.value;
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+</div>

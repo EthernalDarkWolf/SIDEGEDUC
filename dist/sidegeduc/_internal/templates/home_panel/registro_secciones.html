@@ -1,0 +1,272 @@
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">Gestión de Secciones</h3>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-sm btn-light">← Volver</a>
+    </div>
+
+    {% if message %}
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <i class="fas fa-info-circle me-2"></i>{{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+    {% endif %}
+
+    {% if not niveles or not grados or not letras %}
+    <div class="alert alert-warning" role="alert">
+        <strong>Atención:</strong> No hay datos base para los selectores (niveles / grados / letras).
+        Ejecuta <code>python database/rebuild_secciones.py --seed</code> o reinicia la aplicación para cargar valores iniciales.
+    </div>
+    {% endif %}
+
+    <div class="row g-3">
+        <div class="col-md-3">
+            <div class="card h-100 border-primary shadow-sm action-card" role="button" data-action="create_section">
+                <div class="card-body text-center">
+                    <i class="fas fa-folder-plus fa-2x text-primary mb-2"></i>
+                    <h6 class="card-title">Crear sección</h6>
+                    <p class="text-muted small mb-0">Añadir una nueva sección al sistema.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100 border-success shadow-sm action-card" role="button" data-action="Agregar estudiantes">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-graduate fa-2x text-success mb-2"></i>
+                    <h6 class="card-title">Agregar estudiantes</h6>
+                    <p class="text-muted small mb-0">Asignar estudiantes a una sección existente.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100 border-warning shadow-sm action-card" role="button" data-action="Asignar profesor">
+                <div class="card-body text-center">
+                    <i class="fas fa-chalkboard-teacher fa-2x text-warning mb-2"></i>
+                    <h6 class="card-title">Asignar profesor</h6>
+                    <p class="text-muted small mb-0">Vincular un profesor a una sección.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100 border-secondary shadow-sm action-card" role="button" data-action="Agregar materias">
+                <div class="card-body text-center">
+                    <i class="fas fa-book fa-2x text-secondary mb-2"></i>
+                    <h6 class="card-title">Agregar materias</h6>
+                    <p class="text-muted small mb-0">Relacionar materias con la sección.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modal para crear sección -->
+    <div class="modal fade" id="createSectionModal" tabindex="-1" aria-labelledby="createSectionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createSectionModalLabel">Crear nueva sección</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="sectionFormAlert" class="alert d-none" role="alert"></div>
+                    <form id="createSectionForm" novalidate>
+                        <div class="mb-3">
+                            <label for="id_nivel" class="form-label">Nivel educativo</label>
+                            <select class="form-select" id="id_nivel" name="id_nivel" required>
+                                <option value="">Seleccione</option>
+                                {% for n in niveles %}
+                                    <option value="{{ n.id_nivel }}">{{ n.nombre_nivel }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Por favor, selecciona un nivel educativo.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_grado" class="form-label">Grado</label>
+                            <select class="form-select" id="id_grado" name="id_grado" required>
+                                <option value="">Seleccione</option>
+                                {% for g in grados %}
+                                    <option value="{{ g.id_grado }}">{{ g.numero_grado }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Por favor, selecciona un grado.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_letra_seccion" class="form-label">Letra de la sección</label>
+                            <select class="form-select" id="id_letra_seccion" name="id_letra_seccion" required>
+                                <option value="">Seleccione</option>
+                                {% for l in letras %}
+                                    <option value="{{ l.id_letra_seccion }}">{{ l.letra }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Por favor, selecciona una letra.</div>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" id="btnCreateSection">
+                                <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                                Guardar sección
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para asignar materia a sección -->
+    <div class="modal fade" id="assignSubjectModal" tabindex="-1" aria-labelledby="assignSubjectModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="assignSubjectModalLabel">Asignar materia a sección</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="assignSubjectAlert" class="alert d-none" role="alert"></div>
+                    <form id="assignSubjectForm" novalidate>
+                        <div class="mb-3">
+                            <label for="select_section_for_subject" class="form-label">Sección</label>
+                            <select class="form-select" id="select_section_for_subject" name="id_seccion" required>
+                                <option value="">Seleccione</option>
+                                {% for s in secciones %}
+                                    <option value="{{ s.id_seccion }}">{{ s.nombre_nivel or 'ID ' + (s.id_nivel|string) }} - {{ s.numero_grado or 'ID ' + (s.id_grado|string) }} - {{ s.letra or 'ID ' + (s.id_letra_seccion|string) }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Selecciona una sección.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="select_subject" class="form-label">Materia</label>
+                            <select class="form-select" id="select_subject" name="id_materia" required>
+                                <option value="">Seleccione</option>
+                                {% for m in materias %}
+                                    <option value="{{ m.id_materia }}">{{ m.nombre_materia }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Selecciona una materia.</div>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" id="btnAssignSubject">
+                                <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                                Guardar asignación
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar estudiante a sección -->
+<div class="modal fade" id="assignStudentModal" tabindex="-1" aria-labelledby="assignStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignStudentModalLabel">Agregar estudiante a sección</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="assignStudentAlert" class="alert d-none" role="alert"></div>
+                <form id="assignStudentForm" novalidate>
+                    <div class="mb-3">
+                        <label for="select_section_for_student" class="form-label">Sección (cupo disponible)</label>
+                        <select class="form-select" id="select_section_for_student" name="id_seccion" required>
+                            <option value="">Seleccione</option>
+                            {% for s in secciones_para_estudiantes %}
+                                {% set current = student_count_by_section.get(s.id_seccion, 0) %}
+                                <option value="{{ s.id_seccion }}">{{ s.nombre_nivel or 'ID ' + (s.id_nivel|string) }} - {{ s.numero_grado or 'ID ' + (s.id_grado|string) }} - {{ s.letra or 'ID ' + (s.id_letra_seccion|string) }} ({{ current }}/30)</option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">Selecciona una sección.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="select_student" class="form-label">Estudiante disponible</label>
+                        <select class="form-select" id="select_student" name="id_estudiante" required>
+                            <option value="">Seleccione</option>
+                            {% for e in estudiantes_disponibles %}
+                                <option value="{{ e.id_estudiante }}">{{ e.primer_nombre }} {{ e.primer_apellido }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">Selecciona un estudiante.</div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="btnAssignStudent">
+                            <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                            Agregar estudiante
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para asignar profesor a sección -->
+<div class="modal fade" id="assignProfessorModal" tabindex="-1" aria-labelledby="assignProfessorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignProfessorModalLabel">Asignar profesor a sección</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="assignProfessorAlert" class="alert d-none" role="alert"></div>
+                <form id="assignProfessorForm" novalidate>
+                    <div class="mb-3">
+                        <label for="select_section_for_professor" class="form-label">Sección sin profesor</label>
+                        <select class="form-select" id="select_section_for_professor" name="id_seccion" required>
+                            <option value="">Seleccione</option>
+                            {% for s in secciones_para_profesores %}
+                                <option value="{{ s.id_seccion }}">{{ s.nombre_nivel or 'ID ' + (s.id_nivel|string) }} - {{ s.numero_grado or 'ID ' + (s.id_grado|string) }} - {{ s.letra or 'ID ' + (s.id_letra_seccion|string) }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">Selecciona una sección.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="select_professor" class="form-label">Profesor disponible</label>
+                        <select class="form-select" id="select_professor" name="id_profesor" required>
+                            <option value="">Seleccione</option>
+                            {% for p in profesores_disponibles %}
+                                <option value="{{ p.id_profesor }}">{{ p.primer_nombre }} {{ p.primer_apellido }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">Selecciona un profesor.</div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="btnAssignProfessor">
+                            <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                            Guardar asignación
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal informativo (funcionalidades en desarrollo) -->
+<div class="modal fade" id="devModal" tabindex="-1" aria-labelledby="devModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="devModalLabel">Funcionalidad en desarrollo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="devModalBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Exponer los datos iniciales para validación y actualización en cliente
+    window.SECCIONES_INITIAL = {{ secciones|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/registro_secciones.js') }}"></script>

@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-chalkboard-teacher me-2"></i>Mi Sección Asignada
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if seccion %}
+                        <h5>Sección: {{ seccion.nombre }}</h5>
+                        <h6>Estudiantes:</h6>
+                        {% if estudiantes %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Apellido</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for estudiante in estudiantes %}
+                                            <tr>
+                                                <td>{{ estudiante.primer_nombre }} {{ estudiante.segundo_nombre }}</td>
+                                                <td>{{ estudiante.primer_apellido }} {{ estudiante.segundo_apellido }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p>No hay estudiantes asignados a esta sección.</p>
+                        {% endif %}
+                    {% else %}
+                        <p>No tienes una sección asignada actualmente.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
